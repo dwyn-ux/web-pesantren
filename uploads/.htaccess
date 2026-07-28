@@ -1,0 +1,21 @@
+# Blokir semua akses langsung ke folder uploads
+# File upload hanya boleh diakses via controller PHP
+
+# Larang eksekusi script apapun di folder ini
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>
+
+# Larang eksekusi via mod_cgi / mod_perl / dll
+Options -ExecCGI
+RemoveHandler .php .php3 .php4 .php5 .phtml .cgi .pl .py .rb
+
+# Hanya izinkan akses ke gambar
+<FilesMatch "\.(jpg|jpeg|png|webp|gif|svg)$">
+    Require all granted
+</FilesMatch>
+
+# Semua file lain ditolak
+<FilesMatch "^(?!.*\.(jpg|jpeg|png|webp|gif|svg)$)">
+    Require all denied
+</FilesMatch>

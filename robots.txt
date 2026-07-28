@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Blokir folder internal
+Disallow: /admin/
+Disallow: /api/
+Disallow: /config/
+Disallow: /includes/
+Disallow: /migrations/
+Disallow: /cache/
+Disallow: /logs/
+
+# Blokir halaman login dari index
+Disallow: /login
+Disallow: /logout
+
+# Sitemap
+Sitemap: https://ponpesashiddiq.or.id/sitemap.xml
