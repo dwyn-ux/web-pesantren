@@ -16,7 +16,7 @@ $pageTitle       ??= APP_NAME . ' | Pesantren Tahfidz Al-Qur\'an Ciamis';
 $pageDescription ??= 'Pondok Pesantren Ash-Shiddiq adalah lembaga pendidikan Islam berbasis Tahfidz Al-Qur\'an di Ciamis, Jawa Barat. Mencetak generasi Qur\'ani berakhlak mulia sejak 2020.';
 $pageKeywords    ??= 'pondok pesantren, tahfidz quran, ciamis, jawa barat, pendaftaran pesantren, PSB, pesantren ash-shiddiq';
 $pageCanonical   ??= BASE_URL;
-$pageOgImage     ??= BASE_URL . '/assets/img/og-default.jpg';
+$pageOgImage     ??= imgExists('og-default.jpg') ? BASE_URL . '/assets/img/og-default.jpg' : '';
 $bodyClass       ??= '';
 $activePage      ??= 'home';
 
@@ -64,8 +64,12 @@ $navLinks = [
     <meta name="twitter:image"       content="<?= e($pageOgImage) ?>">
 
     <!-- Favicon -->
+    <?php if (imgExists('favicon.svg')): ?>
     <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/assets/img/favicon.svg">
-    <link rel="apple-touch-icon"          href="<?= BASE_URL ?>/assets/img/apple-touch-icon.png">
+    <?php endif; ?>
+    <?php if (imgExists('apple-touch-icon.png')): ?>
+    <link rel="apple-touch-icon" href="<?= BASE_URL ?>/assets/img/apple-touch-icon.png">
+    <?php endif; ?>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
