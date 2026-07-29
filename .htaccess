@@ -1,6 +1,3 @@
-# PHP handler untuk Domainesia LiteSpeed
-AddHandler lsapi-php82 .php
-
 # ============================================================
 # Root .htaccess — Pondok Pesantren Ash-Shiddiq
 # ============================================================
