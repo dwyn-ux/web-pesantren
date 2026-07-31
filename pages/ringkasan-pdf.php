@@ -1,6 +1,7 @@
 <?php
-// Fallback PDF — di-include oleh surat-kesanggupan.php jika ZipArchive tidak ada.
-// Butuh variabel: $p, $itemsShown, $signBytes, $labelJenjang, $labelQuran, $jkLabel, $nomorFile
+// Ringkasan pendaftaran format PDF (tabel) — di-include oleh surat-kesanggupan.php
+// Butuh variabel: $p, $itemsShown, $signBytes, $ttdW, $ttdH,
+// $labelJenjang, $labelQuran, $jkLabel, $nomorFile
 if (!isset($p)) { http_response_code(403); exit; }
 
 $jpegData = null; $imgW = 0; $imgH = 0;
@@ -15,8 +16,6 @@ if ($signBytes !== '') {
         imagedestroy($im);
     }
 }
-$ttdW = 170;
-$ttdH = ($imgW > 0) ? (int) round(170 * ($imgH / $imgW)) : 65;
 
 final class RingkasanPdf
 {
@@ -46,17 +45,40 @@ final class RingkasanPdf
 
     public function text(string $t, float $size = 11, bool $bold = false): void { $this->put($t, $size, $bold, 'left', 50, 495); }
 
-    public function row(string $label, string $value): void
+    /**
+     * Baris tabel dengan border. $cells = nilai tiap kolom,
+     * $widths = lebar kolom (pt), $styles = 'label'|'' per kolom.
+     */
+    public function tableRow(array $cells, array $widths, array $styles = [], float $size = 11): void
     {
-        $lw = 170; $vx = 50 + $lw + 8; $vw = 495 - $lw - 8;
-        $this->ensure(16.5);
-        $this->line($label . ':', 11, true, 50);
-        $lines = $this->wrap($value, 11, $vw);
-        foreach ($lines as $ln) {
-            $this->ensure(16.5);
-            $this->line($ln, 11, false, $vx);
+        $lineH = $size * 1.2;
+        $pad   = 5;
+        $wrapped = [];
+        $maxLines = 1;
+        foreach ($cells as $i => $text) {
+            $lines = $this->wrap($text, $size, $widths[$i] - 2 * $pad);
+            $wrapped[$i] = $lines;
+            $maxLines = max($maxLines, count($lines));
         }
-        $this->gap(5);
+        $rowH = $maxLines * $lineH + 2 * $pad;
+        $this->ensure($rowH + 4);
+
+        $x = 50;
+        for ($i = 0; $i < count($cells); $i++) {
+            $cw   = $widths[$i];
+            $topY = $this->y;
+            // isi label dengan abu-abu terang, kolom lain putih
+            $this->cur .= sprintf("%.1f %.1f %.1f %.1f re %s\n", $x, $topY - $rowH, $cw, $rowH, (($styles[$i] ?? '') === 'label') ? '0.93 g f' : '1 g f');
+            $this->cur .= sprintf("%.1f %.1f %.1f %.1f re S\n", $x, $topY - $rowH, $cw, $rowH);
+            $font = (($styles[$i] ?? '') === 'label') ? 'F2' : 'F1';
+            $ty   = $topY - $pad - $lineH;
+            foreach ($wrapped[$i] as $ln) {
+                $this->cur .= sprintf("BT /%s %.1f Tf 1 0 0 1 %.1f %.1f Tm (%s) Tj ET\n", $font, $size, $x + $pad, $ty, self::esc(self::win($ln)));
+                $ty -= $lineH;
+            }
+            $x += $cw;
+        }
+        $this->y -= $rowH;
     }
 
     public function image(float $w, float $h): void
@@ -184,6 +206,7 @@ final class RingkasanPdf
     }
 }
 
+// ── Susun dokumen (format tabel) ─────────────────────────────
 $pdf = new RingkasanPdf();
 $pdf->title('RINGKASAN PENDAFTARAN SANTRI BARU');
 $pdf->center('Pondok Pesantren Ash-Shiddiq', 10.5);
@@ -192,34 +215,38 @@ $pdf->center(($p['nomor_induk'] ? 'Nomor Induk: ' . $p['nomor_induk'] : 'Nomor P
 $pdf->center('Tanggal daftar: ' . date('d/m/Y H:i', strtotime($p['created_at'])) . '  ·  Status: ' . $p['status'], 9.5);
 $pdf->gap(8);
 
+$w2 = [188, 307]; // 2 kolom: label 38%, nilai 62%
+
 $pdf->heading('A. Data Calon Santri');
-$pdf->row('Nama Lengkap', $p['nama_lengkap']);
-$pdf->row('Tempat, Tanggal Lahir', $p['tempat_lahir'] . ', ' . date('d/m/Y', strtotime($p['tanggal_lahir'])));
-$pdf->row('Jenis Kelamin', $jkLabel);
-$pdf->row('Jenjang', $labelJenjang[$p['jenjang']] ?? $p['jenjang']);
-$pdf->row('Tinggi / Berat Badan', (!empty($p['tinggi_badan']) ? (float) $p['tinggi_badan'] . ' cm' : '-') . ' / ' . (!empty($p['berat_badan']) ? (float) $p['berat_badan'] . ' kg' : '-'));
-$pdf->row('No. WhatsApp', $p['whatsapp']);
+$pdf->tableRow(['Nama Lengkap', $p['nama_lengkap']], $w2, ['label', '']);
+$pdf->tableRow(['Tempat, Tanggal Lahir', $p['tempat_lahir'] . ', ' . date('d/m/Y', strtotime($p['tanggal_lahir']))], $w2, ['label', '']);
+$pdf->tableRow(['Jenis Kelamin', $jkLabel], $w2, ['label', '']);
+$pdf->tableRow(['Jenjang', $labelJenjang[$p['jenjang']] ?? $p['jenjang']], $w2, ['label', '']);
+$pdf->tableRow(['Tinggi / Berat Badan', (!empty($p['tinggi_badan']) ? (float) $p['tinggi_badan'] . ' cm' : '-') . ' / ' . (!empty($p['berat_badan']) ? (float) $p['berat_badan'] . ' kg' : '-')], $w2, ['label', '']);
+$pdf->tableRow(['No. WhatsApp', $p['whatsapp']], $w2, ['label', '']);
 
 $pdf->heading('B. Data Orang Tua / Wali');
-$pdf->row('Nama Ayah', $p['nama_ayah']);
-$pdf->row('Nama Ibu', $p['nama_ibu']);
-$pdf->row('No. HP Orang Tua', $p['hp_ortu']);
-$pdf->row('Pekerjaan Orang Tua', $p['pekerjaan_ortu'] ?: '-');
-$pdf->row('Alamat', $p['alamat']);
+$pdf->tableRow(['Nama Ayah', $p['nama_ayah']], $w2, ['label', '']);
+$pdf->tableRow(['Nama Ibu', $p['nama_ibu']], $w2, ['label', '']);
+$pdf->tableRow(['No. HP Orang Tua', $p['hp_ortu']], $w2, ['label', '']);
+$pdf->tableRow(['Pekerjaan Orang Tua', $p['pekerjaan_ortu'] ?: '-'], $w2, ['label', '']);
+$pdf->tableRow(['Alamat', $p['alamat']], $w2, ['label', '']);
 
 $pdf->heading('C. Data Akademik');
-$pdf->row('Asal Sekolah', $p['asal_sekolah']);
-$pdf->row('Tahun Lulus', $p['tahun_lulus']);
-$pdf->row('Kemampuan Membaca Al-Qur\'an', $labelQuran[$p['kemampuan_quran']] ?? $p['kemampuan_quran']);
-$pdf->row('Jumlah Hafalan', $p['jumlah_hafalan'] ?: '-');
-$pdf->row('Motivasi', $p['motivasi'] ?: '-');
+$pdf->tableRow(['Asal Sekolah', $p['asal_sekolah']], $w2, ['label', '']);
+$pdf->tableRow(['Tahun Lulus', $p['tahun_lulus']], $w2, ['label', '']);
+$pdf->tableRow(['Kemampuan Membaca Al-Qur\'an', $labelQuran[$p['kemampuan_quran']] ?? $p['kemampuan_quran']], $w2, ['label', '']);
+$pdf->tableRow(['Jumlah Hafalan', $p['jumlah_hafalan'] ?: '-'], $w2, ['label', '']);
+$pdf->tableRow(['Motivasi', $p['motivasi'] ?: '-'], $w2, ['label', '']);
 
 $pdf->heading('D. Rincian Pembiayaan & Kesanggupan');
+$w4 = [135, 150, 100, 110];
+$pdf->tableRow(['Item', 'Keterangan', 'Nominal', 'Status'], $w4, ['label', 'label', 'label', 'label']);
 foreach ($itemsShown as $it) {
-    $ket = $it['nama'] ? $it['nama'] . ' — ' : '';
+    $ket = $it['nama'] ?: '-';
     $nom = $it['gratis'] ? 'GRATIS' : 'Rp ' . number_format((float) $it['nominal'], 0, ',', '.');
     $st  = pembiayaanStatusLabel($it['status']) . ($it['kesanggupan'] ? ' (disanggupi)' : '');
-    $pdf->row(pembiayaanLabel($it['jenis']), $ket . $nom . ' — ' . $st);
+    $pdf->tableRow([pembiayaanLabel($it['jenis']), $ket, $nom, $st], $w4);
 }
 
 if (!empty($p['kesanggupan_at'])) {
