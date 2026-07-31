@@ -439,6 +439,29 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
 }
 
 /**
+ * Sinkronkan snapshot pembiayaan santri dengan tarif admin terbaru.
+ * Snapshot dibuat ulang dari pembiayaan_tarif selama santri belum
+ * mengunci: biaya pendaftaran masih 'belum' DAN kesanggupan belum
+ * ditandatangani. Setelah bayar/ttd, tagihan membeku.
+ */
+function syncPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void {
+    snapshotPembiayaan($pdo, $pendaftaranId, $gender);
+
+    $s = $pdo->prepare('SELECT kesanggupan_setuju FROM pendaftaran WHERE id=?');
+    $s->execute([$pendaftaranId]);
+    if ((int) $s->fetchColumn() === 1) return; // sudah ttd → terkunci
+
+    $s = $pdo->prepare("SELECT status FROM pembiayaan WHERE pendaftaran_id=? AND jenis='pendaftaran' LIMIT 1");
+    $s->execute([$pendaftaranId]);
+    $pStatus = $s->fetchColumn();
+    // Sudah bayar/menunggu/gratis → terkunci. 'belum' & 'ditolak' → ikut tarif terbaru.
+    if ($pStatus === 'menunggu' || $pStatus === 'lunas' || $pStatus === 'gratis') return;
+
+    $pdo->prepare('DELETE FROM pembiayaan WHERE pendaftaran_id=?')->execute([$pendaftaranId]);
+    snapshotPembiayaan($pdo, $pendaftaranId, $gender);
+}
+
+/**
  * Format angka jadi Rupiah (Rp 1.250.000).
  */
 function formatRupiah(float $nominal): string {

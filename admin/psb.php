@@ -180,7 +180,7 @@ require_once __DIR__ . '/includes/header.php';
                             Kemampuan Qur'an: <?= e(str_replace('-', ' ', $p['kemampuan_quran'])) ?><br>
                             Hafalan: <?= e($p['jumlah_hafalan'] ?? '-') ?>
                             <br><br><strong>Pembiayaan:</strong><br>
-                            <?php snapshotPembiayaan($pdo,(int)$p['id'],$p['jenis_kelamin']);
+                            <?php syncPembiayaan($pdo,(int)$p['id'],$p['jenis_kelamin']);
                             $bi=$pdo->prepare('SELECT * FROM pembiayaan WHERE pendaftaran_id=? ORDER BY urutan,id');$bi->execute([$p['id']]);$biayaP=$bi->fetchAll(); ?>
                             <table class="admin-table" style="font-size:12px;margin-top:6px;">
                                 <tr><th>Item</th><th>Nominal</th><th>Status</th><th></th></tr>

@@ -16,8 +16,8 @@ if (!$pendaftar) {
     redirect('/login-santri');
 }
 
-// Pastikan snapshot pembiayaan ada (santri baru & lama)
-snapshotPembiayaan($pdo, $id, $pendaftar['jenis_kelamin']);
+// Pastikan snapshot pembiayaan sinkron dengan tarif admin (kecuali sudah terkunci)
+syncPembiayaan($pdo, $id, $pendaftar['jenis_kelamin']);
 
 $itemRows = $pdo->prepare('SELECT * FROM pembiayaan WHERE pendaftaran_id=? ORDER BY urutan, id');
 $itemRows->execute([$id]);
