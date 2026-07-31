@@ -195,7 +195,7 @@ $pageCanonical = BASE_URL . '/portal-santri';
     <div class="progress-step <?= $berkasBuka ? 'active' : '' ?>"><span>3</span><strong>Pemberkasan</strong></div>
 </div>
 
-<div class="portal-grid">
+<div class="portal-full">
 
     <!-- ── 1. BIAYA PENDAFTARAN ───────────────────────────────── -->
     <section class="portal-card">
@@ -313,39 +313,45 @@ $pageCanonical = BASE_URL . '/portal-santri';
     <div class="payment-success"><strong>Pemberkasan terbuka</strong>
         <p>Lengkapi berkas berikut. Yang bertanda <strong>Wajib</strong> harus dilengkapi, yang lain boleh menyusul.</p>
     </div>
-    <div class="portal-grid">
-        <section class="portal-card">
-            <h2>Upload Berkas</h2>
-            <p>Kelengkapan wajib: <?= count($wajibTerisi) ?>/<?= count($wajibJenis) ?></p>
-            <form method="post" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-                <input type="hidden" name="action" value="upload_document">
-                <div class="form-group"><label>Jenis berkas</label>
-                    <select class="form-control" name="jenis" required>
-                        <?php foreach (['kartu-keluarga','akta-lahir','ktp-ortu','foto','ijazah','sertifikat-tka','lainnya'] as $j): ?>
-                            <option value="<?= $j ?>"><?= e(berkasLabel($j)) ?><?= in_array($j, $wajibJenis, true) ? ' (Wajib)' : ' (bisa menyusul)' ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="form-group"><input class="form-control" type="file" name="berkas" accept=".pdf,.jpg,.jpeg,.png" required><small>Maksimal 10 MB.</small></div>
-                <button class="btn-primary">Upload Berkas</button>
-            </form>
-        </section>
-        <section class="portal-card">
-            <h2>Daftar Berkas</h2>
-            <?php if (empty($documentFiles)): ?>
-                <p>Belum ada berkas yang diunggah.</p>
-            <?php else: ?>
-                <ul class="portal-files">
-                    <?php foreach ($documentFiles as $f): ?>
-                        <li><span><?= e(berkasLabel($f['jenis'])) ?><?= in_array($f['jenis'], $wajibJenis, true) ? ' <em>(Wajib)</em>' : '' ?> — <?= e($f['nama_asli']) ?></span><strong><?= e(ucfirst($f['status'])) ?></strong></li>
-                    <?php endforeach; ?>
-                </ul>
-            <?php endif; ?>
-            <p style="margin-top:18px;">Unduh surat kesanggupan aturan pesantren, tandatangani bersama wali, lalu unggah sebagai berkas lainnya.</p>
-            <a class="btn-primary" href="<?= BASE_URL ?>/surat-kesanggupan">Download Surat Kesanggupan</a>
-        </section>
-    </div>
+    <section class="portal-card">
+        <h2>3. Pemberkasan</h2>
+        <p>Kelengkapan wajib: <?= count($wajibTerisi) ?>/<?= count($wajibJenis) ?></p>
+        <div class="berkas-grid">
+            <?php
+            $berkasJenis = [
+                'kartu-keluarga' => true, 'akta-lahir' => true, 'ktp-ortu' => true,
+                'foto' => true, 'ijazah' => false, 'sertifikat-tka' => false, 'lainnya' => false,
+            ];
+            foreach ($berkasJenis as $j => $wajib):
+                $filesJ = array_values(array_filter($documentFiles, fn($f) => $f['jenis'] === $j));
+            ?>
+            <div class="berkas-item">
+                <strong><?= e(berkasLabel($j)) ?></strong>
+                <?php if ($wajib): ?>
+                    <span class="badge badge-red">Wajib</span>
+                <?php else: ?>
+                    <span class="badge badge-gray">bisa menyusul</span>
+                <?php endif; ?>
+                <?php foreach ($filesJ as $f): ?>
+                    <p style="margin:8px 0 0;font-size:12px;color:var(--text-mid);line-height:1.5;">
+                        ✓ <?= e($f['nama_asli']) ?> — <strong><?= e(ucfirst($f['status'])) ?></strong>
+                    </p>
+                <?php endforeach; ?>
+                <form method="post" enctype="multipart/form-data" style="margin-top:12px;">
+                    <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                    <input type="hidden" name="action" value="upload_document">
+                    <input type="hidden" name="jenis" value="<?= $j ?>">
+                    <div style="display:flex;gap:8px;">
+                        <input class="form-control" type="file" name="berkas" accept=".pdf,.jpg,.jpeg,.png" required>
+                        <button class="btn-sm btn-sm-primary" style="white-space:nowrap;">Upload</button>
+                    </div>
+                </form>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <p style="margin-top:20px;">Unduh surat kesanggupan aturan pesantren, tandatangani bersama wali, lalu unggah kembali sebagai berkas "Lainnya".</p>
+        <a class="btn-primary" href="<?= BASE_URL ?>/surat-kesanggupan">Download Surat Kesanggupan</a>
+    </section>
 <?php endif; ?>
 
 </div></main>
@@ -353,6 +359,14 @@ $pageCanonical = BASE_URL . '/portal-santri';
 <style>
 .price-gratis { color: var(--green-deep); font-weight: 700; }
 #kesanggupanForm .cost-option input { flex-shrink: 0; }
+.portal-full { display: block; }
+.berkas-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.berkas-item {
+    border: 1px solid var(--cream-dark); border-radius: 10px; padding: 16px;
+    background: var(--cream);
+}
+.berkas-item .form-control { background: #fff; }
+@media (max-width: 700px) { .berkas-grid { grid-template-columns: 1fr; } }
 </style>
 
 <script>
