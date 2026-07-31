@@ -163,8 +163,8 @@ $pageDescription = 'Daftarkan putra-putri Anda ke Pondok Pesantren Ash-Shiddiq. 
 $pageCanonical   = BASE_URL . '/psb';
 
 $labelJenjang = [
-    'mts'               => 'MTs (Setara SMP)',
-    'ma'                => 'MA (Setara SMA)',
+    'mts'               => 'SMP (Setara MTs)',
+    'ma'                => 'SMA (Setara MA)',
     'tahfidz-intensif'  => 'Tahfidz Intensif',
 ];
 $labelQuran = [
@@ -173,6 +173,23 @@ $labelQuran = [
     'tartil'       => 'Tartil',
     'hafal-juz-30' => 'Hafal Juz 30',
     'hafal-lebih'  => 'Hafal Lebih dari Juz 30',
+];
+$errorLabels = [
+    'nama_lengkap'    => 'Nama lengkap',
+    'tempat_lahir'    => 'Tempat lahir',
+    'tanggal_lahir'   => 'Tanggal lahir',
+    'jenis_kelamin'   => 'Jenis kelamin',
+    'jenjang'         => 'Jenjang',
+    'whatsapp'        => 'Nomor WhatsApp',
+    'nama_ayah'       => 'Nama ayah',
+    'nama_ibu'        => 'Nama ibu',
+    'hp_ortu'         => 'No. HP orang tua',
+    'alamat'          => 'Alamat',
+    'asal_sekolah'    => 'Asal sekolah',
+    'tahun_lulus'     => 'Tahun lulus',
+    'kemampuan_quran' => 'Kemampuan membaca Al-Qur\'an',
+    'portal_password' => 'Password akun',
+    'password_confirm'=> 'Konfirmasi password',
 ];
 
 // Tahun lulus options
@@ -198,20 +215,20 @@ $extraHead = <<<'CSS'
     background:var(--white); border:2px solid var(--green-mid);
     border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-size:14px; font-weight:700; color:var(--green-deep);
-    position:relative; z-index:1; font-family:'Playfair Display',serif;
+    position:relative; z-index:1; font-family:'Plus Jakarta Sans',sans-serif;
 }
 .timeline-dot.done { background:var(--green-deep); color:white; border-color:var(--green-deep); }
 .timeline-date {
     font-size:11px; letter-spacing:2px; text-transform:uppercase;
     color:var(--gold); font-weight:600; margin-bottom:4px;
 }
-.timeline-title { font-family:'Playfair Display',serif; font-size:17px; color:var(--text-dark); margin-bottom:6px; }
+.timeline-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:17px; color:var(--text-dark); margin-bottom:6px; }
 .timeline-desc { font-size:13px; color:var(--text-mid); line-height:1.6; }
 
 /* ── SYARAT & BIAYA ──────────────────────────────────────────── */
 .syarat-box { background:var(--white); border-radius:4px; padding:28px; margin-top:36px; }
 .syarat-box h3 {
-    font-family:'Playfair Display',serif; font-size:20px; color:var(--text-dark);
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; color:var(--text-dark);
     margin-bottom:20px; padding-bottom:12px; border-bottom:2px solid var(--cream-dark);
     position:relative;
 }
@@ -228,14 +245,14 @@ $extraHead = <<<'CSS'
     font-size:11px; color:var(--green-deep); margin-top:1px;
 }
 .biaya-box { background:var(--green-deep); border-radius:4px; padding:28px; margin-top:24px; }
-.biaya-box h3 { font-family:'Playfair Display',serif; font-size:20px; color:white; margin-bottom:20px; }
+.biaya-box h3 { font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; color:white; margin-bottom:20px; }
 .biaya-item {
     display:flex; justify-content:space-between; align-items:center;
     padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.1);
 }
 .biaya-item:last-child { border-bottom:none; }
 .biaya-label { font-size:14px; color:rgba(255,255,255,0.7); }
-.biaya-value { font-family:'Playfair Display',serif; font-size:18px; color:var(--gold); }
+.biaya-value { font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; color:var(--gold); }
 
 /* ── FORM CARD ────────────────────────────────────────────────── */
 .psb-form-card {
@@ -243,8 +260,8 @@ $extraHead = <<<'CSS'
     box-shadow:0 8px 40px rgba(13,122,74,0.08); position:sticky; top:90px;
 }
 .form-header { text-align:center; margin-bottom:32px; padding-bottom:24px; border-bottom:1px solid var(--cream-dark); }
-.form-header .arabic { font-family:'Amiri',serif; font-size:24px; color:var(--green-mid); margin-bottom:8px; }
-.form-header h2 { font-family:'Playfair Display',serif; font-size:24px; color:var(--text-dark); margin-bottom:6px; }
+.form-header .arabic { font-family:'Noto Sans Arabic',sans-serif; font-size:24px; color:var(--green-mid); margin-bottom:8px; }
+.form-header h2 { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; color:var(--text-dark); margin-bottom:6px; }
 .form-header p  { font-size:13px; color:var(--text-light); }
 
 /* Step indicator */
@@ -320,12 +337,12 @@ select.form-control { cursor:pointer; }
     width:72px; height:72px; background:rgba(13,122,74,0.1); border-radius:50%;
     display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:30px;
 }
-.success-state h3 { font-family:'Playfair Display',serif; font-size:24px; margin-bottom:12px; }
+.success-state h3 { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; margin-bottom:12px; }
 .success-state p { font-size:14px; color:var(--text-mid); line-height:1.7; }
 .nomor-pendaftaran {
     margin:20px 0; background:var(--cream); border-radius:3px; padding:16px;
     font-size:22px; font-weight:700; color:var(--green-deep);
-    letter-spacing:4px; font-family:'Playfair Display',serif;
+    letter-spacing:4px; font-family:'Plus Jakarta Sans',sans-serif;
 }
 
 /* PSB tutup notice */
@@ -333,7 +350,7 @@ select.form-control { cursor:pointer; }
     background:var(--white); border-radius:4px; padding:48px 40px;
     text-align:center; border-top:4px solid var(--gold);
 }
-.psb-tutup h3 { font-family:'Playfair Display',serif; font-size:26px; color:var(--text-dark); margin-bottom:16px; }
+.psb-tutup h3 { font-family:'Plus Jakarta Sans',sans-serif; font-size:26px; color:var(--text-dark); margin-bottom:16px; }
 .psb-tutup p  { font-size:15px; color:var(--text-mid); line-height:1.8; }
 
 @media (max-width:900px) {
@@ -409,8 +426,8 @@ CSS;
         <div class="syarat-box reveal">
             <h3>Syarat Pendaftaran</h3>
             <ul class="syarat-list">
-                <li><div class="syarat-check" aria-hidden="true">✓</div> Lulusan SD/MI (untuk jenjang MTs) atau SMP/MTs (untuk jenjang MA)</li>
-                <li><div class="syarat-check" aria-hidden="true">✓</div> Usia maksimal 15 tahun (MTs) atau 18 tahun (MA)</li>
+                <li><div class="syarat-check" aria-hidden="true">✓</div> Lulusan SD/MI (untuk jenjang SMP) atau SMP/MTs (untuk jenjang SMA)</li>
+                <li><div class="syarat-check" aria-hidden="true">✓</div> Usia maksimal 15 tahun (SMP) atau 18 tahun (SMA)</li>
                 <li><div class="syarat-check" aria-hidden="true">✓</div> Mampu membaca Al-Qur'an (tidak wajib hafal)</li>
                 <li><div class="syarat-check" aria-hidden="true">✓</div> Surat keterangan sehat dari dokter</li>
                 <li><div class="syarat-check" aria-hidden="true">✓</div> Foto copy ijazah dan raport terakhir (3 lembar)</li>
@@ -494,7 +511,12 @@ CSS;
 
         <?php if (!empty($errors)): ?>
         <div class="flash-message flash-error" role="alert" style="margin-bottom:16px;">
-            Mohon periksa kembali isian formulir. Terdapat <?= count($errors) ?> kesalahan.
+            <strong>Mohon periksa kembali isian formulir. Terdapat <?= count($errors) ?> kesalahan:</strong>
+            <ul style="margin:8px 0 0;padding-left:18px;">
+                <?php foreach ($errors as $field => $msg): ?>
+                <li style="margin-bottom:2px;"><?= e(($errorLabels[$field] ?? $field) . ': ' . $msg) ?></li>
+                <?php endforeach; ?>
+            </ul>
         </div>
         <?php endif; ?>
 
@@ -725,20 +747,7 @@ CSS;
 
 <script>
 (function () {
-    var currentStep = <?= (!empty($errors)) ? 1 : 1 ?>;
-
-    // Jika ada error di step tertentu, tampilkan step yang relevan
-    <?php if (!empty($errors)): ?>
-    var step2Fields = ['nama_ayah','nama_ibu','hp_ortu','alamat'];
-    var step3Fields = ['asal_sekolah','kemampuan_quran','portal_password','password_confirm'];
-    var errorKeys   = <?= json_encode(array_keys($errors)) ?>;
-    if (errorKeys.some(function(k){ return step3Fields.includes(k); })) {
-        currentStep = 3;
-    } else if (errorKeys.some(function(k){ return step2Fields.includes(k); })) {
-        currentStep = 2;
-    }
-    if (currentStep > 1) psbGoTo(currentStep);
-    <?php endif; ?>
+    var currentStep = 1;
 
     window.psbGoTo = function (step) {
         // Sembunyikan semua page
@@ -761,5 +770,20 @@ CSS;
         var card = document.querySelector('.psb-form-card');
         if (card) card.scrollIntoView({ block: 'start', behavior: 'smooth' });
     };
+
+    // Jika ada error, tampilkan step yang relevan lalu sorot field pertama yang salah
+    <?php if (!empty($errors)): ?>
+    var step2Fields = ['nama_ayah','nama_ibu','hp_ortu','alamat'];
+    var step3Fields = ['asal_sekolah','tahun_lulus','kemampuan_quran','portal_password','password_confirm'];
+    var errorKeys   = <?= json_encode(array_keys($errors)) ?>;
+    if (errorKeys.some(function(k){ return step3Fields.indexOf(k) !== -1; })) {
+        currentStep = 3;
+    } else if (errorKeys.some(function(k){ return step2Fields.indexOf(k) !== -1; })) {
+        currentStep = 2;
+    }
+    psbGoTo(currentStep);
+    var firstError = document.querySelector('.form-page.active .is-error');
+    if (firstError) firstError.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    <?php endif; ?>
 }());
 </script>

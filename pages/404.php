@@ -17,16 +17,16 @@ $extraHead = <<<'CSS'
     padding:80px 5%; text-align:center; flex-direction:column;
 }
 .error-404 {
-    font-family:'Playfair Display',serif; font-size:clamp(80px,15vw,140px);
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:clamp(80px,15vw,140px);
     font-style:italic; color:var(--cream-dark); line-height:1;
     margin-bottom:0;
 }
 .error-arabic {
-    font-family:'Amiri',serif; font-size:clamp(20px,3vw,32px);
+    font-family:'Noto Sans Arabic',sans-serif; font-size:clamp(20px,3vw,32px);
     color:var(--green-mid); margin-bottom:16px;
 }
 .error-title {
-    font-family:'Playfair Display',serif; font-size:clamp(22px,3vw,32px);
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:clamp(22px,3vw,32px);
     color:var(--text-dark); margin-bottom:16px;
 }
 .error-desc { font-size:16px; color:var(--text-mid); line-height:1.8; max-width:500px; margin-bottom:40px; }

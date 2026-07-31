@@ -72,8 +72,8 @@ $adminTitle = 'Data PSB';
 $adminPage  = 'admin/psb';
 
 $labelJenjang = [
-    'mts'              => 'MTs',
-    'ma'               => 'MA',
+    'mts'              => 'SMP',
+    'ma'               => 'SMA',
     'tahfidz-intensif' => 'Tahfidz',
 ];
 $labelStatus = [
@@ -235,7 +235,7 @@ require_once __DIR__ . '/includes/header.php';
 <!-- ── MODAL UPDATE STATUS ──────────────────────────────────── -->
 <div id="psbModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:20px;" hidden>
     <div style="background:white;border-radius:8px;padding:28px;width:100%;max-width:440px;">
-        <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;">
+        <h3 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;margin-bottom:20px;">
             Update Status — <span id="modalNama"></span>
         </h3>
         <form method="POST" action="<?= e(BASE_URL . '/admin/psb') ?>">

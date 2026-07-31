@@ -23,12 +23,12 @@ $extraHead = <<<'CSS'
 .visi-inner .section-title { color:white; }
 .visi-card { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:36px 32px; margin-bottom:24px; position:relative; overflow:hidden; }
 .visi-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--gold); }
-.visi-card h3 { font-family:'Playfair Display',serif; font-size:22px; color:var(--gold); margin-bottom:14px; }
+.visi-card h3 { font-family:'Plus Jakarta Sans',sans-serif; font-size:22px; color:var(--gold); margin-bottom:14px; }
 .visi-card p  { font-size:15px; line-height:1.8; color:rgba(255,255,255,0.75); }
 .misi-list { list-style:none; margin-top:24px; }
 .misi-list li { display:flex; gap:16px; padding:14px 0; border-bottom:1px solid rgba(255,255,255,0.08); align-items:flex-start; }
 .misi-list li:last-child { border-bottom:none; }
-.misi-num { width:32px; height:32px; flex-shrink:0; background:rgba(232,168,32,0.15); border:1px solid var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:13px; color:var(--gold); }
+.misi-num { width:32px; height:32px; flex-shrink:0; background:rgba(232,168,32,0.15); border:1px solid var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; color:var(--gold); }
 .misi-text { font-size:14px; line-height:1.7; color:rgba(255,255,255,0.7); padding-top:6px; }
 .struktur-section { padding:80px 5%; max-width:1100px; margin:0 auto; }
 .org-chart { display:flex; flex-direction:column; align-items:center; margin-top:48px; }
@@ -36,10 +36,10 @@ $extraHead = <<<'CSS'
 .org-connector-v { width:1px; height:32px; background:var(--cream-dark); margin:0 auto; }
 .org-card { background:var(--white); border-radius:4px; padding:18px 20px; text-align:center; min-width:160px; border-top:3px solid var(--green-mid); box-shadow:0 4px 16px rgba(0,0,0,0.06); }
 .org-card.head { border-top-color:var(--gold); min-width:220px; }
-.org-name { font-family:'Playfair Display',serif; font-size:15px; color:var(--text-dark); margin-bottom:4px; }
+.org-name { font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; color:var(--text-dark); margin-bottom:4px; }
 .org-card.head .org-name { font-size:17px; }
 .org-pos  { font-size:11px; color:var(--text-light); letter-spacing:1px; text-transform:uppercase; }
-.org-avatar { width:52px; height:52px; border-radius:50%; background:var(--cream-dark); margin:0 auto 12px; display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:20px; color:var(--green-deep); overflow:hidden; }
+.org-avatar { width:52px; height:52px; border-radius:50%; background:var(--cream-dark); margin:0 auto 12px; display:flex; align-items:center; justify-content:center; font-family:'Plus Jakarta Sans',sans-serif; font-size:20px; color:var(--green-deep); overflow:hidden; }
 .org-avatar > img { width:100%; height:100%; object-fit:cover; display:block; border-radius:50%; }
 .org-card.head .org-avatar { width:64px; height:64px; font-size:24px; background:rgba(232,168,32,0.15); color:var(--gold); }
 .pengajar-section { background:var(--cream); padding:80px 5%; }
@@ -47,9 +47,9 @@ $extraHead = <<<'CSS'
 .pengajar-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-top:48px; }
 .pengajar-card { background:var(--white); border-radius:4px; padding:28px 20px; text-align:center; transition:transform 0.3s,box-shadow 0.3s; }
 .pengajar-card:hover { transform:translateY(-6px); box-shadow:0 16px 40px rgba(13,122,74,0.1); }
-.pengajar-photo { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#c8ead8,#90cca8); margin:0 auto 16px; display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:28px; color:var(--green-deep); border:3px solid var(--cream-dark); overflow:hidden; }
+.pengajar-photo { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#c8ead8,#90cca8); margin:0 auto 16px; display:flex; align-items:center; justify-content:center; font-family:'Plus Jakarta Sans',sans-serif; font-size:28px; color:var(--green-deep); border:3px solid var(--cream-dark); overflow:hidden; }
 .pengajar-photo > img { width:100%; height:100%; object-fit:cover; display:block; border-radius:50%; }
-.pengajar-name  { font-family:'Playfair Display',serif; font-size:16px; margin-bottom:6px; }
+.pengajar-name  { font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; margin-bottom:6px; }
 .pengajar-title { font-size:12px; color:var(--green-mid); font-weight:600; letter-spacing:0.5px; margin-bottom:4px; }
 .pengajar-desc  { font-size:12px; color:var(--text-light); line-height:1.5; }
 .fasilitas-section { padding:80px 5%; max-width:1100px; margin:0 auto; }
@@ -60,10 +60,10 @@ $extraHead = <<<'CSS'
 .fas-img > img { width:100%; height:100%; object-fit:cover; display:block; }
 .fas-img p { font-family:'Courier New',monospace; font-size:10px; color:rgba(0,0,0,0.25); letter-spacing:1px; }
 .fas-body { padding:18px 20px; }
-.fas-name { font-family:'Playfair Display',serif; font-size:16px; margin-bottom:6px; }
+.fas-name { font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; margin-bottom:6px; }
 .fas-desc { font-size:13px; color:var(--text-mid); line-height:1.6; }
 .cta-strip { background:var(--gold); padding:50px 5%; text-align:center; }
-.cta-strip h2 { font-family:'Playfair Display',serif; font-size:28px; color:var(--text-dark); margin-bottom:8px; }
+.cta-strip h2 { font-family:'Plus Jakarta Sans',sans-serif; font-size:28px; color:var(--text-dark); margin-bottom:8px; }
 .cta-strip p  { font-size:15px; color:rgba(0,0,0,0.6); margin-bottom:24px; }
 .sejarah-timeline { position:relative; padding-left:28px; border-left:2px solid var(--cream-dark); }
 .sejarah-item { margin-bottom:32px; position:relative; }
@@ -99,9 +99,9 @@ CSS;
                 <tr><td>Nomor Statistik</td><td>510032080019</td></tr>
                 <tr><td>Status</td><td>Terdaftar – Kemenag RI</td></tr>
                 <tr><td>Tahun Berdiri</td><td>2020</td></tr>
-                <tr><td>Jenjang</td><td>MTs &amp; Madrasah Aliyah</td></tr>
+                <tr><td>Jenjang</td><td>SMP &amp; SMA</td></tr>
                 <tr><td>Program Unggulan</td><td>Tahfidz Al-Qur'an 30 Juz</td></tr>
-                <tr><td>Akreditasi</td><td>A (MTs) &middot; B (MA)</td></tr>
+                <tr><td>Akreditasi</td><td>A (SMP) &middot; B (SMA)</td></tr>
                 <tr><td>Alamat</td><td>Jl. Pesantren No. 1, Kab. Ciamis, Jawa Barat 46261</td></tr>
                 <tr><td>Website</td><td><a href="https://ponpesashiddiq.or.id">ponpesashiddiq.or.id</a></td></tr>
                 <tr><td>Email</td><td><a href="mailto:info@ponpesashiddiq.or.id">info@ponpesashiddiq.or.id</a></td></tr>
@@ -152,14 +152,14 @@ CSS;
         <div class="reveal-left">
             <div class="section-tag" aria-hidden="true"><span></span><span class="section-tag-text">Sejarah</span><span></span></div>
             <h2 class="section-title">Perjalanan<br>Kami</h2>
-            <p class="section-desc" style="font-family:'Amiri',serif;font-size:22px;color:var(--green-mid);direction:rtl;margin-top:16px;line-height:1.8;" aria-label="Innallaha ma'ash-saabirin">إِنَّ اللهَ مَعَ الصَّابِرِينَ</p>
+            <p class="section-desc" style="font-family:'Noto Sans Arabic',sans-serif;font-size:22px;color:var(--green-mid);direction:rtl;margin-top:16px;line-height:1.8;" aria-label="Innallaha ma'ash-saabirin">إِنَّ اللهَ مَعَ الصَّابِرِينَ</p>
         </div>
         <div class="reveal-right">
             <div class="sejarah-timeline">
                 <?php
                 $sejarah = [
                     ['year'=>'2020','color'=>'var(--gold)',      'judul'=>'Pendirian Pesantren',        'desc'=>'KH. Ahmad Fauzi mendirikan Pondok Pesantren Ash-Shiddiq dengan 12 santri perdana di sebuah bangunan sederhana. Modal utama hanya keyakinan dan doa.'],
-                    ['year'=>'2013','color'=>'var(--green-mid)', 'judul'=>'Pengembangan MTs Resmi',      'desc'=>'Membuka jenjang MTs resmi ber-izin operasional Kemenag, dengan total 85 santri dan gedung baru yang lebih representatif.'],
+                    ['year'=>'2013','color'=>'var(--green-mid)', 'judul'=>'Pengembangan SMP Resmi',      'desc'=>'Membuka jenjang SMP resmi ber-izin operasional Kemenag, dengan total 85 santri dan gedung baru yang lebih representatif.'],
                     ['year'=>'2017','color'=>'var(--green-mid)', 'judul'=>'Wisuda Hafidz Perdana',       'desc'=>'Momen bersejarah: 8 santri angkatan pertama berhasil menyelesaikan hafalan 30 juz dan diwisuda dengan penuh haru.'],
                     ['year'=>'2025','color'=>'var(--green-deep)','judul'=>'Kini: 500+ Santri Aktif',    'desc'=>'Dengan lebih dari 500 santri aktif, 300+ alumni hafidz, dan fasilitas modern, Ash-Shiddiq terus tumbuh menjadi pesantren terkemuka di Jawa Barat.'],
                 ];
@@ -229,9 +229,9 @@ CSS;
         <div class="org-level" style="width:100%;justify-content:center;gap:60px;">
             <?php
             $level2 = [
-                ['init'=>'ع','file'=>'pengajar/ust-abdul-aziz.jpg',     'name'=>'Ust. Abdul Aziz, S.Pd.I','pos'=>'Kepala MTs'],
+                ['init'=>'ع','file'=>'pengajar/ust-abdul-aziz.jpg',     'name'=>'Ust. Abdul Aziz, S.Pd.I','pos'=>'Kepala SMP'],
                 ['init'=>'م','file'=>'pengajar/ust-muhammad-hasan.jpg', 'name'=>'Ust. Muhammad Hasan',     'pos'=>'Koordinator Tahfidz'],
-                ['init'=>'ي','file'=>'pengajar/ust-yahya-basri.jpg',    'name'=>'Ust. Yahya Basri, M.Ag',  'pos'=>'Kepala MA'],
+                ['init'=>'ي','file'=>'pengajar/ust-yahya-basri.jpg',    'name'=>'Ust. Yahya Basri, M.Ag',  'pos'=>'Kepala SMA'],
             ];
             foreach ($level2 as $l):
             ?>
@@ -266,9 +266,9 @@ CSS;
             // GAMBAR: assets/img/pengajar/{file}.jpg — rasio 1:1 (kotak), ~400x400px
             $pengajar = [
                 ['init'=>'ف','file'=>'pengajar/kh-ahmad-fauzi.jpg',  'name'=>'KH. Suroto Abu Nizam, M. Pd.',  'title'=>'Mudir & Pengasuh',     'desc'=>'Alumni Al-Azhar Mesir, hafidz 30 juz bersanad',        'bg'=>'linear-gradient(135deg,#c8ead8,#90cca8)'],
-                ['init'=>'ع','file'=>'pengajar/ust-abdul-aziz.jpg', 'name'=>'Ust. Abdul Aziz, S.Pd.I','title'=>'Kepala MTs',          'desc'=>'Lulusan PTIQ Jakarta, spesialis Qira\'at Sab\'ah',     'bg'=>'linear-gradient(135deg,#d4e8d0,#a8d0a8)'],
+                ['init'=>'ع','file'=>'pengajar/ust-abdul-aziz.jpg', 'name'=>'Ust. Abdul Aziz, S.Pd.I','title'=>'Kepala SMP',          'desc'=>'Lulusan PTIQ Jakarta, spesialis Qira\'at Sab\'ah',     'bg'=>'linear-gradient(135deg,#d4e8d0,#a8d0a8)'],
                 ['init'=>'م','file'=>'pengajar/ust-muhammad-hasan.jpg','name'=>'Ust. Muhammad Hasan', 'title'=>'Koordinator Tahfidz', 'desc'=>'Hafidz 30 juz, pengalaman mengajar 12 tahun',          'bg'=>'linear-gradient(135deg,#e4d8f0,#c4b0d8)'],
-                ['init'=>'ي','file'=>'pengajar/ust-yahya-basri.jpg', 'name'=>'Ust. Yahya Basri, M.Ag','title'=>'Kepala MA & Fiqih',   'desc'=>'Lulusan UIN Bandung, spesialis Fiqih Mu\'amalah',      'bg'=>'linear-gradient(135deg,#f0e4d0,#d4c0a0)'],
+                ['init'=>'ي','file'=>'pengajar/ust-yahya-basri.jpg', 'name'=>'Ust. Yahya Basri, M.Ag','title'=>'Kepala SMA & Fiqih',  'desc'=>'Lulusan UIN Bandung, spesialis Fiqih Mu\'amalah',      'bg'=>'linear-gradient(135deg,#f0e4d0,#d4c0a0)'],
             ];
             foreach ($pengajar as $i => $p):
             ?>

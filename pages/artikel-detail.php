@@ -25,7 +25,7 @@ if (!$artikel) {
     ?>
     <div style="max-width:700px;margin:120px auto;text-align:center;padding:0 5%;">
         <p style="font-size:80px;margin-bottom:0;">📄</p>
-        <h1 style="font-family:'Playfair Display',serif;font-size:32px;color:var(--green-deep);margin-bottom:16px;">Artikel Tidak Ditemukan</h1>
+        <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:32px;color:var(--green-deep);margin-bottom:16px;">Artikel Tidak Ditemukan</h1>
         <p style="color:var(--text-mid);margin-bottom:32px;">Artikel yang Anda cari tidak tersedia atau telah dihapus.</p>
         <a href="<?= e(BASE_URL . '/artikel') ?>" class="btn-primary">Kembali ke Daftar Artikel</a>
     </div>
@@ -115,7 +115,7 @@ $extraHead = <<<'CSS'
     text-transform:uppercase; padding:4px 12px; border-radius:2px;
 }
 .detail-title {
-    font-family:'Playfair Display',serif;
+    font-family:'Plus Jakarta Sans',sans-serif;
     font-size:clamp(26px,4vw,40px); line-height:1.3;
     color:var(--text-dark); margin-bottom:12px;
 }
@@ -130,7 +130,7 @@ $extraHead = <<<'CSS'
     font-size:16px; line-height:1.9; color:var(--text-mid);
 }
 .detail-content h2, .detail-content h3 {
-    font-family:'Playfair Display',serif; color:var(--text-dark);
+    font-family:'Plus Jakarta Sans',sans-serif; color:var(--text-dark);
     margin:32px 0 16px;
 }
 .detail-content h2 { font-size:24px; }
@@ -161,12 +161,12 @@ $extraHead = <<<'CSS'
 }
 .artikel-nav a:hover { box-shadow:0 4px 20px rgba(13,122,74,0.1); }
 .nav-label { font-size:11px; color:var(--text-light); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
-.nav-judul { font-family:'Playfair Display',serif; font-size:15px; line-height:1.4; color:var(--text-dark); }
+.nav-judul { font-family:'Plus Jakarta Sans',sans-serif; font-size:15px; line-height:1.4; color:var(--text-dark); }
 .artikel-nav .next-link { text-align:right; }
 
 /* Artikel terkait */
 .terkait-section { margin-top:48px; padding-top:32px; border-top:1px solid var(--cream-dark); }
-.terkait-title { font-family:'Playfair Display',serif; font-size:22px; color:var(--text-dark); margin-bottom:24px; }
+.terkait-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:22px; color:var(--text-dark); margin-bottom:24px; }
 .terkait-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
 .terkait-card {
     background:var(--white); border-radius:4px; overflow:hidden;
@@ -180,14 +180,14 @@ $extraHead = <<<'CSS'
 }
 .terkait-img img { width:100%; height:100%; object-fit:cover; display:block; }
 .terkait-body { padding:16px; }
-.terkait-judul { font-family:'Playfair Display',serif; font-size:14px; line-height:1.4; color:var(--text-dark); margin-bottom:6px; }
+.terkait-judul { font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; line-height:1.4; color:var(--text-dark); margin-bottom:6px; }
 .terkait-meta  { font-size:11px; color:var(--text-light); }
 
 /* Sidebar detail */
 .detail-sidebar { position:sticky; top:90px; height:fit-content; }
 .sidebar-widget { background:var(--white); border-radius:4px; padding:28px 24px; margin-bottom:24px; }
 .sidebar-title {
-    font-family:'Playfair Display',serif; font-size:18px; color:var(--text-dark);
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; color:var(--text-dark);
     margin-bottom:20px; padding-bottom:12px;
     border-bottom:2px solid var(--cream-dark); position:relative;
 }
@@ -396,7 +396,7 @@ CSS;
 
         <!-- CTA PSB -->
         <div class="sidebar-widget reveal" style="background:var(--green-deep);text-align:center;padding:32px 24px;">
-            <p style="font-family:'Amiri',serif;font-size:22px;color:var(--gold);margin-bottom:12px;">هَلُمَّ إِلَى الْقُرْآنِ</p>
+            <p style="font-family:'Noto Sans Arabic',sans-serif;font-size:22px;color:var(--gold);margin-bottom:12px;">هَلُمَّ إِلَى الْقُرْآنِ</p>
             <p style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;margin-bottom:20px;">
                 Daftarkan putra-putri Anda sekarang. PSB 2025/2026 telah dibuka!
             </p>

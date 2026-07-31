@@ -58,12 +58,12 @@ $extraHead = <<<'CSS'
 .login-logo-icon {
     width:64px; height:64px; border-radius:50%;
     background:var(--green-deep); color:var(--gold);
-    font-family:'Amiri',serif; font-size:28px;
+    font-family:'Noto Sans Arabic',sans-serif; font-size:28px;
     display:flex; align-items:center; justify-content:center;
     margin:0 auto 14px;
 }
 .login-logo h1 {
-    font-family:'Playfair Display',serif; font-size:22px;
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:22px;
     color:var(--text-dark); margin-bottom:4px;
 }
 .login-logo p { font-size:13px; color:var(--text-light); }

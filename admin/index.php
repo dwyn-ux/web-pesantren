@@ -42,7 +42,7 @@ $labelKategori = [
     'kajian'   => 'Kajian',  'kegiatan' => 'Kegiatan',
     'psb-info' => 'PSB',     'alumni' => 'Alumni',
 ];
-$labelJenjang  = ['mts' => 'MTs', 'ma' => 'MA', 'tahfidz-intensif' => 'Tahfidz'];
+$labelJenjang  = ['mts' => 'SMP', 'ma' => 'SMA', 'tahfidz-intensif' => 'Tahfidz'];
 
 require_once __DIR__ . '/includes/header.php';
 ?>

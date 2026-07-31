@@ -11,7 +11,7 @@ $extraHead = <<<'CSS'
     max-width:780px; margin:0 auto; padding:80px 5%; text-align:center;
 }
 .kata-pembuka .arabic-big {
-    font-family:'Amiri',serif;
+    font-family:'Noto Sans Arabic',sans-serif;
     font-size:clamp(32px,5vw,56px);
     color:var(--green-deep); line-height:1.6; margin-bottom:12px;
 }
@@ -42,7 +42,7 @@ $extraHead = <<<'CSS'
     padding:60px 72px; position:relative; overflow:hidden;
 }
 .mudir-letter::before {
-    content:'"'; font-family:'Playfair Display',serif;
+    content:'"'; font-family:'Plus Jakarta Sans',sans-serif;
     font-size:220px; color:var(--cream-dark);
     position:absolute; top:-30px; left:20px;
     line-height:1; pointer-events:none;
@@ -57,7 +57,7 @@ $extraHead = <<<'CSS'
     margin-bottom:24px; text-align:justify;
 }
 .letter-p.arabic-inline {
-    font-family:'Amiri',serif; font-size:20px; direction:rtl;
+    font-family:'Noto Sans Arabic',sans-serif; font-size:20px; direction:rtl;
     text-align:right; color:var(--green-deep); margin-bottom:8px; line-height:1.8;
 }
 .letter-p.source {
@@ -66,7 +66,7 @@ $extraHead = <<<'CSS'
 }
 .letter-closing { margin-top:40px; }
 .letter-closing .sig-label { font-size:13px; color:var(--text-light); margin-bottom:32px; }
-.sig-name { font-family:'Playfair Display',serif; font-size:22px; color:var(--green-deep); }
+.sig-name { font-family:'Plus Jakarta Sans',sans-serif; font-size:22px; color:var(--green-deep); }
 .sig-title { font-size:13px; color:var(--text-light); letter-spacing:1px; margin-top:4px; }
 .sig-place { font-size:13px; color:var(--text-light); margin-top:2px; }
 
@@ -85,7 +85,7 @@ $extraHead = <<<'CSS'
 }
 .nilai-card:hover { background:rgba(13,122,74,0.9); }
 .nilai-arabic {
-    font-family:'Amiri',serif; font-size:36px;
+    font-family:'Noto Sans Arabic',sans-serif; font-size:36px;
     color:var(--gold); margin-bottom:12px; line-height:1.4;
 }
 .nilai-latin {
@@ -101,11 +101,11 @@ $extraHead = <<<'CSS'
     border-top:4px solid var(--gold); margin-bottom:24px; position:relative;
 }
 .harapan-num {
-    font-family:'Playfair Display',serif; font-size:64px; font-style:italic;
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:64px; font-style:italic;
     color:var(--cream-dark); position:absolute; top:16px; right:24px; line-height:1;
 }
 .harapan-title {
-    font-family:'Playfair Display',serif; font-size:22px;
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:22px;
     color:var(--green-deep); margin-bottom:12px;
 }
 .harapan-text { font-size:15px; line-height:1.9; color:var(--text-mid); }
@@ -122,7 +122,7 @@ $extraHead = <<<'CSS'
 }
 .doa-inner { position:relative; z-index:1; max-width:680px; margin:0 auto; }
 .doa-arabic {
-    font-family:'Amiri',serif; font-size:clamp(22px,4vw,40px);
+    font-family:'Noto Sans Arabic',sans-serif; font-size:clamp(22px,4vw,40px);
     color:var(--gold); line-height:1.8; margin-bottom:16px; direction:rtl;
 }
 .doa-terjemah {
@@ -132,7 +132,7 @@ $extraHead = <<<'CSS'
 .doa-ttd { margin-top:40px; padding-top:32px; border-top:1px solid rgba(255,255,255,0.1); }
 .doa-ttd p { color:rgba(255,255,255,0.5); font-size:13px; margin-bottom:6px; }
 .doa-ttd strong {
-    font-family:'Playfair Display',serif;
+    font-family:'Plus Jakarta Sans',sans-serif;
     font-size:22px; color:white; display:block; margin-bottom:4px;
 }
 .doa-ttd span { font-size:13px; color:rgba(255,255,255,0.5); }
@@ -153,7 +153,7 @@ $extraHead = <<<'CSS'
     background:var(--cream-dark); border-radius:50%;
     display:flex; align-items:center; justify-content:center; font-size:20px;
 }
-.kontak-body h4 { font-family:'Playfair Display',serif; font-size:17px; margin-bottom:6px; }
+.kontak-body h4 { font-family:'Plus Jakarta Sans',sans-serif; font-size:17px; margin-bottom:6px; }
 .kontak-body p  { font-size:14px; color:var(--text-mid); line-height:1.6; }
 .kontak-body a  { color:var(--green-mid); text-decoration:none; }
 .kontak-body a:hover { text-decoration:underline; }

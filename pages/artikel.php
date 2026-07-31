@@ -132,7 +132,7 @@ $extraHead = <<<'CSS'
 }
 .featured-body { padding:28px 32px 32px; }
 .featured-meta { font-size:12px; color:var(--text-light); margin-bottom:12px; display:flex; gap:16px; }
-.featured-title { font-family:'Playfair Display',serif; font-size:26px; line-height:1.35; margin-bottom:14px; color:var(--text-dark); }
+.featured-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:26px; line-height:1.35; margin-bottom:14px; color:var(--text-dark); }
 .featured-excerpt { font-size:15px; line-height:1.75; color:var(--text-mid); margin-bottom:20px; }
 .featured-link { font-size:13px; font-weight:600; color:var(--green-deep); letter-spacing:0.5px; display:inline-flex; align-items:center; gap:6px; border-bottom:1px solid var(--green-mid); padding-bottom:2px; }
 
@@ -153,7 +153,7 @@ $extraHead = <<<'CSS'
 .card-img-placeholder p { font-family:'Courier New',monospace; font-size:9px; color:rgba(0,0,0,0.25); letter-spacing:1px; writing-mode:vertical-rl; text-align:center; }
 .card-body { padding:20px 22px; }
 .card-cat { font-size:10px; font-weight:700; letter-spacing:2px; color:var(--green-mid); text-transform:uppercase; margin-bottom:8px; }
-.card-title { font-family:'Playfair Display',serif; font-size:17px; line-height:1.4; margin-bottom:8px; color:var(--text-dark); }
+.card-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:17px; line-height:1.4; margin-bottom:8px; color:var(--text-dark); }
 .card-meta { font-size:11px; color:var(--text-light); }
 
 /* ── EMPTY STATE ───────────────────────────────────────────────── */
@@ -193,7 +193,7 @@ $extraHead = <<<'CSS'
 .sidebar { position:sticky; top:90px; height:fit-content; }
 .sidebar-widget { background:var(--white); border-radius:4px; padding:28px 24px; margin-bottom:24px; }
 .sidebar-title {
-    font-family:'Playfair Display',serif; font-size:18px; color:var(--text-dark);
+    font-family:'Plus Jakarta Sans',sans-serif; font-size:18px; color:var(--text-dark);
     margin-bottom:20px; padding-bottom:12px;
     border-bottom:2px solid var(--cream-dark); position:relative;
 }
@@ -222,7 +222,7 @@ $extraHead = <<<'CSS'
 .populer-item:last-child { border-bottom:none; }
 .populer-item a { display:flex; gap:14px; text-decoration:none; color:inherit; width:100%; transition:opacity 0.2s; }
 .populer-item a:hover { opacity:0.75; }
-.populer-num { font-family:'Playfair Display',serif; font-size:24px; color:var(--cream-dark); font-style:italic; flex-shrink:0; line-height:1; }
+.populer-num { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; color:var(--cream-dark); font-style:italic; flex-shrink:0; line-height:1; }
 .populer-title { font-size:13px; line-height:1.5; color:var(--text-dark); font-weight:500; }
 .populer-date { font-size:11px; color:var(--text-light); margin-top:4px; }
 
@@ -431,7 +431,7 @@ CSS;
 
         <!-- CTA PSB -->
         <div class="sidebar-widget reveal" style="background:var(--green-deep);text-align:center;padding:32px 24px;">
-            <p style="font-family:'Amiri',serif;font-size:22px;color:var(--gold);margin-bottom:12px;">هَلُمَّ إِلَى الْقُرْآنِ</p>
+            <p style="font-family:'Noto Sans Arabic',sans-serif;font-size:22px;color:var(--gold);margin-bottom:12px;">هَلُمَّ إِلَى الْقُرْآنِ</p>
             <p style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;margin-bottom:20px;">
                 Daftarkan putra-putri Anda sekarang. PSB 2025/2026 telah dibuka!
             </p>

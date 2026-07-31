@@ -22,7 +22,7 @@
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.gate-arabic { font-family: 'Amiri', serif; font-size: clamp(28px,5vw,52px); color: var(--gold); text-align: center; letter-spacing: 2px; line-height: 1.4; }
+.gate-arabic { font-family: 'Noto Sans Arabic', sans-serif; font-size: clamp(28px,5vw,52px); color: var(--gold); text-align: center; letter-spacing: 2px; line-height: 1.4; }
 .gate-ornament { width: 180px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); margin: 4px 0; }
 .gate-title    { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: clamp(22px,4vw,42px); color: var(--white); text-align: center; letter-spacing: 0.5px; }
 .gate-subtitle { font-size: clamp(12px,1.5vw,16px); color: rgba(255,255,255,0.6); letter-spacing: 4px; text-transform: uppercase; }
@@ -95,12 +95,12 @@
 }
 .hero-pattern { position: absolute; inset: 0; opacity: 0.04; background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a227' stroke-width='0.8'%3E%3Crect x='10' y='10' width='60' height='60' rx='0'/%3E%3Cpolygon points='40,5 75,22.5 75,57.5 40,75 5,57.5 5,22.5'/%3E%3Ccircle cx='40' cy='40' r='20'/%3E%3C/g%3E%3C/svg%3E"); }
 .hero-content { position: relative; z-index: 2; text-align: center; padding: 0 20px; max-width: 800px; }
-.hero-arabic { font-family: 'Amiri', serif; font-size: clamp(26px,5vw,52px); color: var(--gold); margin-bottom: 16px; opacity: 0; animation: fadeUp 1s ease 0.5s forwards; }
+.hero-arabic { font-family: 'Noto Sans Arabic', sans-serif; font-size: clamp(26px,5vw,52px); color: var(--gold); margin-bottom: 16px; opacity: 0; animation: fadeUp 1s ease 0.5s forwards; }
 .hero-ornament { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 16px 0; opacity: 0; animation: fadeUp 1s ease 0.7s forwards; }
 .hero-ornament span { width: 60px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
 .hero-ornament span:last-child { background: linear-gradient(90deg, var(--gold), transparent); }
 .hero-ornament-diamond { width: 8px; height: 8px; background: var(--gold); transform: rotate(45deg); }
-.hero-title { font-family: 'Playfair Display', serif; font-size: clamp(32px,6vw,72px); color: var(--white); line-height: 1.15; margin-bottom: 10px; opacity: 0; animation: fadeUp 1s ease 0.9s forwards; }
+.hero-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(32px,6vw,72px); color: var(--white); line-height: 1.15; margin-bottom: 10px; opacity: 0; animation: fadeUp 1s ease 0.9s forwards; }
 .hero-title em { color: var(--gold); font-style: italic; }
 .hero-subtitle { font-size: clamp(13px,2vw,17px); color: rgba(255,255,255,0.55); letter-spacing: 5px; text-transform: uppercase; margin-bottom: 40px; opacity: 0; animation: fadeUp 1s ease 1.1s forwards; }
 .hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; opacity: 0; animation: fadeUp 1s ease 1.3s forwards; }
@@ -126,9 +126,9 @@
 .mudir-photo-placeholder p { font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-light); letter-spacing: 1px; }
 .mudir-frame { position: absolute; bottom: -16px; right: -16px; width: 80%; height: 80%; border: 2px solid var(--gold); opacity: 0.4; pointer-events: none; }
 .mudir-badge { position: absolute; bottom: 24px; left: -24px; background: var(--green-deep); color: var(--white); padding: 16px 20px; min-width: 160px; }
-.mudir-badge-title { font-family: 'Amiri', serif; font-size: 18px; color: var(--gold); margin-bottom: 4px; }
+.mudir-badge-title { font-family: 'Noto Sans Arabic', sans-serif; font-size: 18px; color: var(--gold); margin-bottom: 4px; }
 .mudir-badge-name { font-size: 11px; font-weight: 600; letter-spacing: 1px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
-.sambutan-text .arabic-verse { font-family: 'Amiri', serif; font-size: 22px; color: var(--green-mid); text-align: right; margin-bottom: 8px; line-height: 1.8; direction: rtl; }
+.sambutan-text .arabic-verse { font-family: 'Noto Sans Arabic', sans-serif; font-size: 22px; color: var(--green-mid); text-align: right; margin-bottom: 8px; line-height: 1.8; direction: rtl; }
 .sambutan-text .verse-source { font-size: 12px; color: var(--text-light); margin-bottom: 28px; text-align: right; letter-spacing: 1px; }
 .sambutan-body { font-size: 16px; line-height: 1.9; color: var(--text-mid); margin-bottom: 28px; }
 .mudir-signature { display: flex; flex-direction: column; gap: 4px; }
@@ -143,7 +143,7 @@
 .keunggulan-card::before { content:''; position: absolute; bottom:0; left:0; right:0; height:3px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.4s; }
 .keunggulan-card:hover { transform: translateY(-8px); box-shadow: 0 20px 50px rgba(0,0,0,0.08); }
 .keunggulan-card:hover::before { transform: scaleX(1); }
-.keunggulan-num { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--gold); opacity: 0.2; line-height: 1; margin-bottom: -10px; font-style: italic; }
+.keunggulan-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 52px; color: var(--gold); opacity: 0.2; line-height: 1; margin-bottom: -10px; font-style: italic; }
 .keunggulan-icon { width: 52px; height: 52px; background: rgba(26,61,43,0.08); border-radius: 2px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
 .keunggulan-icon svg { color: var(--green-mid); }
 .keunggulan-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 18px; margin-bottom: 12px; color: var(--green-deep); }
@@ -170,7 +170,7 @@
 .stat-item { padding: 50px 30px; text-align: center; background: var(--cream); position: relative; }
 .stat-item::after { content:''; position: absolute; right:0; top:20%; bottom:20%; width:1px; background: var(--cream-dark); }
 .stat-item:last-child::after { display: none; }
-.stat-num { font-family: 'Playfair Display', serif; font-size: 52px; color: var(--green-deep); font-weight: 700; line-height: 1; margin-bottom: 8px; }
+.stat-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 52px; color: var(--green-deep); font-weight: 700; line-height: 1; margin-bottom: 8px; }
 .stat-num sup { font-size: 24px; color: var(--gold); }
 .stat-label { font-size: 13px; color: var(--text-light); letter-spacing: 2px; text-transform: uppercase; }
 
@@ -208,10 +208,10 @@
 .testi-header { text-align: center; margin-bottom: 60px; }
 .testi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; max-width: 1100px; margin: 0 auto; }
 .testi-card { padding: 36px 28px; background: var(--cream); border-radius: 2px; position: relative; }
-.testi-quote { font-family: 'Playfair Display', serif; font-size: 60px; color: var(--gold); opacity: 0.3; line-height: 0.7; display: block; margin-bottom: 16px; }
+.testi-quote { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 60px; color: var(--gold); opacity: 0.3; line-height: 0.7; display: block; margin-bottom: 16px; }
 .testi-text { font-size: 14px; line-height: 1.8; color: var(--text-mid); margin-bottom: 24px; font-style: italic; }
 .testi-author { display: flex; align-items: center; gap: 12px; }
-.testi-avatar { width: 44px; height: 44px; background: var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 16px; color: var(--white); flex-shrink: 0; overflow:hidden; }
+.testi-avatar { width: 44px; height: 44px; background: var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; color: var(--white); flex-shrink: 0; overflow:hidden; }
 .testi-avatar > img { width:100%; height:100%; object-fit:cover; display:block; border-radius:50%; }
 .testi-name { font-weight: 600; font-size: 14px; }
 .testi-role { font-size: 12px; color: var(--text-light); }
@@ -225,7 +225,7 @@
 }
 #daftar::before { content:''; position: absolute; inset:0; background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23e8a820' stroke-width='0.5'%3E%3Ccircle cx='50' cy='50' r='40'/%3E%3Ccircle cx='50' cy='50' r='25'/%3E%3Cpolygon points='50,10 90,32.5 90,67.5 50,90 10,67.5 10,32.5'/%3E%3C/g%3E%3C/svg%3E"); opacity: 0.04; }
 .daftar-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
-.daftar-arabic { font-family: 'Amiri', serif; font-size: 38px; color: var(--gold); margin-bottom: 20px; line-height: 1.5; }
+.daftar-arabic { font-family: 'Noto Sans Arabic', sans-serif; font-size: 38px; color: var(--gold); margin-bottom: 20px; line-height: 1.5; }
 .daftar-title  { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: clamp(26px,5vw,48px); color: var(--white); line-height: 1.2; margin-bottom: 20px; }
 .daftar-desc   { font-size: 16px; color: rgba(255,255,255,0.6); line-height: 1.8; margin-bottom: 44px; }
 .daftar-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
@@ -235,11 +235,11 @@
 .period-item { text-align: center; color: rgba(255,255,255,0.5); padding: 0 36px; border-right: 1px solid rgba(255,255,255,0.1); }
 
 /* Alumni & lokasi */
-.alumni-landing{padding:100px 5%;background:var(--cream)}.landing-alumni-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:44px}.landing-alumni-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)}.landing-alumni-card img{width:100%;height:260px;object-fit:cover}.landing-alumni-card>div{padding:22px}.alumni-quote{font-family:'Playfair Display',serif;font-style:italic;color:var(--text-mid);line-height:1.7}.landing-alumni-card h3{margin:16px 0 5px}.landing-alumni-card small{color:var(--text-light)}.map-section{display:grid;grid-template-columns:40% 60%;min-height:480px;background:#fff}.map-copy{padding:80px 12%;align-self:center}.map-copy p{margin:0 0 28px;color:var(--text-mid);line-height:1.7}.map-section iframe{width:100%;height:100%;min-height:480px;border:0}
+.alumni-landing{padding:100px 5%;background:var(--cream)}.landing-alumni-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:44px}.landing-alumni-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)}.landing-alumni-card img{width:100%;height:260px;object-fit:cover}.landing-alumni-card>div{padding:22px}.alumni-quote{font-family:'Plus Jakarta Sans',sans-serif;font-style:italic;color:var(--text-mid);line-height:1.7}.landing-alumni-card h3{margin:16px 0 5px}.landing-alumni-card small{color:var(--text-light)}.map-section{display:grid;grid-template-columns:40% 60%;min-height:480px;background:#fff}.map-copy{padding:80px 12%;align-self:center}.map-copy p{margin:0 0 28px;color:var(--text-mid);line-height:1.7}.map-section iframe{width:100%;height:100%;min-height:480px;border:0}
 @media(max-width:900px){.landing-alumni-grid{grid-template-columns:1fr 1fr}.map-section{grid-template-columns:1fr}.map-copy{padding:60px 8%}.map-section iframe{min-height:360px}}@media(max-width:600px){.landing-alumni-grid{grid-template-columns:1fr}}
 .alumni-landing .section-title,.alumni-landing .section-desc{text-align:center;margin-left:auto;margin-right:auto}
 .period-item:last-child { border-right: none; }
-.period-item strong { display: block; font-family: 'Playfair Display', serif; font-size: 26px; color: var(--gold); margin-bottom: 6px; }
+.period-item strong { display: block; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; color: var(--gold); margin-bottom: 6px; }
 .period-item span { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.45); }
 
 /* ── Responsive ────────────────────────────────────────────── */

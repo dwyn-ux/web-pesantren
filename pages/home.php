@@ -189,7 +189,7 @@ try {
                 ['title'=>'Tahfidz Al-Qur\'an (30 Juz)', 'desc'=>'Program inti menghafal seluruh Al-Qur\'an 30 juz dengan metode talaqqi dan musyafahah langsung kepada guru bersanad.', 'icon'=>'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'],
                 ['title'=>'Tahsin & Ilmu Tajwid',         'desc'=>'Perbaikan bacaan Al-Qur\'an secara intensif dengan kaidah tajwid yang benar sebelum dan selama proses menghafal.', 'icon'=>'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>'],
                 ['title'=>'Kajian Kitab Kuning',           'desc'=>'Mempelajari kitab-kitab klasik Islam: Fiqih, Aqidah, Hadits, Nahwu, Sharaf, dan disiplin ilmu Islam lainnya.', 'icon'=>'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'],
-                ['title'=>'Pendidikan Formal (MTs/MA)',    'desc'=>'Kurikulum pendidikan formal jenjang MTs dan MA terakreditasi yang terintegrasi dalam sistem pesantren.', 'icon'=>'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/>'],
+                ['title'=>'Pendidikan Formal (SMP/SMA)', 'desc'=>'Kurikulum pendidikan formal jenjang SMP dan SMA terakreditasi yang terintegrasi dalam sistem pesantren.', 'icon'=>'<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/>'],
             ];
             foreach ($programs as $i => $prog):
                 $delay = 'reveal-delay-' . ($i + 1);
