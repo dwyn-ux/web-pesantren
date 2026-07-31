@@ -152,7 +152,7 @@ CSS;
         <div class="reveal-left">
             <div class="section-tag" aria-hidden="true"><span></span><span class="section-tag-text">Sejarah</span><span></span></div>
             <h2 class="section-title">Perjalanan<br>Kami</h2>
-            <p class="section-desc" style="font-family:'Noto Sans Arabic',sans-serif;font-size:22px;color:var(--green-mid);direction:rtl;margin-top:16px;line-height:1.8;" aria-label="Innallaha ma'ash-saabirin">إِنَّ اللهَ مَعَ الصَّابِرِينَ</p>
+            <p class="section-desc" style="font-family:'Amiri',serif;font-size:22px;color:var(--green-mid);direction:rtl;margin-top:16px;line-height:1.8;" aria-label="Innallaha ma'ash-saabirin">إِنَّ اللهَ مَعَ الصَّابِرِينَ</p>
         </div>
         <div class="reveal-right">
             <div class="sejarah-timeline">

@@ -396,7 +396,7 @@ CSS;
 
         <!-- CTA PSB -->
         <div class="sidebar-widget reveal" style="background:var(--green-deep);text-align:center;padding:32px 24px;">
-            <p style="font-family:'Noto Sans Arabic',sans-serif;font-size:22px;color:var(--gold);margin-bottom:12px;">هَلُمَّ إِلَى الْقُرْآنِ</p>
+            <p style="font-family:'Amiri',serif;font-size:22px;color:var(--gold);margin-bottom:12px;">هَلُمَّ إِلَى الْقُرْآنِ</p>
             <p style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;margin-bottom:20px;">
                 Daftarkan putra-putri Anda sekarang. PSB 2025/2026 telah dibuka!
             </p>

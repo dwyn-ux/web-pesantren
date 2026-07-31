@@ -260,7 +260,7 @@ $extraHead = <<<'CSS'
     box-shadow:0 8px 40px rgba(13,122,74,0.08); position:sticky; top:90px;
 }
 .form-header { text-align:center; margin-bottom:32px; padding-bottom:24px; border-bottom:1px solid var(--cream-dark); }
-.form-header .arabic { font-family:'Noto Sans Arabic',sans-serif; font-size:24px; color:var(--green-mid); margin-bottom:8px; }
+.form-header .arabic { font-family:'Amiri',serif; font-size:24px; color:var(--green-mid); margin-bottom:8px; }
 .form-header h2 { font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; color:var(--text-dark); margin-bottom:6px; }
 .form-header p  { font-size:13px; color:var(--text-light); }
 
@@ -728,6 +728,9 @@ CSS;
                         <div class="form-group"><label for="portal_password">Password <span class="req">*</span></label><input type="password" id="portal_password" name="portal_password" class="form-control<?= isset($errors['portal_password']) ? ' is-error' : '' ?>" minlength="8" autocomplete="new-password" required><small>Minimal 8 karakter.</small></div>
                         <div class="form-group"><label for="password_confirm">Ulangi Password <span class="req">*</span></label><input type="password" id="password_confirm" name="password_confirm" class="form-control<?= isset($errors['password_confirm']) ? ' is-error' : '' ?>" minlength="8" autocomplete="new-password" required></div>
                     </div>
+                    <label class="form-note" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                        <input type="checkbox" id="lihatPassword" style="width:auto;"> Lihat password
+                    </label>
                 </div>
 
                 <p class="form-note">
@@ -785,5 +788,14 @@ CSS;
     var firstError = document.querySelector('.form-page.active .is-error');
     if (firstError) firstError.scrollIntoView({ block: 'center', behavior: 'smooth' });
     <?php endif; ?>
+
+    var lihatPassword = document.getElementById('lihatPassword');
+    if (lihatPassword) {
+        lihatPassword.addEventListener('change', function () {
+            var type = this.checked ? 'text' : 'password';
+            document.getElementById('portal_password').type = type;
+            document.getElementById('password_confirm').type = type;
+        });
+    }
 }());
 </script>

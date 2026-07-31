@@ -58,7 +58,7 @@ $extraHead = <<<'CSS'
 .login-logo-icon {
     width:64px; height:64px; border-radius:50%;
     background:var(--green-deep); color:var(--gold);
-    font-family:'Noto Sans Arabic',sans-serif; font-size:28px;
+    font-family:'Amiri',serif; font-size:28px;
     display:flex; align-items:center; justify-content:center;
     margin:0 auto 14px;
 }

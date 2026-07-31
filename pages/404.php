@@ -22,7 +22,7 @@ $extraHead = <<<'CSS'
     margin-bottom:0;
 }
 .error-arabic {
-    font-family:'Noto Sans Arabic',sans-serif; font-size:clamp(20px,3vw,32px);
+    font-family:'Amiri',serif; font-size:clamp(20px,3vw,32px);
     color:var(--green-mid); margin-bottom:16px;
 }
 .error-title {

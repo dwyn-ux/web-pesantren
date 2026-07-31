@@ -11,7 +11,7 @@ $extraHead = <<<'CSS'
     max-width:780px; margin:0 auto; padding:80px 5%; text-align:center;
 }
 .kata-pembuka .arabic-big {
-    font-family:'Noto Sans Arabic',sans-serif;
+    font-family:'Amiri',serif;
     font-size:clamp(32px,5vw,56px);
     color:var(--green-deep); line-height:1.6; margin-bottom:12px;
 }
@@ -57,7 +57,7 @@ $extraHead = <<<'CSS'
     margin-bottom:24px; text-align:justify;
 }
 .letter-p.arabic-inline {
-    font-family:'Noto Sans Arabic',sans-serif; font-size:20px; direction:rtl;
+    font-family:'Amiri',serif; font-size:20px; direction:rtl;
     text-align:right; color:var(--green-deep); margin-bottom:8px; line-height:1.8;
 }
 .letter-p.source {
@@ -85,7 +85,7 @@ $extraHead = <<<'CSS'
 }
 .nilai-card:hover { background:rgba(13,122,74,0.9); }
 .nilai-arabic {
-    font-family:'Noto Sans Arabic',sans-serif; font-size:36px;
+    font-family:'Amiri',serif; font-size:36px;
     color:var(--gold); margin-bottom:12px; line-height:1.4;
 }
 .nilai-latin {
@@ -122,7 +122,7 @@ $extraHead = <<<'CSS'
 }
 .doa-inner { position:relative; z-index:1; max-width:680px; margin:0 auto; }
 .doa-arabic {
-    font-family:'Noto Sans Arabic',sans-serif; font-size:clamp(22px,4vw,40px);
+    font-family:'Amiri',serif; font-size:clamp(22px,4vw,40px);
     color:var(--gold); line-height:1.8; margin-bottom:16px; direction:rtl;
 }
 .doa-terjemah {

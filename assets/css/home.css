@@ -22,7 +22,7 @@
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.gate-arabic { font-family: 'Noto Sans Arabic', sans-serif; font-size: clamp(28px,5vw,52px); color: var(--gold); text-align: center; letter-spacing: 2px; line-height: 1.4; }
+.gate-arabic { font-family: 'Amiri', serif; font-size: clamp(28px,5vw,52px); color: var(--gold); text-align: center; letter-spacing: 2px; line-height: 1.4; }
 .gate-ornament { width: 180px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); margin: 4px 0; }
 .gate-title    { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: clamp(22px,4vw,42px); color: var(--white); text-align: center; letter-spacing: 0.5px; }
 .gate-subtitle { font-size: clamp(12px,1.5vw,16px); color: rgba(255,255,255,0.6); letter-spacing: 4px; text-transform: uppercase; }
@@ -95,7 +95,7 @@
 }
 .hero-pattern { position: absolute; inset: 0; opacity: 0.04; background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a227' stroke-width='0.8'%3E%3Crect x='10' y='10' width='60' height='60' rx='0'/%3E%3Cpolygon points='40,5 75,22.5 75,57.5 40,75 5,57.5 5,22.5'/%3E%3Ccircle cx='40' cy='40' r='20'/%3E%3C/g%3E%3C/svg%3E"); }
 .hero-content { position: relative; z-index: 2; text-align: center; padding: 0 20px; max-width: 800px; }
-.hero-arabic { font-family: 'Noto Sans Arabic', sans-serif; font-size: clamp(26px,5vw,52px); color: var(--gold); margin-bottom: 16px; opacity: 0; animation: fadeUp 1s ease 0.5s forwards; }
+.hero-arabic { font-family: 'Amiri', serif; font-size: clamp(26px,5vw,52px); color: var(--gold); margin-bottom: 16px; opacity: 0; animation: fadeUp 1s ease 0.5s forwards; }
 .hero-ornament { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 16px 0; opacity: 0; animation: fadeUp 1s ease 0.7s forwards; }
 .hero-ornament span { width: 60px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
 .hero-ornament span:last-child { background: linear-gradient(90deg, var(--gold), transparent); }
@@ -126,9 +126,9 @@
 .mudir-photo-placeholder p { font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-light); letter-spacing: 1px; }
 .mudir-frame { position: absolute; bottom: -16px; right: -16px; width: 80%; height: 80%; border: 2px solid var(--gold); opacity: 0.4; pointer-events: none; }
 .mudir-badge { position: absolute; bottom: 24px; left: -24px; background: var(--green-deep); color: var(--white); padding: 16px 20px; min-width: 160px; }
-.mudir-badge-title { font-family: 'Noto Sans Arabic', sans-serif; font-size: 18px; color: var(--gold); margin-bottom: 4px; }
+.mudir-badge-title { font-family: 'Amiri', serif; font-size: 18px; color: var(--gold); margin-bottom: 4px; }
 .mudir-badge-name { font-size: 11px; font-weight: 600; letter-spacing: 1px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
-.sambutan-text .arabic-verse { font-family: 'Noto Sans Arabic', sans-serif; font-size: 22px; color: var(--green-mid); text-align: right; margin-bottom: 8px; line-height: 1.8; direction: rtl; }
+.sambutan-text .arabic-verse { font-family: 'Amiri', serif; font-size: 22px; color: var(--green-mid); text-align: right; margin-bottom: 8px; line-height: 1.8; direction: rtl; }
 .sambutan-text .verse-source { font-size: 12px; color: var(--text-light); margin-bottom: 28px; text-align: right; letter-spacing: 1px; }
 .sambutan-body { font-size: 16px; line-height: 1.9; color: var(--text-mid); margin-bottom: 28px; }
 .mudir-signature { display: flex; flex-direction: column; gap: 4px; }
@@ -225,7 +225,7 @@
 }
 #daftar::before { content:''; position: absolute; inset:0; background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23e8a820' stroke-width='0.5'%3E%3Ccircle cx='50' cy='50' r='40'/%3E%3Ccircle cx='50' cy='50' r='25'/%3E%3Cpolygon points='50,10 90,32.5 90,67.5 50,90 10,67.5 10,32.5'/%3E%3C/g%3E%3C/svg%3E"); opacity: 0.04; }
 .daftar-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
-.daftar-arabic { font-family: 'Noto Sans Arabic', sans-serif; font-size: 38px; color: var(--gold); margin-bottom: 20px; line-height: 1.5; }
+.daftar-arabic { font-family: 'Amiri', serif; font-size: 38px; color: var(--gold); margin-bottom: 20px; line-height: 1.5; }
 .daftar-title  { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: clamp(26px,5vw,48px); color: var(--white); line-height: 1.2; margin-bottom: 20px; }
 .daftar-desc   { font-size: 16px; color: rgba(255,255,255,0.6); line-height: 1.8; margin-bottom: 44px; }
 .daftar-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }

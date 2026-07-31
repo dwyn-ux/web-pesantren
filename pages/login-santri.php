@@ -9,4 +9,14 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     }$error='Nomor pendaftaran/induk atau password salah.';
 }
 $activePage='psb';$pageTitle='Login Portal Santri | '.APP_NAME;$pageDescription='Portal calon santri Pondok Pesantren Ash-Shiddiq.';$pageCanonical=BASE_URL.'/login-santri';?>
-<main class="page-section"><div class="container narrow-container"><form method="post" class="public-form portal-login"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><h1 class="section-title">Portal Santri</h1><p>Gunakan nomor pendaftaran atau nomor induk dan password yang dibuat saat mendaftar.</p><?php if($error):?><div class="flash-message flash-error"><?=e($error)?></div><?php endif;?><div class="form-group"><label>Nomor pendaftaran / nomor induk</label><input class="form-control" name="nomor_induk" required autocomplete="username"></div><div class="form-group"><label>Password</label><input class="form-control" type="password" name="password" required autocomplete="current-password"></div><button class="btn-primary">Masuk ke Portal</button><div class="login-register-prompt"><span>Belum memiliki akun?</span><a href="<?=BASE_URL?>/psb">Daftar sebagai calon santri</a></div></form></div></main>
+<main class="page-section"><div class="container narrow-container"><form method="post" class="public-form portal-login"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><h1 class="section-title">Portal Santri</h1><p>Gunakan nomor pendaftaran atau nomor induk dan password yang dibuat saat mendaftar.</p><?php if($error):?><div class="flash-message flash-error"><?=e($error)?></div><?php endif;?><div class="form-group"><label>Nomor pendaftaran / nomor induk</label><input class="form-control" name="nomor_induk" required autocomplete="username"></div><div class="form-group"><label>Password</label><input class="form-control" type="password" name="password" id="portal_password" required autocomplete="current-password"></div><label class="form-note" style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="lihatPassword" style="width:auto;"> Lihat password</label><button class="btn-primary">Masuk ke Portal</button><div class="login-register-prompt"><span>Belum memiliki akun?</span><a href="<?=BASE_URL?>/psb">Daftar sebagai calon santri</a></div></form></div></main>
+<script>
+(function () {
+    var lihatPassword = document.getElementById('lihatPassword');
+    if (lihatPassword) {
+        lihatPassword.addEventListener('change', function () {
+            document.getElementById('portal_password').type = this.checked ? 'text' : 'password';
+        });
+    }
+}());
+</script>

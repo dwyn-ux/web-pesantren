@@ -66,7 +66,7 @@ address { font-style: normal; }
   width: 40px; height: 40px;
   border: 1.5px solid var(--gold);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Noto Sans Arabic', sans-serif; font-size: 18px; color: var(--gold);
+  font-family: 'Amiri', serif; font-size: 18px; color: var(--gold);
   border-radius: var(--radius-sm);
   flex-shrink: 0;
 }
@@ -324,13 +324,13 @@ footer { background: #062e1c; padding: 60px 5% 28px; color: rgba(255,255,255,0.5
 .footer-logo-icon {
   width: 40px; height: 40px; border: 1.5px solid var(--gold);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Noto Sans Arabic', sans-serif; font-size: 18px; color: var(--gold);
+  font-family: 'Amiri', serif; font-size: 18px; color: var(--gold);
   border-radius: var(--radius-sm); flex-shrink: 0;
 }
 .footer-brand h3  { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; color: var(--white); }
 .footer-logo-sub  { font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 2px; text-transform: uppercase; }
 .footer-brand > p { font-size: 13px; line-height: 1.7; margin-bottom: 14px; }
-.footer-arabic    { font-family: 'Noto Sans Arabic', sans-serif; font-size: 20px; color: var(--gold); }
+.footer-arabic    { font-family: 'Amiri', serif; font-size: 20px; color: var(--gold); }
 
 .footer-col h4 {
   font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
@@ -365,7 +365,7 @@ footer { background: #062e1c; padding: 60px 5% 28px; color: rgba(255,255,255,0.5
 .artikel-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
 .artikel-card-img { height: 200px; background: var(--cream-dark); overflow: hidden; }
 .artikel-card-img img { width: 100%; height: 100%; object-fit: cover; }
-.artikel-card-img-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Noto Sans Arabic',sans-serif; font-size: 36px; color: var(--text-light); background: linear-gradient(135deg, var(--cream-dark), var(--cream)); }
+.artikel-card-img-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Amiri',serif; font-size: 36px; color: var(--text-light); background: linear-gradient(135deg, var(--cream-dark), var(--cream)); }
 .artikel-card-body { padding: 20px 24px 24px; }
 .artikel-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-light); margin-bottom: 10px; }
 
