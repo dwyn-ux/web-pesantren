@@ -10,11 +10,31 @@ if ($signBytes !== '') {
     if ($im) {
         $w = imagesx($im);
         $h = imagesy($im);
-        // komposit di atas latar putih agar transparansi PNG tidak jadi hitam
+        // Pastikan truecolor agar imagecolorat mengembalikan ARGB
+        if (!imageistruecolor($im)) {
+            $tc = imagecreatetruecolor($w, $h);
+            imagecopy($tc, $im, 0, 0, 0, 0, $w, $h);
+            imagedestroy($im);
+            $im = $tc;
+        }
+        // Blend manual per-pixel di atas latar putih (transparansi tidak jadi hitam/putih)
         $bg = imagecreatetruecolor($w, $h);
-        imagefill($bg, 0, 0, imagecolorallocate($bg, 255, 255, 255));
-        imagealphablending($bg, true);
-        imagecopy($bg, $im, 0, 0, 0, 0, $w, $h);
+        $white = imagecolorallocate($bg, 255, 255, 255);
+        imagefill($bg, 0, 0, $white);
+        for ($y = 0; $y < $h; $y++) {
+            for ($x = 0; $x < $w; $x++) {
+                $rgb = imagecolorat($im, $x, $y);
+                $a   = ($rgb >> 24) & 0x7F; // GD alpha: 0 = opak, 127 = transparan
+                $t   = 1 - ($a / 127);
+                $r   = ($rgb >> 16) & 0xFF;
+                $g   = ($rgb >> 8) & 0xFF;
+                $b   = $rgb & 0xFF;
+                imagesetpixel($bg, $x, $y, imagecolorallocate($bg,
+                    (int) ($r * $t + 255 * (1 - $t)),
+                    (int) ($g * $t + 255 * (1 - $t)),
+                    (int) ($b * $t + 255 * (1 - $t))));
+            }
+        }
         imagedestroy($im);
         $imgW = $w;
         $imgH = $h;
