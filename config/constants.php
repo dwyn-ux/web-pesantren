@@ -48,4 +48,4 @@ if (IS_DEBUG) {
 date_default_timezone_set('Asia/Jakarta');
 
 // Versi asset untuk cache busting (update saat deploy)
-define('ASSET_VERSION', '1.5.1');
+define('ASSET_VERSION', '1.6.0');

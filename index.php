@@ -30,11 +30,11 @@ if (preg_match('#^artikel/([a-z0-9\-]+)$#', $rawPage, $m)) {
 $publicPages = [
     'home', 'profil', 'sekapur-sirih',
     'artikel', 'artikel-detail',
-    'psb', 'login', 'login-santri', 'portal-santri', 'surat-kesanggupan', 'dokumentasi', 'alumni', 'pendataan-alumni', 'dokumen-lihat', '404',
+    'psb', 'login', 'login-santri', 'portal-santri', 'profil-santri', 'surat-kesanggupan', 'dokumentasi', 'alumni', 'pendataan-alumni', 'dokumen-lihat', '404',
 ];
 
-// Halaman yang butuh login
-$authPages = ['profil-santri'];
+// Halaman yang butuh login (admin)
+$authPages = [];
 
 // Halaman admin (butuh role admin)
 $adminPages = [
