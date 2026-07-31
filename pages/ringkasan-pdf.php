@@ -69,7 +69,7 @@ final class RingkasanPdf
 
     public function center(string $t, float $size = 11, bool $bold = false): void { $this->put($t, $size, $bold, 'center', 50, 495); }
 
-    public function heading(string $t): void { $this->gap(10); $this->put($t, 13, true, 'left', 50, 495); $this->gap(4); }
+    public function heading(string $t): void { $this->gap(26); $this->put($t, 13, true, 'left', 50, 495); $this->gap(6); }
 
     public function text(string $t, float $size = 11, bool $bold = false): void { $this->put($t, $size, $bold, 'left', 50, 495); }
 
