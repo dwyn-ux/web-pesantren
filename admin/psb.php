@@ -223,6 +223,7 @@ require_once __DIR__ . '/includes/header.php';
                             <?php if(!empty($p['kesanggupan_at'])): ?>
                             <br><strong>Kesanggupan:</strong> tanda tangan <a href="<?=BASE_URL?>/api/signature.php?id=<?=$p['id']?>" target="_blank" rel="noopener">lihat</a> · <?=e($p['kesanggupan_at'])?>
                             <?php endif; ?>
+                            <br><a href="<?=BASE_URL?>/surat-kesanggupan?id=<?=$p['id']?>" target="_blank" rel="noopener" class="btn-sm btn-sm-primary" style="margin-top:8px;">Download Ringkasan</a>
                             <?php $bf=$pdo->prepare('SELECT id,jenis,nama_asli,status FROM berkas_santri WHERE pendaftaran_id=? ORDER BY created_at DESC');$bf->execute([$p['id']]);$berkasP=$bf->fetchAll(); ?>
                             <br><br><strong>Berkas Masuk (<?=count($berkasP)?>):</strong><br>
                             <?php foreach($berkasP as $file): ?><a target="_blank" href="<?=BASE_URL?>/admin/berkas-lihat?id=<?=$file['id']?>"><?=e(ucwords(str_replace('-',' ',$file['jenis'])))?> — <?=e($file['nama_asli'])?></a> (<?=e($file['status'])?>)<br><?php endforeach; ?>
