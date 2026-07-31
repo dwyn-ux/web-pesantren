@@ -26,8 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             try{if($password!=='')$pdo->prepare("UPDATE pendaftaran SET nomor_induk=?,portal_password=?,status='diterima' WHERE id=?")->execute([$nomorInduk,password_hash($password,PASSWORD_BCRYPT),$id]);else $pdo->prepare("UPDATE pendaftaran SET nomor_induk=?,status='diterima' WHERE id=?")->execute([$nomorInduk,$id]);setFlash('success','Nomor induk dan akses portal diperbarui.');}catch(PDOException $e){setFlash('error','Nomor induk sudah digunakan atau data tidak valid.');}
         } else setFlash('error','Nomor induk tidak valid atau password baru kurang dari 8 karakter.');
     } elseif ($_POST['action'] === 'update_payment') {
-        $id=sanitizeInt($_POST['id']??0);$payment=sanitizeString($_POST['status_pembayaran']??'');
-        if($id>0&&in_array($payment,['belum','menunggu','lunas','ditolak'],true)){$pdo->prepare('UPDATE pendaftaran SET status_pembayaran=? WHERE id=?')->execute([$payment,$id]);$pdo->prepare("UPDATE berkas_santri SET status=CASE WHEN ?='lunas' THEN 'verified' WHEN ?='ditolak' THEN 'rejected' ELSE status END WHERE pendaftaran_id=? AND jenis='bukti-bayar'")->execute([$payment,$payment,$id]);setFlash('success','Status pembayaran diperbarui.');}
+        $itemId=sanitizeInt($_POST['item_id']??0);$payment=sanitizeString($_POST['status_pembayaran']??'');
+        if($itemId>0&&in_array($payment,['belum','menunggu','lunas','ditolak'],true)){
+            $pdo->prepare('UPDATE pembiayaan SET status=? WHERE id=?')->execute([$payment,$itemId]);
+            $pdo->prepare("UPDATE berkas_santri SET status=CASE WHEN ?='lunas' THEN 'verified' WHEN ?='ditolak' THEN 'rejected' ELSE status END WHERE pembiayaan_id=? AND jenis='bukti-bayar'")->execute([$payment,$payment,$itemId]);
+            setFlash('success','Status pembiayaan diperbarui.');
+        }
     }
     redirect('/admin/psb');
 }
@@ -175,14 +179,50 @@ require_once __DIR__ . '/includes/header.php';
                             Lulus: <?= e($p['tahun_lulus']) ?><br>
                             Kemampuan Qur'an: <?= e(str_replace('-', ' ', $p['kemampuan_quran'])) ?><br>
                             Hafalan: <?= e($p['jumlah_hafalan'] ?? '-') ?>
-                            <br><br><strong>Pilihan Biaya:</strong><br>
-                            <?= e($p['pilihan_biaya'] ? ucfirst($p['pilihan_biaya']) : 'Belum memilih') ?>
-                            <?php if($p['nominal_biaya']!==null): ?><br>Rp <?= number_format((float)$p['nominal_biaya'],0,',','.') ?><?php endif; ?>
-                            <br>Status pembayaran: <strong><?=e(ucfirst($p['status_pembayaran']??'belum'))?></strong>
+                            <br><br><strong>Pembiayaan:</strong><br>
+                            <?php snapshotPembiayaan($pdo,(int)$p['id'],$p['jenis_kelamin']);
+                            $bi=$pdo->prepare('SELECT * FROM pembiayaan WHERE pendaftaran_id=? ORDER BY urutan,id');$bi->execute([$p['id']]);$biayaP=$bi->fetchAll(); ?>
+                            <table class="admin-table" style="font-size:12px;margin-top:6px;">
+                                <tr><th>Item</th><th>Nominal</th><th>Status</th><th></th></tr>
+                                <?php foreach($biayaP as $biaya): ?>
+                                <tr>
+                                    <td><?=e(pembiayaanLabel($biaya['jenis']))?><?=$biaya['nama']?'<br><em>'.e($biaya['nama']).'</em>':''?><?=$biaya['dipilih']?'<br><span class="badge badge-diterima">dipilih</span>':''?></td>
+                                    <td>
+                                        <?php if($biaya['gratis']):?>GRATIS
+                                        <?php else:?><?=($biaya['harga_diskon']!==null && (float)$biaya['harga_diskon']<(float)$biaya['harga_asli'])?'<s>'.formatRupiah((float)$biaya['harga_asli']).'</s> ':''?><?=formatRupiah((float)$biaya['nominal'])?>
+                                        <?php endif;?>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-<?=$biaya['status']==='lunas'||$biaya['status']==='gratis'?'diterima':($biaya['status']==='menunggu'?'pending':'ditolak')?>"><?=e(pembiayaanStatusLabel($biaya['status']))?></span>
+                                        <?=$biaya['kesanggupan']?'<br><small>disanggupi</small>':''?>
+                                    </td>
+                                    <td>
+                                        <?php if($biaya['gratis']):?>
+                                        <em style="font-size:11px;">otomatis</em>
+                                        <?php else:?>
+                                        <form method="post" style="display:flex;gap:4px;margin:0">
+                                            <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
+                                            <input type="hidden" name="action" value="update_payment">
+                                            <input type="hidden" name="item_id" value="<?=$biaya['id']?>">
+                                            <select name="status_pembayaran" style="padding:4px;font-size:12px;">
+                                                <option value="belum" <?=($biaya['status']??'belum')==='belum'?'selected':''?>>Belum</option>
+                                                <option value="menunggu" <?=($biaya['status']??'')==='menunggu'?'selected':''?>>Menunggu</option>
+                                                <option value="lunas" <?=($biaya['status']??'')==='lunas'?'selected':''?>>Lunas</option>
+                                                <option value="ditolak" <?=($biaya['status']??'')==='ditolak'?'selected':''?>>Ditolak</option>
+                                            </select>
+                                            <button class="btn-sm btn-sm-primary">Simpan</button>
+                                        </form>
+                                        <?php endif;?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </table>
+                            <?php if(!empty($p['kesanggupan_at'])): ?>
+                            <br><strong>Kesanggupan:</strong> tanda tangan <a href="<?=BASE_URL?>/api/signature.php?id=<?=$p['id']?>" target="_blank" rel="noopener">lihat</a> · <?=e($p['kesanggupan_at'])?>
+                            <?php endif; ?>
                             <?php $bf=$pdo->prepare('SELECT id,jenis,nama_asli,status FROM berkas_santri WHERE pendaftaran_id=? ORDER BY created_at DESC');$bf->execute([$p['id']]);$berkasP=$bf->fetchAll(); ?>
                             <br><br><strong>Berkas Masuk (<?=count($berkasP)?>):</strong><br>
                             <?php foreach($berkasP as $file): ?><a target="_blank" href="<?=BASE_URL?>/admin/berkas-lihat?id=<?=$file['id']?>"><?=e(ucwords(str_replace('-',' ',$file['jenis'])))?> — <?=e($file['nama_asli'])?></a> (<?=e($file['status'])?>)<br><?php endforeach; ?>
-                            <form method="post" style="margin-top:10px;display:flex;gap:6px"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><input type="hidden" name="action" value="update_payment"><input type="hidden" name="id" value="<?=$p['id']?>"><select name="status_pembayaran"><option value="belum" <?=($p['status_pembayaran']??'belum')==='belum'?'selected':''?>>Belum bayar</option><option value="menunggu" <?=($p['status_pembayaran']??'')==='menunggu'?'selected':''?>>Menunggu</option><option value="lunas" <?=($p['status_pembayaran']??'')==='lunas'?'selected':''?>>Lunas</option><option value="ditolak" <?=($p['status_pembayaran']??'')==='ditolak'?'selected':''?>>Ditolak</option></select><button class="btn-sm btn-sm-primary">Verifikasi</button></form>
                         </div>
                         <div>
                             <strong>Alamat</strong><br>

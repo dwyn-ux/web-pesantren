@@ -140,6 +140,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
             $data['motivasi'] ?: null,
         ]);
 
+        // Snapshot tarif pembiayaan ke tagihan santri ini
+        snapshotPembiayaan($pdo, (int) $pdo->lastInsertId(), $data['jenis_kelamin']);
+
         // POST-Redirect-GET: simpan data sukses di session lalu redirect
         $_SESSION['psb_success'] = [
             'nomor' => $nomorDaftar,

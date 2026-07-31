@@ -331,3 +331,145 @@ function jsonResponse(mixed $data, int $statusCode = 200): never {
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+// ── Pembiayaan ───────────────────────────────────────────────
+
+function pembiayaanLabel(string $jenis): string {
+    return match ($jenis) {
+        'pendaftaran' => 'Biaya Pendaftaran',
+        'administrasi' => 'Administrasi Awal',
+        'wakaf'        => 'Wakaf',
+        'laundry'      => 'Laundry',
+        'infak'        => 'Infak Wajib',
+        default        => $jenis,
+    };
+}
+
+function pembiayaanStatusLabel(string $status): string {
+    return match ($status) {
+        'belum'   => 'Belum dibayar',
+        'menunggu'=> 'Menunggu verifikasi',
+        'lunas'   => 'Lunas',
+        'gratis'  => 'Gratis',
+        'ditolak' => 'Bukti ditolak',
+        default   => $status,
+    };
+}
+
+function berkasLabel(string $jenis): string {
+    return match ($jenis) {
+        'kartu-keluarga' => 'Scan KK',
+        'akta-lahir'     => 'Scan Akta Lahir',
+        'ktp-ortu'       => 'Scan KTP Orang Tua',
+        'foto'           => 'Foto 3x4',
+        'ijazah'         => 'Scan SKL/Ijazah',
+        'sertifikat-tka' => 'Sertifikat TKA',
+        'lainnya'        => 'Lainnya',
+        default          => $jenis,
+    };
+}
+
+/** Berkas yang wajib dilengkapi (selain bisa menyusul). */
+function berkasWajib(): array {
+    return ['kartu-keluarga', 'akta-lahir', 'ktp-ortu', 'foto'];
+}
+
+/**
+ * Ambil tarif pembiayaan aktif dari pembiayaan_tarif.
+ * Kembalikan array berkelompok per jenis.
+ */
+function getPembiayaanTarif(PDO $pdo): array {
+    $rows = $pdo->query(
+        "SELECT * FROM pembiayaan_tarif WHERE is_active = 1 ORDER BY urutan, id"
+    )->fetchAll();
+    $tarif = ['pendaftaran' => [], 'administrasi' => [], 'wakaf' => [], 'laundry' => [], 'infak' => []];
+    foreach ($rows as $r) {
+        $tarif[$r['jenis']][] = $r;
+    }
+    return $tarif;
+}
+
+/**
+ * Buat snapshot pembiayaan per-santri dari tarif global.
+ * Dipanggil saat santri mendaftar atau otomatis di portal/admin
+ * jika snapshot belum ada (santri lama).
+ */
+function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void {
+    $chk = $pdo->prepare('SELECT COUNT(*) FROM pembiayaan WHERE pendaftaran_id = ?');
+    $chk->execute([$pendaftaranId]);
+    if ((int) $chk->fetchColumn() > 0) return;
+
+    $tarif = getPembiayaanTarif($pdo);
+    $ins   = $pdo->prepare(
+        "INSERT INTO pembiayaan
+            (pendaftaran_id, jenis, nama, harga_asli, harga_diskon, gratis, nominal, status, urutan)
+         VALUES (?,?,?,?,?,?,?,?,?)"
+    );
+    $urutan = 0;
+
+    $add = function (array $t) use ($pdo, $ins, $pendaftaranId, &$urutan): void {
+        $nominal = $t['gratis'] ? 0 : (float) ($t['harga_diskon'] ?? $t['harga_asli']);
+        $status  = $t['gratis'] ? 'gratis' : 'belum';
+        $ins->execute([
+            $pendaftaranId, $t['jenis'], $t['nama'], $t['harga_asli'],
+            $t['harga_diskon'], $t['gratis'], $nominal, $status, ++$urutan,
+        ]);
+    };
+
+    foreach (['pendaftaran', 'infak'] as $jenis) {
+        foreach ($tarif[$jenis] as $t) $add($t);
+    }
+    foreach (['administrasi', 'wakaf'] as $jenis) {
+        foreach ($tarif[$jenis] as $t) $add($t);
+    }
+    foreach ($tarif['laundry'] as $t) {
+        if ($t['gender'] === 'all' || $t['gender'] === $gender) $add($t);
+    }
+}
+
+/**
+ * Format angka jadi Rupiah (Rp 1.250.000).
+ */
+function formatRupiah(float $nominal): string {
+    return 'Rp ' . number_format($nominal, 0, ',', '.');
+}
+
+/**
+ * Render harga item pembiayaan (gratis / coret diskon / normal).
+ * @param array<string, mixed> $item
+ */
+function hargaItem(array $item): string {
+    if (!empty($item['gratis'])) {
+        return '<span class="price-gratis">GRATIS</span>';
+    }
+    $asli  = formatRupiah((float) $item['harga_asli']);
+    $bayar = formatRupiah((float) $item['nominal']);
+    if ($item['harga_diskon'] !== null && (float) $item['harga_diskon'] < (float) $item['harga_asli']) {
+        return '<s>' . $asli . '</s> <strong>' . $bayar . '</strong>';
+    }
+    return $bayar;
+}
+
+/**
+ * Simpan gambar tanda tangan (data URL PNG) dari canvas.
+ * Kembalikan nama file atau false jika tidak valid.
+ */
+function saveSignature(string $dataUrl, string $destDir): string|false {
+    if (!preg_match('#^data:image/png;base64,#i', $dataUrl, $m)) {
+        return false;
+    }
+    $bin = base64_decode(substr($dataUrl, strlen($m[0])), true);
+    if ($bin === false || strlen($bin) < 8 || strlen($bin) > 500000) {
+        return false;
+    }
+    // Cek magic bytes PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (substr($bin, 0, 8) !== "\x89PNG\x0D\x0A\x1A\x0A") {
+        return false;
+    }
+    if (!is_dir($destDir)) mkdir($destDir, 0755, true);
+    $file = 'sign-' . bin2hex(random_bytes(16)) . '.png';
+    if (file_put_contents($destDir . DIRECTORY_SEPARATOR . $file, $bin) === false) {
+        return false;
+    }
+    return $file;
+}
