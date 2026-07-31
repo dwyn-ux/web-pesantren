@@ -407,7 +407,15 @@ $pageCanonical = BASE_URL . '/portal-santri';
         var form = document.getElementById('kesanggupanForm');
         if (form) form.addEventListener('submit', function (e) {
             if (!drawn) { e.preventDefault(); alert('Silakan gambar tanda tangan terlebih dahulu.'); return; }
-            document.getElementById('tandaTangan').value = canvas.toDataURL('image/png');
+            // Simpan dengan latar putih opak agar tidak bergantung pada alpha browser
+            var saveCanvas = document.createElement('canvas');
+            saveCanvas.width = canvas.width;
+            saveCanvas.height = canvas.height;
+            var sctx = saveCanvas.getContext('2d');
+            sctx.fillStyle = '#ffffff';
+            sctx.fillRect(0, 0, saveCanvas.width, saveCanvas.height);
+            sctx.drawImage(canvas, 0, 0);
+            document.getElementById('tandaTangan').value = saveCanvas.toDataURL('image/png');
         });
     }
 }());
