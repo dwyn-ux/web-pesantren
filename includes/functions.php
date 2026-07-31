@@ -74,6 +74,16 @@ function imgExists(string $relativePath): bool {
     return is_file(ROOT_PATH . '/assets/img/' . ltrim($relativePath, '/'));
 }
 
+/**
+ * Nama file logo website yang aktif (logo.svg / logo.png) atau '' jika belum ada.
+ */
+function getLogoFile(): string {
+    foreach (['logo.svg', 'logo.png'] as $f) {
+        if (is_file(ROOT_PATH . '/assets/img/' . $f)) return $f;
+    }
+    return '';
+}
+
 // ── File Upload ──────────────────────────────────────────────
 
 /** Deteksi MIME dari isi file, termasuk pada hosting tanpa ekstensi fileinfo. */

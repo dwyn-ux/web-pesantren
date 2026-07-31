@@ -13,8 +13,8 @@ $currentYear = date('Y');
             <!-- Branding -->
             <div class="footer-brand">
                 <div class="footer-logo">
-                    <?php if (imgExists('logo.png')): ?>
-                    <img class="footer-logo-image" src="<?= BASE_URL ?>/assets/img/logo.png" alt="Logo <?= e(APP_NAME) ?>">
+                    <?php $footerLogo = getLogoFile(); if ($footerLogo !== ''): ?>
+                    <img class="footer-logo-image" src="<?= BASE_URL ?>/assets/img/<?= $footerLogo ?>" alt="Logo <?= e(APP_NAME) ?>">
                     <?php else: ?>
                     <div class="footer-logo-icon" aria-hidden="true">ص</div>
                     <?php endif; ?>

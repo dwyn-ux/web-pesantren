@@ -6,6 +6,10 @@
     <title><?= e($adminTitle ?? 'Dashboard') ?> — Admin | <?= e(APP_NAME) ?></title>
     <meta name="robots" content="noindex, nofollow">
 
+    <?php $logoFile = getLogoFile(); if ($logoFile !== ''): ?>
+    <link rel="icon" href="<?= BASE_URL ?>/assets/img/<?= $logoFile ?>">
+    <?php endif; ?>
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

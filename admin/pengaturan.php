@@ -9,6 +9,43 @@ $keys = ['rekening_pembayaran'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrf();
 
+    // ── Upload logo (opsional) → logo.png / logo.svg ─────────
+    if (!empty($_FILES['logo']['name'])) {
+        $logoErr = validateUpload($_FILES['logo'], ['png', 'jpg', 'jpeg', 'webp', 'svg'], ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'], 2097152);
+        if ($logoErr) {
+            setFlash('error', 'Logo: ' . implode(' ', $logoErr));
+            redirect('/admin/pengaturan');
+        }
+        $ext  = strtolower(pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION));
+        $base = ROOT_PATH . '/assets/img/logo';
+        if ($ext === 'svg') {
+            if (!move_uploaded_file($_FILES['logo']['tmp_name'], $base . '.svg')) {
+                setFlash('error', 'Gagal menyimpan logo.');
+                redirect('/admin/pengaturan');
+            }
+        } else {
+            $src = @imagecreatefromstring((string) file_get_contents($_FILES['logo']['tmp_name']));
+            if (!$src) {
+                setFlash('error', 'File gambar tidak valid.');
+                redirect('/admin/pengaturan');
+            }
+            $sw = imagesx($src); $sh = imagesy($src);
+            $max = 512; $w = $sw; $h = $sh;
+            if ($w > $max) { $ratio = $max / $w; $h = (int) round($sh * $ratio); $w = $max; }
+            $canvas = imagecreatetruecolor($w, $h);
+            imagealphablending($canvas, false);
+            imagesavealpha($canvas, true);
+            imagecopyresampled($canvas, $src, 0, 0, 0, 0, $w, $h, $sw, $sh);
+            $ok = imagepng($canvas, $base . '.png', 6);
+            imagedestroy($canvas);
+            imagedestroy($src);
+            if (!$ok) {
+                setFlash('error', 'Gagal menyimpan logo.');
+                redirect('/admin/pengaturan');
+            }
+        }
+    }
+
     // Simpan nilai pengaturan (rekening dll)
     foreach ($keys as $k) {
         $v = sanitizeString($_POST[$k] ?? '');
@@ -118,8 +155,20 @@ $adminPage  = 'admin/pengaturan';
 require __DIR__ . '/includes/header.php';
 ?>
 
-<form method="post" class="admin-form">
+<form method="post" class="admin-form" enctype="multipart/form-data">
 <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+
+<div class="admin-form-card">
+    <h2 class="admin-form-title">Logo Website &amp; Favicon</h2>
+    <?php $logoPreview = getLogoFile(); if ($logoPreview !== ''): ?>
+    <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;">Logo saat ini:</p>
+    <img src="<?= BASE_URL ?>/assets/img/<?= $logoPreview ?>" alt="Logo" style="height:64px;width:auto;background:#fff;padding:8px;border:1px solid var(--cream-dark);border-radius:8px;margin-bottom:14px;">
+    <?php endif; ?>
+    <div class="form-group"><label>Upload logo baru (PNG/JPG/WEBP/SVG, maks 2 MB)</label>
+        <input class="form-control" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp,.svg">
+    </div>
+    <p style="font-size:12px;color:var(--text-light);">Logo otomatis dipakai sebagai favicon website. Disarankan rasio kotak (mis. 512x512).</p>
+</div>
 
 <div class="admin-form-card">
     <h2 class="admin-form-title">Pembiayaan — Biaya Pendaftaran</h2>

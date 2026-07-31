@@ -20,6 +20,8 @@ $pageOgImage     ??= imgExists('og-default.jpg') ? BASE_URL . '/assets/img/og-de
 $bodyClass       ??= '';
 $activePage      ??= 'home';
 
+$logoFile = getLogoFile();
+
 // Daftar nav links
 $navLinks = [
     'home'          => ['url' => BASE_URL . '/',                    'label' => 'Beranda'],
@@ -66,6 +68,8 @@ $navLinks = [
     <!-- Favicon -->
     <?php if (imgExists('favicon.svg')): ?>
     <link rel="icon" type="image/svg+xml" href="<?= BASE_URL ?>/assets/img/favicon.svg">
+    <?php elseif ($logoFile !== ''): ?>
+    <link rel="icon" href="<?= BASE_URL ?>/assets/img/<?= $logoFile ?>">
     <?php endif; ?>
     <?php if (imgExists('apple-touch-icon.png')): ?>
     <link rel="apple-touch-icon" href="<?= BASE_URL ?>/assets/img/apple-touch-icon.png">
@@ -88,8 +92,8 @@ $navLinks = [
 <nav id="mainNav" aria-label="Navigasi utama">
     <!-- Logo -->
     <a href="<?= BASE_URL ?>/" class="nav-logo" aria-label="<?= e(APP_NAME) ?> — Beranda">
-        <?php if (imgExists('logo.png')): ?>
-        <img class="nav-logo-image" src="<?= BASE_URL ?>/assets/img/logo.png" alt="Logo <?= e(APP_NAME) ?>">
+        <?php if ($logoFile !== ''): ?>
+        <img class="nav-logo-image" src="<?= BASE_URL ?>/assets/img/<?= $logoFile ?>" alt="Logo <?= e(APP_NAME) ?>">
         <?php else: ?>
         <div class="nav-logo-icon" aria-hidden="true">ص</div>
         <?php endif; ?>
