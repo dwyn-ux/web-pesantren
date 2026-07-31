@@ -116,7 +116,11 @@ $navLinks = [
         <li>
             <a href="<?= BASE_URL ?>/psb" class="nav-cta">Daftar Sekarang</a>
         </li>
+        <?php if (!empty($_SESSION['santri_id'])): ?>
+        <li><a href="<?= BASE_URL ?>/login-santri?logout=1" class="nav-login">Logout</a></li>
+        <?php else: ?>
         <li><a href="<?= BASE_URL ?>/login-santri" class="nav-login">Login</a></li>
+        <?php endif; ?>
         <?php if (isLoggedIn()): ?>
         <li>
             <a href="<?= BASE_URL ?>/admin" style="font-size:11px;opacity:0.55;letter-spacing:1px;" title="Panel Admin">⚙ Admin</a>
@@ -143,7 +147,11 @@ $navLinks = [
     <a href="<?= BASE_URL ?>/psb" class="btn-primary" style="margin-top:8px;text-align:center;">
         Daftar Sekarang
     </a>
+    <?php if (!empty($_SESSION['santri_id'])): ?>
+    <a href="<?= BASE_URL ?>/login-santri?logout=1" class="btn-outline" style="text-align:center;">Logout</a>
+    <?php else: ?>
     <a href="<?= BASE_URL ?>/login-santri" class="btn-outline" style="text-align:center;">Login Santri</a>
+    <?php endif; ?>
 
     <?php if (isLoggedIn()): ?>
     <a href="<?= BASE_URL ?>/admin" style="font-size:12px;opacity:0.6;margin-top:8px;">⚙ Panel Admin</a>

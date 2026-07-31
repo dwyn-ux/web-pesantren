@@ -37,6 +37,10 @@ function sanitizeInt(mixed $value): int {
     return (int) filter_var($value, FILTER_SANITIZE_NUMBER_INT);
 }
 
+function sanitizeFloat(mixed $value): float {
+    return (float) preg_replace('/[^0-9.]/', '', (string) $value);
+}
+
 // ── Static Image Helper ──────────────────────────────────────
 
 /**
@@ -219,17 +223,11 @@ function formatBytes(int $bytes, int $precision = 1): string {
 }
 
 /**
- * Format tanggal ke format Indonesia (contoh: 26 April 2026)
+ * Format tanggal ke format dd/mm/yyyy (contoh: 26/04/2026)
  */
 function formatTanggal(string $dateStr, bool $withTime = false): string {
-    $bulan = [
-        1  => 'Januari', 2  => 'Februari', 3  => 'Maret',
-        4  => 'April',   5  => 'Mei',       6  => 'Juni',
-        7  => 'Juli',    8  => 'Agustus',   9  => 'September',
-        10 => 'Oktober', 11 => 'November', 12 => 'Desember',
-    ];
     $ts     = strtotime($dateStr);
-    $result = date('j', $ts) . ' ' . $bulan[(int) date('n', $ts)] . ' ' . date('Y', $ts);
+    $result = date('d/m/Y', $ts);
     if ($withTime) {
         $result .= ' · ' . date('H:i', $ts);
     }

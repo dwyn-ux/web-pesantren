@@ -42,6 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
         'kemampuan_quran' => sanitizeString($_POST['kemampuan_quran'] ?? ''),
         'jumlah_hafalan'  => sanitizeString($_POST['jumlah_hafalan']  ?? ''),
         'motivasi'        => sanitizeString($_POST['motivasi']        ?? ''),
+        'tinggi_badan'    => sanitizeFloat($_POST['tinggi_badan']    ?? ''),
+        'berat_badan'     => sanitizeFloat($_POST['berat_badan']     ?? ''),
         'portal_password' => $_POST['portal_password'] ?? '',
         'password_confirm'=> $_POST['password_confirm'] ?? '',
     ];
@@ -94,6 +96,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
     if ($data['tahun_lulus'] < 2015 || $data['tahun_lulus'] > $tahunSekarang + 1) {
         $errors['tahun_lulus'] = 'Tahun lulus tidak valid.';
     }
+
+    // Validasi tinggi & berat badan (opsional, untuk seragam)
+    if ($data['tinggi_badan'] > 0 && ($data['tinggi_badan'] < 50 || $data['tinggi_badan'] > 250)) {
+        $errors['tinggi_badan'] = 'Tinggi badan tidak valid (dalam cm).';
+    }
+    if ($data['berat_badan'] > 0 && ($data['berat_badan'] < 5 || $data['berat_badan'] > 250)) {
+        $errors['berat_badan'] = 'Berat badan tidak valid (dalam kg).';
+    }
     if (strlen($data['portal_password']) < 8) {
         $errors['portal_password'] = 'Password akun minimal 8 karakter.';
     } elseif ($data['portal_password'] !== $data['password_confirm']) {
@@ -116,8 +126,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
                 (nomor_daftar, portal_password, nama_lengkap, tempat_lahir, tanggal_lahir,
                  jenis_kelamin, jenjang, whatsapp,
                  nama_ayah, nama_ibu, hp_ortu, pekerjaan_ortu, alamat,
-                 asal_sekolah, tahun_lulus, kemampuan_quran, jumlah_hafalan, motivasi)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                 asal_sekolah, tahun_lulus, kemampuan_quran, jumlah_hafalan, motivasi,
+                 tinggi_badan, berat_badan)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         );
         $stmtInsert->execute([
             $nomorDaftar,
@@ -138,6 +149,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
             $data['kemampuan_quran'],
             $data['jumlah_hafalan'] ?: null,
             $data['motivasi'] ?: null,
+            $data['tinggi_badan'] > 0 ? $data['tinggi_badan'] : null,
+            $data['berat_badan'] > 0 ? $data['berat_badan'] : null,
         ]);
 
         // Snapshot tarif pembiayaan ke tagihan santri ini
@@ -191,6 +204,8 @@ $errorLabels = [
     'asal_sekolah'    => 'Asal sekolah',
     'tahun_lulus'     => 'Tahun lulus',
     'kemampuan_quran' => 'Kemampuan membaca Al-Qur\'an',
+    'tinggi_badan'    => 'Tinggi badan',
+    'berat_badan'     => 'Berat badan',
     'portal_password' => 'Password akun',
     'password_confirm'=> 'Konfirmasi password',
 ];
@@ -260,7 +275,7 @@ $extraHead = <<<'CSS'
 /* ── FORM CARD ────────────────────────────────────────────────── */
 .psb-form-card {
     background:var(--white); border-radius:4px; padding:40px 36px;
-    box-shadow:0 8px 40px rgba(13,122,74,0.08); position:sticky; top:90px;
+    box-shadow:0 8px 40px rgba(13,122,74,0.08);
 }
 .form-header { text-align:center; margin-bottom:32px; padding-bottom:24px; border-bottom:1px solid var(--cream-dark); }
 .form-header .arabic { font-family:'Amiri',serif; font-size:24px; color:var(--green-mid); margin-bottom:8px; }
@@ -441,26 +456,48 @@ CSS;
         </div>
 
         <!-- Biaya -->
+        <?php
+        $tarifBiaya = getPembiayaanTarif($pdo);
+        $biayaTampil = [];
+        $nilai = fn(array $r): float => (float) ($r['harga_diskon'] ?? $r['harga_asli']);
+        $minOpt = function (array $rows) use ($nilai): float {
+            return min(array_map($nilai, $rows));
+        };
+        if (!empty($tarifBiaya['pendaftaran'])) {
+            $t = $tarifBiaya['pendaftaran'][0];
+            $biayaTampil[] = ['Biaya Pendaftaran', !empty($t['gratis']) ? 'GRATIS' : formatRupiah($nilai($t))];
+        }
+        if (!empty($tarifBiaya['administrasi'])) {
+            $biayaTampil[] = ['Administrasi Awal', 'mulai ' . formatRupiah($minOpt($tarifBiaya['administrasi']))];
+        }
+        if (!empty($tarifBiaya['wakaf'])) {
+            $biayaTampil[] = ['Wakaf', 'mulai ' . formatRupiah($minOpt($tarifBiaya['wakaf']))];
+        }
+        if (!empty($tarifBiaya['syahriyah'])) {
+            $biayaTampil[] = ['Syahriyah / Bulan', 'mulai ' . formatRupiah($minOpt($tarifBiaya['syahriyah']))];
+        }
+        $laundryL = $laundryP = null;
+        foreach ($tarifBiaya['laundry'] as $t) {
+            if ($t['gender'] === 'L') $laundryL = $nilai($t);
+            if ($t['gender'] === 'P') $laundryP = $nilai($t);
+        }
+        if ($laundryL !== null || $laundryP !== null) {
+            $biayaTampil[] = ['Laundry (L/P)', ($laundryL !== null ? formatRupiah($laundryL) : '-') . ' / ' . ($laundryP !== null ? formatRupiah($laundryP) : '-')];
+        }
+        if (!empty($tarifBiaya['infak'])) {
+            $biayaTampil[] = ['Infak Wajib', formatRupiah($nilai($tarifBiaya['infak'][0]))];
+        }
+        ?>
         <div class="biaya-box reveal">
             <h3>Estimasi Biaya Awal</h3>
+            <?php foreach ($biayaTampil as [$biayaLabel, $biayaValue]): ?>
             <div class="biaya-item">
-                <span class="biaya-label">Biaya Pendaftaran</span>
-                <span class="biaya-value">Rp 250.000</span>
+                <span class="biaya-label"><?= e($biayaLabel) ?></span>
+                <span class="biaya-value"><?= e($biayaValue) ?></span>
             </div>
-            <div class="biaya-item">
-                <span class="biaya-label">Uang Pangkal</span>
-                <span class="biaya-value">Rp 3.500.000</span>
-            </div>
-            <div class="biaya-item">
-                <span class="biaya-label">SPP / Bulan</span>
-                <span class="biaya-value">Rp 750.000</span>
-            </div>
-            <div class="biaya-item">
-                <span class="biaya-label">Perlengkapan Santri</span>
-                <span class="biaya-value">Rp 1.200.000</span>
-            </div>
+            <?php endforeach; ?>
             <p style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:16px;line-height:1.6;">
-                * Tersedia beasiswa bagi santri berprestasi dan dari keluarga kurang mampu. Hubungi panitia untuk informasi lebih lanjut.
+                * Tarif final sesuai kesanggupan orang tua. Tersedia diskon dan jalur gratis bagi yang memenuhi syarat. Hubungi panitia untuk informasi lebih lanjut.
             </p>
         </div>
     </div>
@@ -587,6 +624,29 @@ CSS;
                                    <?= (isset($data['jenis_kelamin']) && $data['jenis_kelamin'] === 'P') ? 'checked' : '' ?>>
                             Perempuan
                         </label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tinggi_badan">Tinggi Badan (cm)</label>
+                        <input type="number" id="tinggi_badan" name="tinggi_badan" min="50" max="250" step="0.1"
+                               class="form-control<?= isset($errors['tinggi_badan']) ? ' is-error' : '' ?>"
+                               placeholder="Contoh: 145" maxlength="5"
+                               value="<?= isset($data['tinggi_badan']) && $data['tinggi_badan'] > 0 ? e($data['tinggi_badan']) : '' ?>">
+                        <?php if (isset($errors['tinggi_badan'])): ?>
+                        <p class="field-error"><?= e($errors['tinggi_badan']) ?></p>
+                        <?php endif; ?>
+                        <p class="form-note">Untuk persiapan seragam santri.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="berat_badan">Berat Badan (kg)</label>
+                        <input type="number" id="berat_badan" name="berat_badan" min="5" max="250" step="0.1"
+                               class="form-control<?= isset($errors['berat_badan']) ? ' is-error' : '' ?>"
+                               placeholder="Contoh: 38" maxlength="5"
+                               value="<?= isset($data['berat_badan']) && $data['berat_badan'] > 0 ? e($data['berat_badan']) : '' ?>">
+                        <?php if (isset($errors['berat_badan'])): ?>
+                        <p class="field-error"><?= e($errors['berat_badan']) ?></p>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="form-group">

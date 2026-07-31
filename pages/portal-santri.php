@@ -368,7 +368,10 @@ $pageCanonical = BASE_URL . '/portal-santri';
         function pos(e) {
             var r = canvas.getBoundingClientRect();
             var p = e.touches ? e.touches[0] : e;
-            return { x: p.clientX - r.left, y: p.clientY - r.top };
+            return {
+                x: (p.clientX - r.left) * (canvas.width / r.width),
+                y: (p.clientY - r.top) * (canvas.height / r.height)
+            };
         }
         function start(e) { e.preventDefault(); drawing = true; drawn = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
         function move(e) { if (!drawing) return; e.preventDefault(); var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }

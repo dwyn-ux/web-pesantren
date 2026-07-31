@@ -179,6 +179,9 @@ require_once __DIR__ . '/includes/header.php';
                             Lulus: <?= e($p['tahun_lulus']) ?><br>
                             Kemampuan Qur'an: <?= e(str_replace('-', ' ', $p['kemampuan_quran'])) ?><br>
                             Hafalan: <?= e($p['jumlah_hafalan'] ?? '-') ?>
+                            <?php if (!empty($p['tinggi_badan']) || !empty($p['berat_badan'])): ?><br>
+                            Seragam: <?= !empty($p['tinggi_badan']) ? e((float)$p['tinggi_badan']) . ' cm' : '-' ?> / <?= !empty($p['berat_badan']) ? e((float)$p['berat_badan']) . ' kg' : '-' ?>
+                            <?php endif; ?>
                             <br><br><strong>Pembiayaan:</strong><br>
                             <?php syncPembiayaan($pdo,(int)$p['id'],$p['jenis_kelamin']);
                             $bi=$pdo->prepare('SELECT * FROM pembiayaan WHERE pendaftaran_id=? ORDER BY urutan,id');$bi->execute([$p['id']]);$biayaP=$bi->fetchAll(); ?>
