@@ -102,7 +102,7 @@ final class RingkasanPdf
             $font = (($styles[$i] ?? '') === 'label') ? 'F2' : 'F1';
             $ty   = $topY - $pad - $lineH;
             foreach ($wrapped[$i] as $ln) {
-                $this->cur .= sprintf("BT /%s %.1f Tf 1 0 0 1 %.1f %.1f Tm (%s) Tj ET\n", $font, $size, $x + $pad, $ty, self::esc(self::win($ln)));
+                $this->cur .= sprintf("0 g BT /%s %.1f Tf 1 0 0 1 %.1f %.1f Tm (%s) Tj ET\n", $font, $size, $x + $pad, $ty, self::esc(self::win($ln)));
                 $ty -= $lineH;
             }
             $x += $cw;
@@ -132,7 +132,9 @@ final class RingkasanPdf
     private function line(string $t, float $size, bool $bold, float $x): void
     {
         $font = $bold ? 'F2' : 'F1';
-        $this->cur .= sprintf("BT /%s %.1f Tf 1 0 0 1 %.1f %.1f Tm (%s) Tj ET\n", $font, $size, $x, $this->y, self::esc(self::win($t)));
+        // `0 g` wajib: reset warna fill ke hitam sebelum teks,
+        // karena fill sel sebelumnya (putih/abu) ikut dipakai Tj
+        $this->cur .= sprintf("0 g BT /%s %.1f Tf 1 0 0 1 %.1f %.1f Tm (%s) Tj ET\n", $font, $size, $x, $this->y, self::esc(self::win($t)));
         $this->y -= $size * 1.5;
     }
 
