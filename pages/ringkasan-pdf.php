@@ -8,12 +8,20 @@ $jpegData = null; $imgW = 0; $imgH = 0;
 if ($signBytes !== '') {
     $im = @imagecreatefromstring($signBytes);
     if ($im) {
-        $imgW = imagesx($im);
-        $imgH = imagesy($im);
-        ob_start();
-        imagejpeg($im, null, 88);
-        $jpegData = ob_get_clean();
+        $w = imagesx($im);
+        $h = imagesy($im);
+        // komposit di atas latar putih agar transparansi PNG tidak jadi hitam
+        $bg = imagecreatetruecolor($w, $h);
+        imagefill($bg, 0, 0, imagecolorallocate($bg, 255, 255, 255));
+        imagealphablending($bg, true);
+        imagecopy($bg, $im, 0, 0, 0, 0, $w, $h);
         imagedestroy($im);
+        $imgW = $w;
+        $imgH = $h;
+        ob_start();
+        imagejpeg($bg, null, 88);
+        $jpegData = ob_get_clean();
+        imagedestroy($bg);
     }
 }
 
@@ -68,8 +76,9 @@ final class RingkasanPdf
             $cw   = $widths[$i];
             $topY = $this->y;
             // isi label dengan abu-abu terang, kolom lain putih
-            $this->cur .= sprintf("%.1f %.1f %.1f %.1f re %s\n", $x, $topY - $rowH, $cw, $rowH, (($styles[$i] ?? '') === 'label') ? '0.93 g f' : '1 g f');
-            $this->cur .= sprintf("%.1f %.1f %.1f %.1f re S\n", $x, $topY - $rowH, $cw, $rowH);
+            // `n` wajib setelah f/S agar path tidak terakumulasi (mencegah fill menutup teks)
+            $this->cur .= sprintf("%.1f %.1f %.1f %.1f re %s n\n", $x, $topY - $rowH, $cw, $rowH, (($styles[$i] ?? '') === 'label') ? '0.93 g f' : '1 g f');
+            $this->cur .= sprintf("%.1f %.1f %.1f %.1f re S n\n", $x, $topY - $rowH, $cw, $rowH);
             $font = (($styles[$i] ?? '') === 'label') ? 'F2' : 'F1';
             $ty   = $topY - $pad - $lineH;
             foreach ($wrapped[$i] as $ln) {
