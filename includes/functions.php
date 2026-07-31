@@ -341,6 +341,7 @@ function pembiayaanLabel(string $jenis): string {
         'wakaf'        => 'Wakaf',
         'laundry'      => 'Laundry',
         'infak'        => 'Infak Wajib',
+        'syahriyah'    => 'Biaya Syahriyah (Bulanan)',
         default        => $jenis,
     };
 }
@@ -382,7 +383,7 @@ function getPembiayaanTarif(PDO $pdo): array {
     $rows = $pdo->query(
         "SELECT * FROM pembiayaan_tarif WHERE is_active = 1 ORDER BY urutan, id"
     )->fetchAll();
-    $tarif = ['pendaftaran' => [], 'administrasi' => [], 'wakaf' => [], 'laundry' => [], 'infak' => []];
+    $tarif = ['pendaftaran' => [], 'administrasi' => [], 'wakaf' => [], 'laundry' => [], 'infak' => [], 'syahriyah' => []];
     foreach ($rows as $r) {
         $tarif[$r['jenis']][] = $r;
     }
@@ -419,7 +420,7 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
     foreach (['pendaftaran', 'infak'] as $jenis) {
         foreach ($tarif[$jenis] as $t) $add($t);
     }
-    foreach (['administrasi', 'wakaf'] as $jenis) {
+    foreach (['administrasi', 'wakaf', 'syahriyah'] as $jenis) {
         foreach ($tarif[$jenis] as $t) $add($t);
     }
     foreach ($tarif['laundry'] as $t) {

@@ -68,6 +68,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $replaceTarif('wakaf', $wakafRows);
 
+    // Syahriyah (biaya bulanan, beberapa pilihan)
+    $syahriyahRows = [];
+    foreach (($_POST['syahriyah_nama'] ?? []) as $i => $nama) {
+        if (trim($nama) === '') continue;
+        $syahriyahRows[] = [
+            'nama' => sanitizeString($nama),
+            'harga_asli' => $_POST['syahriyah_harga_asli'][$i] ?? 0,
+            'harga_diskon' => $_POST['syahriyah_harga_diskon'][$i] ?? '',
+        ];
+    }
+    $replaceTarif('syahriyah', $syahriyahRows);
+
     // Laundry (L/P)
     $replaceTarif('laundry', [
         ['nama' => 'Laundry Santri', 'harga_asli' => $_POST['laundry_harga_l'] ?? 0, 'gratis' => false, 'gender' => 'L'],
@@ -96,6 +108,7 @@ $tarif = getPembiayaanTarif($pdo);
 $pendaftaran = $tarif['pendaftaran'][0] ?? [];
 $administrasi = $tarif['administrasi'];
 $wakaf = $tarif['wakaf'];
+$syahriyah = $tarif['syahriyah'];
 $laundry = ['L' => null, 'P' => null];
 foreach ($tarif['laundry'] as $t) $laundry[$t['gender']] = $t;
 $infak = $tarif['infak'][0] ?? [];
@@ -147,6 +160,19 @@ require __DIR__ . '/includes/header.php';
         <?php endforeach; ?>
     </div>
     <button type="button" class="btn-sm btn-sm-secondary" onclick="addRow('wakaf')">+ Tambah pilihan</button>
+
+    <h3 style="font-size:14px;font-weight:600;margin:22px 0 10px;">Biaya Syahriyah (Bulanan) — beberapa pilihan</h3>
+    <div id="syahriyah-rows">
+        <?php foreach ($syahriyah as $t): ?>
+            <div class="form-row">
+                <div class="form-group"><input class="form-control" name="syahriyah_nama[]" placeholder="Nama pilihan" value="<?= e($t['nama']) ?>" required></div>
+                <div class="form-group"><input class="form-control" type="number" min="0" name="syahriyah_harga_asli[]" placeholder="Harga asli" value="<?= e($t['harga_asli']) ?>" required></div>
+                <div class="form-group"><input class="form-control" type="number" min="0" name="syahriyah_harga_diskon[]" placeholder="Harga diskon (opsional)" value="<?= isset($t['harga_diskon']) ? e($t['harga_diskon']) : '' ?>"></div>
+                <button type="button" class="btn-sm btn-sm-secondary" onclick="this.parentElement.remove()">Hapus</button>
+            </div>
+        <?php endforeach; ?>
+    </div>
+    <button type="button" class="btn-sm btn-sm-secondary" onclick="addRow('syahriyah')">+ Tambah pilihan</button>
 
     <h3 style="font-size:14px;font-weight:600;margin:22px 0 10px;">Laundry (beda laki-laki/perempuan)</h3>
     <div class="form-row">

@@ -26,6 +26,7 @@ $itemRows = $itemRows->fetchAll();
 $pendaftaranItem = null;
 $administrasiItems = [];
 $wakafItems = [];
+$syahriyahItems = [];
 $laundryItem = null;
 $infakItem = null;
 foreach ($itemRows as $it) {
@@ -33,6 +34,7 @@ foreach ($itemRows as $it) {
         case 'pendaftaran': $pendaftaranItem = $it; break;
         case 'administrasi': $administrasiItems[] = $it; break;
         case 'wakaf':        $wakafItems[] = $it; break;
+        case 'syahriyah':    $syahriyahItems[] = $it; break;
         case 'laundry':      $laundryItem = $it; break;
         case 'infak':        $infakItem = $it; break;
     }
@@ -76,17 +78,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'kesanggupan') {
         $pilihAdministrasi = sanitizeInt($_POST['pilih_administrasi'] ?? 0);
         $pilihWakaf        = sanitizeInt($_POST['pilih_wakaf'] ?? 0);
+        $pilihSyahriyah    = sanitizeInt($_POST['pilih_syahriyah'] ?? 0);
         $setuju            = !empty($_POST['kesanggupan_setuju']);
         $signData          = $_POST['tanda_tangan'] ?? '';
 
         $adminIds = array_map(fn($i) => (int) $i['id'], $administrasiItems);
         $wakafIds = array_map(fn($i) => (int) $i['id'], $wakafItems);
+        $syahriyahIds = array_map(fn($i) => (int) $i['id'], $syahriyahItems);
 
         if ($administrasiItems && !in_array($pilihAdministrasi, $adminIds, true)) {
             $errors[] = 'Pilih salah satu model administrasi.';
         }
         if ($wakafItems && !in_array($pilihWakaf, $wakafIds, true)) {
             $errors[] = 'Pilih salah satu pilihan wakaf.';
+        }
+        if ($syahriyahItems && !in_array($pilihSyahriyah, $syahriyahIds, true)) {
+            $errors[] = 'Pilih salah satu pilihan syahriyah.';
         }
         if (!$setuju) {
             $errors[] = 'Centang kesanggupan membayar terlebih dahulu.';
@@ -107,6 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($wakafItems) {
                     $pdo->prepare('UPDATE pembiayaan SET dipilih=0, kesanggupan=0 WHERE pendaftaran_id=? AND jenis="wakaf"')->execute([$id]);
                     $pdo->prepare('UPDATE pembiayaan SET dipilih=1, kesanggupan=1 WHERE id=?')->execute([$pilihWakaf]);
+                }
+                if ($syahriyahItems) {
+                    $pdo->prepare('UPDATE pembiayaan SET dipilih=0, kesanggupan=0 WHERE pendaftaran_id=? AND jenis="syahriyah"')->execute([$id]);
+                    $pdo->prepare('UPDATE pembiayaan SET dipilih=1, kesanggupan=1 WHERE id=?')->execute([$pilihSyahriyah]);
                 }
                 if ($laundryItem) {
                     $pdo->prepare('UPDATE pembiayaan SET kesanggupan=1 WHERE id=?')->execute([$laundryItem['id']]);
@@ -255,6 +266,14 @@ $pageCanonical = BASE_URL . '/portal-santri';
                     <div class="form-group"><label>Wakaf — pilih salah satu</label>
                         <?php foreach ($wakafItems as $i): ?>
                             <label class="cost-option"><input type="radio" name="pilih_wakaf" value="<?= $i['id'] ?>" required><span><strong><?= e($i['nama'] ?: 'Wakaf') ?></strong><small><?= hargaItem($i) ?></small></span></label>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ($syahriyahItems): ?>
+                    <div class="form-group"><label>Biaya Syahriyah (Bulanan) — pilih salah satu</label>
+                        <?php foreach ($syahriyahItems as $i): ?>
+                            <label class="cost-option"><input type="radio" name="pilih_syahriyah" value="<?= $i['id'] ?>" required><span><strong><?= e($i['nama'] ?: 'Syahriyah') ?></strong><small><?= hargaItem($i) ?></small></span></label>
                         <?php endforeach; ?>
                     </div>
                 <?php endif; ?>
