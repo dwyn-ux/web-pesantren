@@ -349,8 +349,8 @@ $pageCanonical = BASE_URL . '/portal-santri';
             </div>
             <?php endforeach; ?>
         </div>
-        <p style="margin-top:20px;">Unduh surat kesanggupan aturan pesantren, tandatangani bersama wali, lalu unggah kembali sebagai berkas "Lainnya".</p>
-        <a class="btn-primary" href="<?= BASE_URL ?>/surat-kesanggupan">Download Surat Kesanggupan</a>
+        <p style="margin-top:20px;">Unduh ringkasan pendaftaran (berisi seluruh data, rincian biaya &amp; tanda tangan kesanggupan) sebagai arsip.</p>
+        <a class="btn-primary" href="<?= BASE_URL ?>/surat-kesanggupan">Download Ringkasan Pendaftaran</a>
     </section>
 <?php endif; ?>
 
