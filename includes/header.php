@@ -41,7 +41,7 @@ $navLinks = [
     'profil'        => ['url' => BASE_URL . '/profil',              'label' => 'Profil'],
     'sekapur-sirih' => ['url' => BASE_URL . '/sekapur-sirih',       'label' => 'Sekapur Sirih'],
     'artikel'       => ['url' => BASE_URL . '/artikel',             'label' => 'Artikel'],
-    'galeri'        => ['url' => BASE_URL . '/#kehidupan',          'label' => 'Galeri'],
+    'galeri'        => ['url' => BASE_URL . '/galeri',              'label' => 'Galeri'],
     'dokumentasi'   => ['url' => BASE_URL . '/dokumentasi',         'label' => 'Dokumentasi'],
     'alumni'        => ['url' => BASE_URL . '/alumni',              'label' => 'Alumni'],
     'psb'           => ['url' => BASE_URL . '/psb',                 'label' => 'PSB'],
