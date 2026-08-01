@@ -177,6 +177,7 @@ $activePage      = 'psb';
 $pageTitle       = 'Pendaftaran Santri Baru ' . $psbTahun . ' | ' . APP_NAME;
 $pageDescription = 'Daftarkan putra-putri Anda ke Pondok Pesantren Ash-Shiddiq. PSB Tahun Ajaran ' . $psbTahun . ' telah dibuka. Isi formulir pendaftaran online sekarang.';
 $pageCanonical   = BASE_URL . '/psb';
+$bodyClass       = 'psb-page';
 
 $labelJenjang = [
     'mts'               => 'SMP (Setara MTs)',
@@ -215,6 +216,19 @@ $tahunOptions = range(date('Y') + 1, 2018);
 
 $extraHead = <<<'CSS'
 <style>
+/* ── BACKGROUND HALAMAN ─────────────────────────────────────── */
+.psb-page {
+  background:
+    radial-gradient(ellipse at 85% -10%, rgba(232,168,32,0.16), transparent 55%),
+    linear-gradient(180deg, #fff8e8 0%, #f7fcf9 50%, #eefaf3 100%);
+  min-height:100vh;
+}
+.psb-page .page-hero {
+  background:
+    radial-gradient(ellipse at 82% 0%, rgba(201,162,39,0.38), transparent 55%),
+    linear-gradient(135deg, #074a2c 0%, #0d7a4a 60%, #17633f 100%);
+}
+
 /* ── WRAPPER ─────────────────────────────────────────────────── */
 .psb-wrapper {
     max-width:1100px; margin:0 auto; padding:80px 5%;
