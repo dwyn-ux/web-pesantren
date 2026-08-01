@@ -293,11 +293,11 @@ CSS;
         <?php
         // GAMBAR: assets/img/fasilitas/{file}.jpg — rasio landscape (~800x480)
         $fasilitas = [
-            ['file'=>'fasilitas/masjid.jpg',        'name'=>'Masjid Ash-Shiddiq',  'desc'=>'Masjid utama kapasitas 500 jamaah, dilengkapi sound system dan AC.',                          'bg'=>'linear-gradient(135deg,#d4f0e0,#b0dcc0)'],
-            ['file'=>'fasilitas/asrama.jpg',        'name'=>'Asrama Santri',        'desc'=>'Asrama putra dan putri terpisah, berkapasitas 600 santri dengan fasilitas lengkap.',           'bg'=>'linear-gradient(135deg,#d4e0f0,#b0c4e0)'],
-            ['file'=>'fasilitas/perpustakaan.jpg',  'name'=>'Perpustakaan',         'desc'=>'Koleksi 5.000+ buku; kitab klasik, ilmu modern, dan referensi Al-Qur\'an.',                    'bg'=>'linear-gradient(135deg,#f0f0d4,#e0e0b0)'],
-            ['file'=>'fasilitas/ruang-kelas.jpg',   'name'=>'Ruang Kelas Modern',   'desc'=>'20 ruang kelas ber-AC dengan proyektor dan papan tulis digital interaktif.',                   'bg'=>'linear-gradient(135deg,#f0d4d4,#e0b0b0)'],
-            ['file'=>'fasilitas/lab-komputer.jpg',  'name'=>'Lab Komputer',         'desc'=>'Laboratorium komputer 40 unit dengan akses internet terbatas dan terkontrol.',                 'bg'=>'linear-gradient(135deg,#d4f0d4,#a0d8a0)'],
+            ['file'=>'fasilitas/masjid.jpg',        'name'=>'Masjid Ash-Shiddiq',  'desc'=>'Masjid utama dengan sound system dan suasana nyaman untuk berjamaah.',                          'bg'=>'linear-gradient(135deg,#d4f0e0,#b0dcc0)'],
+            ['file'=>'fasilitas/asrama.jpg',        'name'=>'Asrama Santri',        'desc'=>'Asrama putra dan putri terpisah dengan fasilitas lengkap.',                                   'bg'=>'linear-gradient(135deg,#d4e0f0,#b0c4e0)'],
+            ['file'=>'fasilitas/perpustakaan.jpg',  'name'=>'Perpustakaan',         'desc'=>'Koleksi buku kitab klasik, ilmu modern, dan referensi Al-Qur\'an.',                            'bg'=>'linear-gradient(135deg,#f0f0d4,#e0e0b0)'],
+            ['file'=>'fasilitas/ruang-kelas.jpg',   'name'=>'Ruang Kelas Modern',   'desc'=>'Ruang kelas nyaman dan kondusif untuk belajar menghafal dan memahami Al-Qur\'an.',               'bg'=>'linear-gradient(135deg,#f0d4d4,#e0b0b0)'],
+            ['file'=>'fasilitas/lab-komputer.jpg',  'name'=>'Lab Komputer',         'desc'=>'Laboratorium komputer dengan akses internet terbatas dan terkontrol.',                         'bg'=>'linear-gradient(135deg,#d4f0d4,#a0d8a0)'],
             ['file'=>'fasilitas/klinik.jpg',        'name'=>'Klinik Kesehatan',     'desc'=>'Layanan kesehatan dasar dengan tenaga medis yang siap setiap hari.',                           'bg'=>'linear-gradient(135deg,#d4ecf0,#a0d0d8)'],
         ];
         foreach ($fasilitas as $i => $fas):
