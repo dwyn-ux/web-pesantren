@@ -4,6 +4,25 @@ requireAdmin();
 $pdo = getDB();
 $errors = [];
 
+// Slot foto statis yang bisa diupload admin (kelompok home & profil)
+$fotoSlots = [
+    ['group'=>'home',   'field'=>'hero',      'dest'=>'hero-bg.jpg',                       'max'=>1920, 'label'=>'Foto Hero (background, lebar ~1920px)'],
+    ['group'=>'home',   'field'=>'mudir',     'dest'=>'mudir.jpg',                         'max'=>600,  'label'=>'Foto Mudir (rasio 3:4, disarankan 600x800px)'],
+    ['group'=>'profil', 'field'=>'gedung',    'dest'=>'profil/gedung-pesantren.jpg',       'max'=>1200, 'label'=>'Gedung Pesantren (rasio 4:3)'],
+    ['group'=>'profil', 'field'=>'masjid',    'dest'=>'profil/masjid-pesantren.jpg',       'max'=>1200, 'label'=>'Masjid Pesantren (rasio 4:3)'],
+    ['group'=>'profil', 'field'=>'asrama',    'dest'=>'profil/asrama-santri.jpg',          'max'=>1200, 'label'=>'Asrama Santri (rasio 4:3)'],
+    ['group'=>'profil', 'field'=>'pengajar_1','dest'=>'pengajar/kh-ahmad-fauzi.jpg',       'max'=>400,  'label'=>'Pengajar 1 — KH. Ahmad Fauzi'],
+    ['group'=>'profil', 'field'=>'pengajar_2','dest'=>'pengajar/ust-abdul-aziz.jpg',       'max'=>400,  'label'=>'Pengajar 2 — Ust. Abdul Aziz'],
+    ['group'=>'profil', 'field'=>'pengajar_3','dest'=>'pengajar/ust-muhammad-hasan.jpg',   'max'=>400,  'label'=>'Pengajar 3 — Ust. Muhammad Hasan'],
+    ['group'=>'profil', 'field'=>'pengajar_4','dest'=>'pengajar/ust-yahya-basri.jpg',      'max'=>400,  'label'=>'Pengajar 4 — Ust. Yahya Basri'],
+    ['group'=>'profil', 'field'=>'fas_masjid','dest'=>'fasilitas/masjid.jpg',              'max'=>800,  'label'=>'Fasilitas — Masjid'],
+    ['group'=>'profil', 'field'=>'fas_asrama','dest'=>'fasilitas/asrama.jpg',              'max'=>800,  'label'=>'Fasilitas — Asrama'],
+    ['group'=>'profil', 'field'=>'fas_perpus','dest'=>'fasilitas/perpustakaan.jpg',        'max'=>800,  'label'=>'Fasilitas — Perpustakaan'],
+    ['group'=>'profil', 'field'=>'fas_kelas','dest'=>'fasilitas/ruang-kelas.jpg',          'max'=>800,  'label'=>'Fasilitas — Ruang Kelas'],
+    ['group'=>'profil', 'field'=>'fas_lab',   'dest'=>'fasilitas/lab-komputer.jpg',        'max'=>800,  'label'=>'Fasilitas — Lab Komputer'],
+    ['group'=>'profil', 'field'=>'fas_klinik','dest'=>'fasilitas/klinik.jpg',              'max'=>800,  'label'=>'Fasilitas — Klinik Kesehatan'],
+];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrf();
     $action = sanitizeString($_POST['action'] ?? 'upload');
@@ -21,8 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/admin/foto');
     }
 
-    // ── Foto halaman depan (hero, mudir, testimoni) ───────────
-    if ($action === 'home') {
+    // ── Foto halaman depan & profil (hero, mudir, gedung, pengajar, fasilitas) ──
+    if ($action === 'home' || $action === 'profil') {
         $savedHome = [];
 
         $saveHome = function (string $field, string $destRel, int $maxWidth) use (&$savedHome): void {
@@ -36,13 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         };
 
-        $saveHome('hero', 'hero-bg.jpg', 1920);
-        $saveHome('mudir', 'mudir.jpg', 600);
+        foreach ($fotoSlots as $slot) {
+            if ($slot['group'] === 'home' && $action === 'home') $saveHome($slot['field'], $slot['dest'], $slot['max']);
+            if ($slot['group'] === 'profil' && $action === 'profil') $saveHome($slot['field'], $slot['dest'], $slot['max']);
+        }
 
         if ($savedHome) {
             setFlash('error', implode(' | ', $savedHome));
         } else {
-            setFlash('success', 'Foto halaman depan berhasil diperbarui.');
+            setFlash('success', 'Foto berhasil diperbarui.');
         }
         redirect('/admin/foto');
     }
@@ -75,25 +96,39 @@ require __DIR__ . '/includes/header.php';
 
 <div class="admin-form-card">
   <h2 class="admin-form-title">Foto Halaman Depan</h2>
-  <p style="font-size:13px;color:var(--text-mid);margin-bottom:14px;">Hero (background besar) dan foto Mudir. Klik <strong>Simpan</strong> untuk mengganti. File lama otomatis ditimpa.</p>
+  <p style="font-size:13px;color:var(--text-mid);margin-bottom:14px;">Klik <strong>Simpan</strong> untuk mengganti. File lama otomatis ditimpa.</p>
   <form method="post" enctype="multipart/form-data" class="admin-form" id="homePhotoForm">
     <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
     <input type="hidden" name="action" value="home">
-    <div class="form-row">
-      <div class="form-group">
-        <label>Foto Hero (background, lebar ~1920px)</label>
-        <?php if (imgExists('hero-bg.jpg')): ?><div class="home-photo-preview"><img src="<?=e(BASE_URL.'/assets/img/hero-bg.jpg')?>" alt="Hero"></div><?php endif; ?>
-        <input class="form-control" type="file" name="hero" accept=".jpg,.jpeg,.png,.webp">
-      </div>
-      <div class="form-group">
-        <label>Foto Mudir (rasio 3:4, disarankan 600x800px)</label>
-        <?php if (imgExists('mudir.png') || imgExists('mudir.jpg')): ?><div class="home-photo-preview"><img src="<?=e(BASE_URL.'/assets/img/'.(imgExists('mudir.png')?'mudir.png':'mudir.jpg'))?>" alt="Mudir"></div><?php endif; ?>
-        <input class="form-control" type="file" name="mudir" accept=".jpg,.jpeg,.png,.webp">
-      </div>
+    <?php foreach (array_filter($fotoSlots, fn($s) => $s['group'] === 'home') as $slot): ?>
+    <div class="form-group">
+      <label><?=e($slot['label'])?></label>
+      <?php if (imgExists($slot['dest'])): ?><div class="home-photo-preview"><img src="<?=e(BASE_URL.'/assets/img/'.$slot['dest'])?>" alt="<?=e($slot['label'])?>"></div><?php endif; ?>
+      <input class="form-control" type="file" name="<?=e($slot['field'])?>" accept=".jpg,.jpeg,.png,.webp">
     </div>
+    <?php endforeach; ?>
     <div class="form-actions"><button class="btn-sm btn-sm-primary">Simpan Foto</button></div>
   </form>
   <p style="font-size:12px;color:var(--text-light);margin-top:14px;">Foto testimoni halaman depan diambil otomatis dari data alumni (foto yang diunggah lewat pendataan alumni).</p>
+</div>
+
+<div class="admin-form-card">
+  <h2 class="admin-form-title">Foto Halaman Profil</h2>
+  <p style="font-size:13px;color:var(--text-mid);margin-bottom:14px;">Gedung, masjid, asrama, tim pengajar, dan fasilitas. Klik <strong>Simpan</strong> untuk mengganti.</p>
+  <form method="post" enctype="multipart/form-data" class="admin-form" id="profilPhotoForm">
+    <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
+    <input type="hidden" name="action" value="profil">
+    <div class="form-row">
+      <?php foreach (array_filter($fotoSlots, fn($s) => $s['group'] === 'profil') as $i => $slot): ?>
+      <div class="form-group">
+        <label><?=e($slot['label'])?></label>
+        <?php if (imgExists($slot['dest'])): ?><div class="home-photo-preview"><img src="<?=e(BASE_URL.'/assets/img/'.$slot['dest'])?>" alt="<?=e($slot['label'])?>"></div><?php endif; ?>
+        <input class="form-control" type="file" name="<?=e($slot['field'])?>" accept=".jpg,.jpeg,.png,.webp">
+      </div>
+      <?php endforeach; ?>
+    </div>
+    <div class="form-actions"><button class="btn-sm btn-sm-primary">Simpan Foto</button></div>
+  </form>
 </div>
 
 <div class="admin-form-card">
