@@ -14,11 +14,19 @@ $extraHead = <<<'CSS'
 <style>
 .login-santri-page {
   background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='92' viewBox='0 0 80 92'%3E%3Cpolygon points='40,5 75,22 75,70 40,87 5,70 5,22' fill='none' stroke='%23c9a227' stroke-width='1' stroke-opacity='0.35'/%3E%3C/svg%3E"),
     radial-gradient(ellipse at 18% -10%, rgba(201,162,39,0.12), transparent 55%),
     linear-gradient(160deg, #0b3a28 0%, #0a2b3e 55%, #0a1f2e 100%);
   min-height:100vh;
 }
-.login-santri-page .page-section { padding-top: calc(var(--nav-height) + 48px); padding-bottom: 64px; }
+.login-santri-page::before, .login-santri-page::after {
+  content:''; position:fixed; z-index:0; pointer-events:none;
+  width:320px; height:420px; border:2px solid rgba(201,162,39,0.35);
+  border-radius:50% 50% 0 0;
+}
+.login-santri-page::before { left:4%; bottom:-180px; }
+.login-santri-page::after  { right:4%; top:-180px; transform:rotate(180deg); box-shadow:inset 0 0 60px rgba(201,162,39,0.08); }
+.login-santri-page .page-section { padding-top: calc(var(--nav-height) + 48px); padding-bottom: 64px; position:relative; z-index:1; }
 .login-santri-page .public-form.portal-login { border-radius:8px; box-shadow:0 24px 70px rgba(0,0,0,0.35); border-top:4px solid var(--gold); }
 .login-santri-page .section-title { color: var(--green-deep); }
 .login-register-prompt { margin-top:20px; font-size:13px; color:var(--text-light); }

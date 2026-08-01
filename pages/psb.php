@@ -219,10 +219,18 @@ $extraHead = <<<'CSS'
 /* ── BACKGROUND HALAMAN ─────────────────────────────────────── */
 .psb-page {
   background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='92' viewBox='0 0 80 92'%3E%3Cpolygon points='40,5 75,22 75,70 40,87 5,70 5,22' fill='none' stroke='%230d7a4a' stroke-width='1' stroke-opacity='0.14'/%3E%3C/svg%3E"),
     radial-gradient(ellipse at 85% -10%, rgba(232,168,32,0.16), transparent 55%),
     linear-gradient(180deg, #fff8e8 0%, #f7fcf9 50%, #eefaf3 100%);
   min-height:100vh;
 }
+.psb-page::before, .psb-page::after {
+  content:''; position:fixed; z-index:0; pointer-events:none;
+  width:360px; height:460px; border:2px solid rgba(13,122,74,0.18);
+}
+.psb-page::before { left:-160px; top:32%; border-radius:50% 0 0 0; }
+.psb-page::after  { right:-160px; bottom:-60px; border-radius:50% 50% 0 0; transform:rotate(180deg); }
+.psb-page .page-hero, .psb-page .psb-wrapper, .psb-page .psb-login-bar { position:relative; z-index:1; }
 .psb-page .page-hero {
   background:
     radial-gradient(ellipse at 82% 0%, rgba(201,162,39,0.38), transparent 55%),
@@ -408,7 +416,7 @@ CSS;
 </div>
 
 <!-- ══ KONTEN ═══════════════════════════════════════════════════ -->
-<div style="text-align:center;padding:24px 20px 0"><span>Sudah menerima nomor induk pesantren?</span> <a class="btn-primary" href="<?=BASE_URL?>/login-santri" style="display:inline-block;margin-left:10px">Login Portal Santri</a></div>
+<div class="psb-login-bar" style="text-align:center;padding:24px 20px 0"><span>Sudah menerima nomor induk pesantren?</span> <a class="btn-primary" href="<?=BASE_URL?>/login-santri" style="display:inline-block;margin-left:10px">Login Portal Santri</a></div>
 <div class="psb-wrapper">
 
     <!-- ── INFO SISI KIRI ──────────────────────────────────────── -->
