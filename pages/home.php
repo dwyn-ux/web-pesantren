@@ -25,6 +25,7 @@ $galeriDb = [];
 $mapSettings = ['map_latitude'=>'-7.325','map_longitude'=>'108.350','map_zoom'=>'15','kontak_alamat'=>'Ciamis, Jawa Barat'];
 try {
     $landingAlumni = $pdo->query("SELECT * FROM alumni WHERE status='verified' AND tampil_landing=1 ORDER BY updated_at DESC LIMIT 6")->fetchAll();
+    $testimoniDb = $pdo->query("SELECT nama,tahun_kelulusan,aktivitas,tempat_kuliah,jurusan,tempat_bekerja,jabatan,pesan_kesan,foto,orientasi FROM alumni WHERE status='verified' AND tampil_landing=1 AND foto<>'' ORDER BY updated_at DESC LIMIT 3")->fetchAll();
     $galeriDb = $pdo->query("SELECT nama_file,judul FROM foto_galeri WHERE is_aktif=1 ORDER BY urutan ASC, created_at DESC")->fetchAll();
     $mapStmt=$pdo->query("SELECT key_name,value FROM pengaturan WHERE key_name IN ('map_latitude','map_longitude','map_zoom','kontak_alamat')");
     foreach($mapStmt->fetchAll() as $row)$mapSettings[$row['key_name']]=$row['value'];
@@ -279,6 +280,7 @@ try {
     </div>
 </section>
 
+<?php if ($testimoniDb): ?>
 <!-- TESTIMONI -->
 <section id="testimoni" aria-labelledby="testimoni-heading">
     <div class="testi-header reveal">
@@ -288,31 +290,29 @@ try {
         <h2 class="section-title" id="testimoni-heading">Kata Mereka</h2>
     </div>
     <div class="testi-grid">
-        <?php
-        // GAMBAR: assets/img/testimoni/{file}.jpg — rasio 1:1 (kotak), ~200x200px
-        $testimoni = [
-            ['file'=>'testimoni/faisal-rahman.jpg', 'text'=>'Alhamdulillah, anak kami berhasil khatam 30 juz dalam 2 tahun. Bukan hanya hafal, akhlaknya pun terbentuk sangat baik sejak di pesantren ini.', 'name'=>'Bpk. Faisal Rahman', 'role'=>'Wali Santri – Bandung', 'initial'=>'F', 'bg'=>'var(--green-light)'],
-            ['file'=>'testimoni/zaki-alhasan.jpg',  'text'=>'Di sinilah saya menemukan rumah kedua. Para ustadz sangat sabar dan metode menghafal yang diajarkan sangat efektif dan menyenangkan.',            'name'=>'Zaki Al-Hasan',     'role'=>'Alumni Angkatan 2021', 'initial'=>'Z', 'bg'=>'var(--gold)'],
-            ['file'=>'testimoni/ibu-nurhayati.jpg', 'text'=>'Lingkungan yang bersih, pengurus yang amanah, dan program yang jelas. Kami tidak ragu untuk menitipkan anak kami di Ash-Shiddiq.',              'name'=>'Ibu Nurhayati',     'role'=>'Wali Santri – Jakarta', 'initial'=>'N', 'bg'=>'#40916c'],
-        ];
-        foreach ($testimoni as $i => $t):
+        <?php foreach ($testimoniDb as $i => $t):
+            $orientasi = ($t['orientasi'] ?? 'landscape') === 'portrait' ? 'portrait' : 'landscape';
+            $aktivitas = $t['aktivitas'] === 'kuliah'
+                ? 'Alumni · ' . e((string)$t['tahun_kelulusan']) . ' · ' . e($t['jurusan'])
+                : 'Alumni · ' . e((string)$t['tahun_kelulusan']) . ' · ' . e($t['jabatan']);
         ?>
         <div class="testi-card reveal reveal-delay-<?= $i+1 ?>">
             <span class="testi-quote" aria-hidden="true">"</span>
-            <p class="testi-text"><?= e($t['text']) ?></p>
+            <p class="testi-text"><?= e($t['pesan_kesan']) ?></p>
             <div class="testi-author">
-                <div class="testi-avatar" style="background:<?= $t['bg'] ?>;<?= $t['bg']==='var(--gold)'?'color:var(--green-deep)':'' ?>">
-                    <?= imgOrPlaceholder($t['file'], $t['name'], e($t['initial'])) ?>
+                <div class="testi-avatar <?= $orientasi ?>">
+                    <img src="<?= e(BASE_URL . '/uploads/alumni/' . $t['foto']) ?>" alt="Foto <?= e($t['nama']) ?>">
                 </div>
                 <div>
-                    <p class="testi-name"><?= e($t['name']) ?></p>
-                    <p class="testi-role"><?= e($t['role']) ?></p>
+                    <p class="testi-name"><?= e($t['nama']) ?></p>
+                    <p class="testi-role"><?= $aktivitas ?></p>
                 </div>
             </div>
         </div>
         <?php endforeach; ?>
     </div>
 </section>
+<?php endif; ?>
 
 <?php if($landingAlumni): ?>
 <section id="alumni-landing" class="alumni-landing" aria-labelledby="alumni-heading"><div class="container"><div class="section-tag" style="justify-content:center"><span></span><span class="section-tag-text">Jejak Alumni</span><span></span></div><h2 class="section-title" id="alumni-heading">Dari Ash-Shiddiq, Melangkah Lebih Jauh</h2><div class="landing-alumni-grid"><?php foreach($landingAlumni as $a):?><article class="landing-alumni-card reveal"><img src="<?=e(BASE_URL.'/uploads/alumni/'.$a['foto'])?>" alt="<?=e($a['nama'])?>" loading="lazy"><div><p class="alumni-quote">“<?=e($a['pesan_kesan'])?>”</p><h3><?=e($a['nama'])?></h3><small>Alumni <?=e((string)$a['tahun_kelulusan'])?> · <?=e($a['aktivitas']==='kuliah'?$a['tempat_kuliah'].' / '.$a['jurusan']:$a['tempat_bekerja'].' / '.$a['jabatan'])?></small></div></article><?php endforeach;?></div><div style="text-align:center;margin-top:30px"><a class="btn-outline" href="<?=BASE_URL?>/alumni">Lihat Semua Profil Alumni</a></div></div></section>

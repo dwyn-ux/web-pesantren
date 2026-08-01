@@ -211,8 +211,10 @@
 .testi-quote { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 60px; color: var(--gold); opacity: 0.3; line-height: 0.7; display: block; margin-bottom: 16px; }
 .testi-text { font-size: 14px; line-height: 1.8; color: var(--text-mid); margin-bottom: 24px; font-style: italic; }
 .testi-author { display: flex; align-items: center; gap: 12px; }
-.testi-avatar { width: 44px; height: 44px; background: var(--green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; color: var(--white); flex-shrink: 0; overflow:hidden; }
-.testi-avatar > img { width:100%; height:100%; object-fit:cover; display:block; border-radius:50%; }
+.testi-avatar { background: var(--green-light); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; color: var(--white); flex-shrink: 0; overflow:hidden; }
+.testi-avatar > img { display:block; width:100%; height:100%; object-fit:cover; }
+.testi-avatar.portrait  { width: 52px; height: 68px; }
+.testi-avatar.landscape { width: 72px; height: 52px; }
 .testi-name { font-weight: 600; font-size: 14px; }
 .testi-role { font-size: 12px; color: var(--text-light); }
 

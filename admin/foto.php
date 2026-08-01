@@ -38,9 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $saveHome('hero', 'hero-bg.jpg', 1920);
         $saveHome('mudir', 'mudir.jpg', 600);
-        $saveHome('testimoni_1', 'testimoni/faisal-rahman.jpg', 300);
-        $saveHome('testimoni_2', 'testimoni/zaki-alhasan.jpg', 300);
-        $saveHome('testimoni_3', 'testimoni/ibu-nurhayati.jpg', 300);
 
         if ($savedHome) {
             setFlash('error', implode(' | ', $savedHome));
@@ -78,7 +75,7 @@ require __DIR__ . '/includes/header.php';
 
 <div class="admin-form-card">
   <h2 class="admin-form-title">Foto Halaman Depan</h2>
-  <p style="font-size:13px;color:var(--text-mid);margin-bottom:14px;">Hero (background besar), foto Mudir, dan 3 foto testimoni. Klik <strong>Simpan</strong> untuk mengganti. File lama otomatis ditimpa.</p>
+  <p style="font-size:13px;color:var(--text-mid);margin-bottom:14px;">Hero (background besar) dan foto Mudir. Klik <strong>Simpan</strong> untuk mengganti. File lama otomatis ditimpa.</p>
   <form method="post" enctype="multipart/form-data" class="admin-form" id="homePhotoForm">
     <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
     <input type="hidden" name="action" value="home">
@@ -94,25 +91,9 @@ require __DIR__ . '/includes/header.php';
         <input class="form-control" type="file" name="mudir" accept=".jpg,.jpeg,.png,.webp">
       </div>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Testimoni 1 — Bpk. Faisal Rahman</label>
-        <?php if (imgExists('testimoni/faisal-rahman.jpg')): ?><div class="home-photo-preview"><img src="<?=e(BASE_URL.'/assets/img/testimoni/faisal-rahman.jpg')?>" alt="Testimoni 1"></div><?php endif; ?>
-        <input class="form-control" type="file" name="testimoni_1" accept=".jpg,.jpeg,.png,.webp">
-      </div>
-      <div class="form-group">
-        <label>Testimoni 2 — Zaki Al-Hasan</label>
-        <?php if (imgExists('testimoni/zaki-alhasan.jpg')): ?><div class="home-photo-preview"><img src="<?=e(BASE_URL.'/assets/img/testimoni/zaki-alhasan.jpg')?>" alt="Testimoni 2"></div><?php endif; ?>
-        <input class="form-control" type="file" name="testimoni_2" accept=".jpg,.jpeg,.png,.webp">
-      </div>
-      <div class="form-group">
-        <label>Testimoni 3 — Ibu Nurhayati</label>
-        <?php if (imgExists('testimoni/ibu-nurhayati.jpg')): ?><div class="home-photo-preview"><img src="<?=e(BASE_URL.'/assets/img/testimoni/ibu-nurhayati.jpg')?>" alt="Testimoni 3"></div><?php endif; ?>
-        <input class="form-control" type="file" name="testimoni_3" accept=".jpg,.jpeg,.png,.webp">
-      </div>
-    </div>
     <div class="form-actions"><button class="btn-sm btn-sm-primary">Simpan Foto</button></div>
   </form>
+  <p style="font-size:12px;color:var(--text-light);margin-top:14px;">Foto testimoni halaman depan diambil otomatis dari data alumni (foto yang diunggah lewat pendataan alumni).</p>
 </div>
 
 <div class="admin-form-card">
