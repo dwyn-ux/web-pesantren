@@ -61,6 +61,7 @@ $pageMap = [
     'artikel-detail'  => ROOT_PATH . '/pages/artikel-detail.php',
     'psb'             => ROOT_PATH . '/pages/psb.php',
     'dokumentasi'     => ROOT_PATH . '/pages/dokumentasi.php',
+    'galeri'          => ROOT_PATH . '/pages/galeri.php',
     'dokumen-lihat'   => ROOT_PATH . '/pages/dokumen-lihat.php',
     'alumni'          => ROOT_PATH . '/pages/alumni.php',
     'pendataan-alumni' => ROOT_PATH . '/pages/pendataan-alumni.php',
