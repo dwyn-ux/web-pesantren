@@ -229,9 +229,9 @@ CSS;
         <div class="org-level" style="width:100%;justify-content:center;gap:60px;">
             <?php
             $level2 = [
-                ['init'=>'ع','file'=>'pengajar/ust-abdul-aziz.jpg',     'name'=>'Ust. Abdul Aziz, S.Pd.I','pos'=>'Kepala SMP'],
-                ['init'=>'م','file'=>'pengajar/ust-muhammad-hasan.jpg', 'name'=>'Ust. Muhammad Hasan',     'pos'=>'Koordinator Tahfidz'],
-                ['init'=>'ي','file'=>'pengajar/ust-yahya-basri.jpg',    'name'=>'Ust. Yahya Basri, M.Ag',  'pos'=>'Kepala SMA'],
+                ['init'=>'ا','file'=>'pengajar/usth-ina-rusiana.jpg',    'name'=>'Usth. Ina Rusiana, S. Pd.',    'pos'=>'Kepala SMP'],
+                ['init'=>'ن','file'=>'pengajar/ust-nurwidi-sasongko.jpg','name'=>'USt. Nurwidi Sasongko, S. Pd.','pos'=>'Koordinator Tahfidz'],
+                ['init'=>'و','file'=>'pengajar/ust-nur-wahyudi.jpg',     'name'=>'USt. Nur Wahyudi, S. Pd.',     'pos'=>'Kepala SMA'],
             ];
             foreach ($level2 as $l):
             ?>
@@ -265,10 +265,10 @@ CSS;
             <?php
             // GAMBAR: assets/img/pengajar/{file}.jpg — rasio 1:1 (kotak), ~400x400px
             $pengajar = [
-                ['init'=>'ف','file'=>'pengajar/kh-ahmad-fauzi.jpg',  'name'=>'KH. Suroto Abu Nizam, M. Pd.',  'title'=>'Mudir & Pengasuh',     'desc'=>'Alumni Al-Azhar Mesir, hafidz 30 juz bersanad',        'bg'=>'linear-gradient(135deg,#c8ead8,#90cca8)'],
-                ['init'=>'ع','file'=>'pengajar/ust-abdul-aziz.jpg', 'name'=>'Ust. Abdul Aziz, S.Pd.I','title'=>'Kepala SMP',          'desc'=>'Lulusan PTIQ Jakarta, spesialis Qira\'at Sab\'ah',     'bg'=>'linear-gradient(135deg,#d4e8d0,#a8d0a8)'],
-                ['init'=>'م','file'=>'pengajar/ust-muhammad-hasan.jpg','name'=>'Ust. Muhammad Hasan', 'title'=>'Koordinator Tahfidz', 'desc'=>'Hafidz 30 juz, pengalaman mengajar 12 tahun',          'bg'=>'linear-gradient(135deg,#e4d8f0,#c4b0d8)'],
-                ['init'=>'ي','file'=>'pengajar/ust-yahya-basri.jpg', 'name'=>'Ust. Yahya Basri, M.Ag','title'=>'Kepala SMA & Fiqih',  'desc'=>'Lulusan UIN Bandung, spesialis Fiqih Mu\'amalah',      'bg'=>'linear-gradient(135deg,#f0e4d0,#d4c0a0)'],
+                ['init'=>'ف','file'=>'pengajar/kh-ahmad-fauzi.jpg',        'name'=>'KH. Suroto Abu Nizam, M. Pd.',    'title'=>'Mudir & Pengasuh',  'desc'=>'', 'bg'=>'linear-gradient(135deg,#c8ead8,#90cca8)'],
+                ['init'=>'ا','file'=>'pengajar/usth-ina-rusiana.jpg',      'name'=>'Usth. Ina Rusiana, S. Pd.',       'title'=>'Kepala SMP',        'desc'=>'', 'bg'=>'linear-gradient(135deg,#d4e8d0,#a8d0a8)'],
+                ['init'=>'ن','file'=>'pengajar/ust-nurwidi-sasongko.jpg',  'name'=>'USt. Nurwidi Sasongko, S. Pd.',   'title'=>'Koordinator Tahfidz','desc'=>'', 'bg'=>'linear-gradient(135deg,#e4d8f0,#c4b0d8)'],
+                ['init'=>'و','file'=>'pengajar/ust-nur-wahyudi.jpg',       'name'=>'USt. Nur Wahyudi, S. Pd.',        'title'=>'Kepala SMA & Fiqih', 'desc'=>'', 'bg'=>'linear-gradient(135deg,#f0e4d0,#d4c0a0)'],
             ];
             foreach ($pengajar as $i => $p):
             ?>
@@ -278,7 +278,7 @@ CSS;
                 </div>
                 <div class="pengajar-name"><?= e($p['name']) ?></div>
                 <div class="pengajar-title"><?= e($p['title']) ?></div>
-                <div class="pengajar-desc"><?= e($p['desc']) ?></div>
+                <?php if ($p['desc'] !== ''): ?><div class="pengajar-desc"><?= e($p['desc']) ?></div><?php endif; ?>
             </div>
             <?php endforeach; ?>
         </div>

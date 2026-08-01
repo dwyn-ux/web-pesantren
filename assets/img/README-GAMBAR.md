@@ -58,10 +58,10 @@ Rasio **1:1** kotak/bulat (400 × 400 px).
 
 | File                                         | Nama                        |
 |----------------------------------------------|-----------------------------|
-| `assets/img/pengajar/kh-ahmad-fauzi.jpg`     | KH. Suroto Abu Nizam, M. Pd.        |
-| `assets/img/pengajar/ust-abdul-aziz.jpg`     | Ust. Abdul Aziz, S.Pd.I     |
-| `assets/img/pengajar/ust-muhammad-hasan.jpg` | Ust. Muhammad Hasan         |
-| `assets/img/pengajar/ust-yahya-basri.jpg`    | Ust. Yahya Basri, M.Ag      |
+| `assets/img/pengajar/kh-ahmad-fauzi.jpg`        | KH. Suroto Abu Nizam, M. Pd.         |
+| `assets/img/pengajar/usth-ina-rusiana.jpg`      | Usth. Ina Rusiana, S. Pd.            |
+| `assets/img/pengajar/ust-nurwidi-sasongko.jpg`  | USt. Nurwidi Sasongko, S. Pd.        |
+| `assets/img/pengajar/ust-nur-wahyudi.jpg`       | USt. Nur Wahyudi, S. Pd.             |
 
 > Catatan: file pengajar juga dipakai di bagan struktur organisasi
 > (kh-ahmad-fauzi.jpg sebagai mudir, tiga lainnya sebagai level 2).
