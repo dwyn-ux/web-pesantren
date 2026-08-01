@@ -171,27 +171,42 @@ function saveUpload(array $file, string $destDir): string|false {
 }
 
 /**
- * Resize gambar sebelum disimpan (optimasi performa shared hosting)
+ * Resize gambar sebelum disimpan (optimasi performa shared hosting).
+ * Jika GD tidak punya handler untuk format tsb (mis. server tanpa JPEG),
+ * fallback menyalin file asli agar upload tetap berhasil.
  */
 function resizeImage(string $source, string $dest, int $maxWidth = 1200, int $quality = 85): bool {
-    [$width, $height, $type] = getimagesize($source);
+    $info = @getimagesize($source);
+    if ($info === false) return false;
+    [$width, $height, $type] = $info;
 
     if ($width <= $maxWidth) {
-        // File upload sudah berada di tujuan; jangan menyalin file ke dirinya sendiri.
         return $source === $dest ? true : copy($source, $dest);
+    }
+
+    $loader = match ($type) {
+        IMAGETYPE_JPEG => 'imagecreatefromjpeg',
+        IMAGETYPE_PNG  => 'imagecreatefrompng',
+        IMAGETYPE_WEBP => 'imagecreatefromwebp',
+        default        => null,
+    };
+    $saver = match ($type) {
+        IMAGETYPE_JPEG => 'imagejpeg',
+        IMAGETYPE_PNG  => 'imagepng',
+        IMAGETYPE_WEBP => 'imagewebp',
+        default        => null,
+    };
+
+    // GD tidak punya fungsi untuk format ini → simpan asli tanpa resize
+    if ($loader === null || $saver === null || !function_exists($loader) || !function_exists($saver)) {
+        return copy($source, $dest);
     }
 
     $ratio  = $maxWidth / $width;
     $newH   = (int) ($height * $ratio);
     $canvas = imagecreatetruecolor($maxWidth, $newH);
 
-    $src = match ($type) {
-        IMAGETYPE_JPEG => imagecreatefromjpeg($source),
-        IMAGETYPE_PNG  => imagecreatefrompng($source),
-        IMAGETYPE_WEBP => imagecreatefromwebp($source),
-        default        => false,
-    };
-
+    $src = $loader($source);
     if (!$src) return false;
 
     // Pertahankan transparansi PNG
@@ -202,12 +217,12 @@ function resizeImage(string $source, string $dest, int $maxWidth = 1200, int $qu
 
     imagecopyresampled($canvas, $src, 0, 0, 0, 0, $maxWidth, $newH, $width, $height);
 
-    return match ($type) {
-        IMAGETYPE_JPEG => imagejpeg($canvas, $dest, $quality),
-        IMAGETYPE_PNG  => imagepng($canvas, $dest, 6),
-        IMAGETYPE_WEBP => imagewebp($canvas, $dest, $quality),
-        default        => false,
-    };
+    $ok = $type === IMAGETYPE_PNG
+        ? $saver($canvas, $dest, 6)
+        : $saver($canvas, $dest, $quality);
+    imagedestroy($canvas);
+    imagedestroy($src);
+    return $ok;
 }
 
 // ── Formatting ───────────────────────────────────────────────

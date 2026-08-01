@@ -60,6 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($slot['group'] === 'profil' && $action === 'profil') $saveHome($slot['field'], $slot['dest'], $slot['max']);
         }
 
+        // Home page cek mudir.png dulu → hapus versi lama biar upload mudir.jpg tampil
+        $oldMudirPng = ROOT_PATH . '/assets/img/mudir.png';
+        if ($action === 'home' && is_file($oldMudirPng)) {
+            unlink($oldMudirPng);
+        }
+
         if ($savedHome) {
             setFlash('error', implode(' | ', $savedHome));
         } else {
