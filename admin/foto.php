@@ -109,7 +109,7 @@ require __DIR__ . '/includes/header.php';
     <?php foreach (array_filter($fotoSlots, fn($s) => $s['group'] === 'home') as $slot): ?>
     <div class="form-group">
       <label><?=e($slot['label'])?></label>
-      <?php if (imgExists($slot['dest'])): ?><div class="home-photo-preview"><img src="<?=e(BASE_URL.'/assets/img/'.$slot['dest'])?>" alt="<?=e($slot['label'])?>"></div><?php endif; ?>
+      <?php if (imgExists($slot['dest'])): ?><div class="home-photo-preview"><img src="<?=e(imgUrl($slot['dest']))?>" alt="<?=e($slot['label'])?>"></div><?php endif; ?>
       <input class="form-control" type="file" name="<?=e($slot['field'])?>" accept=".jpg,.jpeg,.png,.webp">
     </div>
     <?php endforeach; ?>
@@ -128,7 +128,7 @@ require __DIR__ . '/includes/header.php';
       <?php foreach (array_filter($fotoSlots, fn($s) => $s['group'] === 'profil') as $i => $slot): ?>
       <div class="form-group">
         <label><?=e($slot['label'])?></label>
-        <?php if (imgExists($slot['dest'])): ?><div class="home-photo-preview"><img src="<?=e(BASE_URL.'/assets/img/'.$slot['dest'])?>" alt="<?=e($slot['label'])?>"></div><?php endif; ?>
+        <?php if (imgExists($slot['dest'])): ?><div class="home-photo-preview"><img src="<?=e(imgUrl($slot['dest']))?>" alt="<?=e($slot['label'])?>"></div><?php endif; ?>
         <input class="form-control" type="file" name="<?=e($slot['field'])?>" accept=".jpg,.jpeg,.png,.webp">
       </div>
       <?php endforeach; ?>

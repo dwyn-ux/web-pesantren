@@ -9,3 +9,10 @@ Thumbs.db
 Prototype/
 .vscode/
 foto.txt
+
+# Gambar slot dikelola admin saat runtime — jangan di-commit
+assets/img/**/*.jpg
+assets/img/**/*.jpeg
+assets/img/**/*.png
+assets/img/**/*.webp
+assets/img/**/*.svg

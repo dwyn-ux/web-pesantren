@@ -64,10 +64,22 @@ function imgOrPlaceholder(string $relativePath, string $alt, string $placeholder
     if (is_file($fullPath)) {
         $lazyAttr = $lazy ? ' loading="lazy"' : '';
         $cls      = $imgClass !== '' ? ' class="' . e($imgClass) . '"' : '';
-        return '<img src="' . e(BASE_URL . '/assets/img/' . $rel) . '"'
+        return '<img src="' . e(imgUrl($rel)) . '"'
              . ' alt="' . e($alt) . '"' . $cls . $lazyAttr . '>';
     }
     return $placeholderHtml;
+}
+
+/**
+ * URL gambar di /assets/img/ dengan versi cache-busting (?v=waktu modifikasi).
+ * Saat admin mengunggah ulang (menimpa file), browser langsung memuat versi baru
+ * karena URL-nya berubah — tidak lagi menampilkan cache gambar lama.
+ */
+function imgUrl(string $relativePath): string {
+    $rel      = ltrim($relativePath, '/');
+    $fullPath = ROOT_PATH . '/assets/img/' . $rel;
+    $ver      = is_file($fullPath) ? (int) @filemtime($fullPath) : 0;
+    return BASE_URL . '/assets/img/' . $rel . ($ver ? '?v=' . $ver : '');
 }
 
 /**

@@ -15,12 +15,13 @@ CREATE TABLE IF NOT EXISTS `testimoni` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3 dummy testimoni (hanya jika tabel masih kosong)
+-- 3 dummy testimoni (hanya jika tabel masih kosong; satu statement atomik,
+-- aman dijalankan ulang dan tidak menghidupkan kembali dummy yang sudah dihapus admin)
 INSERT INTO `testimoni` (`nama`, `role`, `isi`, `urutan`, `is_aktif`)
 SELECT * FROM (
-  SELECT 'Ibu Siti Nurjanah', 'Wali Santri — Angkatan 2023',
-         'Alhamdulillah, sejak anak saya mondok di Ash-Shiddiq hafalannya bertambah pesat dan akhlaknya jauh lebih baik. Pembinaannya sangat intensif dan penuh kasih sayang.',
-         1, 1
+  SELECT 'Ibu Siti Nurjanah' AS `nama`, 'Wali Santri — Angkatan 2023' AS `role`,
+         'Alhamdulillah, sejak anak saya mondok di Ash-Shiddiq hafalannya bertambah pesat dan akhlaknya jauh lebih baik. Pembinaannya sangat intensif dan penuh kasih sayang.' AS `isi`,
+         1 AS `urutan`, 1 AS `is_aktif`
   UNION ALL SELECT 'Ahmad Fauzan', 'Alumni — Angkatan 2024',
          'Dulu saya kesulitan menghafal Al-Qur\'an, kini alhamdulillah hafal 12 juz berkat metode dan pendampingan ustadz di Ash-Shiddiq. Terima kasih, Pondok Ash-Shiddiq.',
          2, 1

@@ -85,7 +85,7 @@ try {
 
 <!-- HERO -->
 <section id="hero" aria-label="Halaman utama">
-    <div class="hero-bg<?= imgExists('hero-bg.jpg') ? ' has-img' : '' ?>"></div>
+    <div class="hero-bg<?= imgExists('hero-bg.jpg') ? ' has-img' : '' ?>"<?= imgExists('hero-bg.jpg') ? ' style="--hero-img:url(' . e(imgUrl('hero-bg.jpg')) . ')"' : '' ?>></div>
     <div class="hero-pattern"></div>
     <div class="hero-content">
         <div class="hero-arabic" aria-label="Wa rattilil-Qur'ana tartila">وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا</div>
