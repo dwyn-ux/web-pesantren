@@ -262,6 +262,8 @@ body.admin-body {
 @media(max-width:800px){.ai-writer-row{grid-template-columns:1fr}.alumni-admin-grid{grid-template-columns:1fr}.alumni-admin-card{grid-template-columns:1fr}.admin-table-card{overflow-x:auto}.editor-toolbar{top:68px}.editor-surface{min-height:340px;padding:18px}.editor-separator{display:none}}
 .admin-form .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .admin-form .form-actions { display: flex; gap: 12px; padding-top: 20px; border-top: 1px solid var(--cream-dark); }
+.home-photo-preview { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.home-photo-preview img { height:56px; width:auto; max-width:120px; object-fit:cover; border-radius:6px; border:1px solid var(--cream-dark); background:#fff; }
 
 /* ── BUTTONS ──────────────────────────────────────────────────── */
 .btn-sm {
