@@ -52,37 +52,6 @@ try {
 } catch (PDOException $e) {}
 ?>
 
-<!-- GATE / SPLASH -->
-<div id="gate">
-    <div class="gate-overlay"></div>
-    <div class="gate-geo">
-        <svg width="100%" height="100%" viewBox="0 0 1200 800">
-            <defs>
-                <pattern id="hexPattern" x="0" y="0" width="80" height="92" patternUnits="userSpaceOnUse">
-                    <polygon points="40,5 75,22 75,70 40,87 5,70 5,22" fill="none" stroke="#c9a227" stroke-width="1"/>
-                </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#hexPattern)"/>
-        </svg>
-    </div>
-    <div class="door-left"><div class="door-pattern"></div><div class="door-arch"></div></div>
-    <div class="door-right"><div class="door-pattern"></div><div class="door-arch"></div></div>
-    <div class="gate-content gate-content-left">
-        <div class="gate-arabic">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيْمِ</div>
-        <div class="gate-ornament"></div>
-        <div class="gate-title"><?= e(APP_NAME) ?></div>
-        <div class="gate-subtitle">Berbasis Tahfidz Al-Qur'an</div>
-        <button class="gate-enter-btn" type="button">Masuk →</button>
-    </div>
-    <div class="gate-content gate-content-right" aria-hidden="true">
-        <div class="gate-arabic">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيْمِ</div>
-        <div class="gate-ornament"></div>
-        <div class="gate-title"><?= e(APP_NAME) ?></div>
-        <div class="gate-subtitle">Berbasis Tahfidz Al-Qur'an</div>
-        <button class="gate-enter-btn" type="button" tabindex="-1">Masuk →</button>
-    </div>
-</div>
-
 <!-- HERO -->
 <section id="hero" aria-label="Halaman utama">
     <div class="hero-bg<?= imgExists('hero-bg.jpg') ? ' has-img' : '' ?>"<?= imgExists('hero-bg.jpg') ? ' style="--hero-img:url(' . e(imgUrl('hero-bg.jpg')) . ')"' : '' ?>></div>
@@ -376,27 +345,6 @@ try {
 $extraScripts = <<<'JS'
 <script>
 (function(){
-  // Gate
-  var gate    = document.getElementById('gate');
-  var gateBtns = gate.querySelectorAll('.gate-enter-btn');
-  if (!gate) return;
-
-  document.body.style.overflow = 'hidden';
-
-  var gateIsOpening = false;
-  function openGate() {
-    if (gateIsOpening) return;
-    gateIsOpening = true;
-    gate.classList.add('leaving');
-    setTimeout(function(){ gate.classList.add('opening'); }, 300);
-    setTimeout(function(){ gate.classList.add('gone'); document.body.style.overflow=''; }, 1300);
-  }
-
-  gateBtns.forEach(function(gateBtn){
-    gateBtn.addEventListener('click', function(){ clearTimeout(autoTimer); openGate(); });
-  });
-  var autoTimer = setTimeout(openGate, 2800);
-
   // 3D tilt cards
   function initTilt(sel) {
     document.querySelectorAll(sel).forEach(function(card){
