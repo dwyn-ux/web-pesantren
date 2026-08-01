@@ -41,6 +41,7 @@
             'admin/artikel'   => ['icon' => '✎', 'label' => 'Artikel'],
             'admin/foto'      => ['icon' => '▧', 'label' => 'Galeri Foto'],
             'admin/dokumentasi' => ['icon' => '▣', 'label' => 'Dokumentasi'],
+            'admin/testimoni' => ['icon' => '”', 'label' => 'Testimoni'],
             'admin/alumni'    => ['icon' => '♙', 'label' => 'Data Alumni'],
             'admin/pengaturan' => ['icon' => '⚙', 'label' => 'Pengaturan'],
             'admin/psb'       => ['icon' => '◎', 'label' => 'Data PSB'],

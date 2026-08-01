@@ -115,7 +115,7 @@ require __DIR__ . '/includes/header.php';
     <?php endforeach; ?>
     <div class="form-actions"><button class="btn-sm btn-sm-primary">Simpan Foto</button></div>
   </form>
-  <p style="font-size:12px;color:var(--text-light);margin-top:14px;">Foto testimoni halaman depan diambil otomatis dari data alumni (foto yang diunggah lewat pendataan alumni).</p>
+  <p style="font-size:12px;color:var(--text-light);margin-top:14px;">Foto & isi testimoni halaman depan dikelola lewat menu <a href="<?= e(BASE_URL.'/admin/testimoni') ?>">Testimoni</a>.</p>
 </div>
 
 <div class="admin-form-card">
