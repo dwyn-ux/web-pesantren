@@ -67,7 +67,7 @@
 #gate.opening .gate-overlay { opacity: 0; }
 #gate.opening .door-left  { transform: translateX(-98%) scaleX(.35); opacity: .25; }
 #gate.opening .door-right { transform: translateX(98%) scaleX(.35); opacity: .25; }
-#gate .gate-content { transition: transform .95s cubic-bezier(.7,0,.2,1), opacity .25s ease .05s; }
+#gate .gate-content { transition: transform .95s cubic-bezier(.7,0,.2,1), opacity .1s ease; }
 #gate.opening .gate-content-left  { transform: translateX(-100%); opacity: 0; pointer-events:none; }
 #gate.opening .gate-content-right { transform: translateX(100%); opacity: 0; pointer-events:none; }
 #gate.gone { display: none; }
