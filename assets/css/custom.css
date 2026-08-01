@@ -139,14 +139,16 @@ address { font-style: normal; }
 .mobile-nav {
   display: none; position: fixed; inset: 0;
   background: var(--green-deep); z-index: 200;
-  flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+  flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  padding: 24px 5%; overflow-y: auto;
   opacity: 0; transition: opacity 0.3s;
 }
 .mobile-nav.open { display: flex; opacity: 1; }
 .mobile-nav a {
-  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 24px;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; font-size: 18px;
   color: var(--white); text-decoration: none; transition: color var(--transition);
 }
+.mobile-nav .btn-primary, .mobile-nav .btn-outline { padding: 10px 26px; font-size: 13px; }
 .mobile-nav a:hover,
 .mobile-nav a.active { color: var(--gold); }
 .mobile-nav-close {

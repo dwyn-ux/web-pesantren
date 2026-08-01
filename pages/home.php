@@ -388,14 +388,14 @@ $extraScripts = <<<'JS'
     if (gateIsOpening) return;
     gateIsOpening = true;
     gate.classList.add('leaving');
-    setTimeout(function(){ gate.classList.add('opening'); }, 520);
-    setTimeout(function(){ gate.classList.add('gone'); document.body.style.overflow=''; }, 1950);
+    setTimeout(function(){ gate.classList.add('opening'); }, 300);
+    setTimeout(function(){ gate.classList.add('gone'); document.body.style.overflow=''; }, 1300);
   }
 
   gateBtns.forEach(function(gateBtn){
     gateBtn.addEventListener('click', function(){ clearTimeout(autoTimer); openGate(); });
   });
-  var autoTimer = setTimeout(openGate, 4000);
+  var autoTimer = setTimeout(openGate, 2800);
 
   // 3D tilt cards
   function initTilt(sel) {

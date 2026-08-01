@@ -44,7 +44,7 @@
 .door-left, .door-right {
   position: absolute; top: 0; width: 50%; height: 100%;
   background: repeating-linear-gradient(90deg,#071f17 0,#123b2d 7%,#061a14 14%,#1f513f 21%,#09271d 28%); transform-style: preserve-3d; z-index: 10;
-  box-shadow: inset 0 0 80px rgba(0,0,0,.65); transition: transform 1.35s cubic-bezier(.7,0,.2,1), opacity .35s ease 1s;
+  box-shadow: inset 0 0 80px rgba(0,0,0,.65); transition: transform .95s cubic-bezier(.7,0,.2,1), opacity .3s ease .7s;
   backface-visibility: hidden;
 }
 .door-left  { left: 0; transform-origin: left center; border-right: 4px solid rgba(201,162,39,.45); }
@@ -67,7 +67,7 @@
 #gate.opening .gate-overlay { opacity: 0; }
 #gate.opening .door-left  { transform: translateX(-98%) scaleX(.35); opacity: .25; }
 #gate.opening .door-right { transform: translateX(98%) scaleX(.35); opacity: .25; }
-#gate .gate-content { transition: transform 1.35s cubic-bezier(.7,0,.2,1), opacity .35s ease 1s; }
+#gate .gate-content { transition: transform .95s cubic-bezier(.7,0,.2,1), opacity .3s ease .7s; }
 #gate.opening .gate-content-left  { transform: translateX(-100%); opacity: .2; pointer-events:none; }
 #gate.opening .gate-content-right { transform: translateX(100%); opacity: .2; pointer-events:none; }
 #gate.gone { display: none; }
@@ -264,4 +264,12 @@
   .lightbox-prev { left:8px; }.lightbox-next { right:8px; }
   .stat-inner       { grid-template-columns: repeat(2,1fr); }
   .period-item      { padding: 0 16px; margin-bottom: 16px; }
+
+  /* Gate — kecilkan agar teks tiap sisi tidak membungkus/bertumpuk saat terpecah di tengah */
+  .gate-arabic    { font-size: 19px; line-height: 1.5; }
+  .gate-ornament  { width: 110px; margin: 0; }
+  .gate-title     { font-size: 20px; }
+  .gate-subtitle  { font-size: 9px; letter-spacing: 2px; }
+  .gate-enter-btn { margin-top: 8px; padding: 10px 24px; font-size: 12px; letter-spacing: 2px; }
+  #gate .gate-content { gap: 10px; }
 }
