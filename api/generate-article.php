@@ -51,7 +51,7 @@ $configs = [
     ],
     'openrouter' => [
         'key'   => $_ENV['OPENROUTER_API_KEY'] ?? '',
-        'model' => $_ENV['OPENROUTER_MODEL'] ?? 'openai/gpt-3.5-turbo',
+        'model' => $_ENV['OPENROUTER_MODEL'] ?? 'minimax/minimax-m3:free',
         'url'   => 'https://openrouter.ai/api/v1/chat/completions',
     ],
     'gemini'     => [
