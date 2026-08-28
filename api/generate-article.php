@@ -51,7 +51,7 @@ $configs = [
     ],
     'openrouter' => [
         'key'   => $_ENV['OPENROUTER_API_KEY'] ?? '',
-        'model' => $_ENV['OPENROUTER_MODEL'] ?? 'nvidia/nemotron-3-super-120b-a12b:free',
+        'model' => $_ENV['OPENROUTER_MODEL'] ?? 'openai/gpt-3.5-turbo',
         'url'   => 'https://openrouter.ai/api/v1/chat/completions',
     ],
     'gemini'     => [
@@ -75,7 +75,7 @@ if (!$cfg || $cfg['key'] === '') {
 $prompt = "Tulis artikel berbahasa Indonesia untuk website pondok pesantren tentang: {$topic}. "
         . "Nada: {$tone}. Keluarkan HANYA JSON valid dengan properti judul, ringkasan, dan isi. "
         . "Isi memakai HTML sederhana (p, h2, h3, ul, li, strong), faktual, ramah, 700-1000 kata, "
-        . "tanpa markdown fence.";
+        . "tanpa markdown fence. JANGAN sertakan penjelasan, analisis, atau teks apapun di luar JSON.";
 
 // ── Susun payload & header sesuai provider ──────────────────
 if ($provider === 'gemini') {
@@ -95,7 +95,7 @@ if ($provider === 'gemini') {
     $payload = [
         'model'       => $cfg['model'],
         'messages'    => [
-            ['role' => 'system', 'content' => 'Anda adalah editor artikel pesantren yang teliti.'],
+            ['role' => 'system', 'content' => 'Anda adalah editor artikel pesantren yang teliti. Jawab HANYA dalam format JSON valid. Jangan sertakan teks penjelasan, analisis, atau reasoning apapun. Langsung mulai dengan karakter { dan tutup dengan }.'],
             ['role' => 'user',   'content' => $prompt],
         ],
         'temperature' => 0.7,
@@ -147,8 +147,14 @@ if ($provider === 'gemini') {
 // Bersihkan markdown fence jika ada
 $text = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', $text);
 
+// Coba extract JSON dari teks (kadang AI nambahin teks di luar JSON)
 $article = json_decode($text, true);
-
+if (!is_array($article) || empty($article['isi'])) {
+    // Coba cari JSON object di dalam teks
+    if (preg_match('/\{[\s\S]*\"judul\"[\s\S]*\}/', $text, $m)) {
+        $article = json_decode($m[0], true);
+    }
+}
 if (!is_array($article) || empty($article['isi'])) {
     jsonResponse(['error' => 'Format jawaban AI tidak valid. Coba lagi.'], 502);
 }
