@@ -28,15 +28,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = sanitizeString($_POST['action'] ?? 'upload');
 
     if ($action === 'delete') {
-        $id = sanitizeInt($_POST['id'] ?? 0);
-        $stmt = $pdo->prepare('SELECT nama_file FROM foto_galeri WHERE id=?');
-        $stmt->execute([$id]);
-        if ($foto = $stmt->fetch()) {
-            $pdo->prepare('DELETE FROM foto_galeri WHERE id=?')->execute([$id]);
-            $path = UPLOADS_PATH . '/galeri/' . basename($foto['nama_file']);
+        // Hapus seluruh album = semua foto dengan judul yang sama
+        $judul = (string) ($_POST['judul'] ?? '');
+        if ($judul === '(tanpa judul)') $judul = '';
+
+        if ($judul === '') {
+            $stmt = $pdo->query("SELECT nama_file FROM foto_galeri WHERE judul IS NULL OR judul = ''");
+            $files = array_column($stmt->fetchAll(), 'nama_file');
+            $pdo->exec("DELETE FROM foto_galeri WHERE judul IS NULL OR judul = ''");
+        } else {
+            $stmt = $pdo->prepare('SELECT nama_file FROM foto_galeri WHERE judul = ?');
+            $stmt->execute([$judul]);
+            $files = array_column($stmt->fetchAll(), 'nama_file');
+            $pdo->prepare('DELETE FROM foto_galeri WHERE judul = ?')->execute([$judul]);
+        }
+
+        foreach ($files as $f) {
+            $path = UPLOADS_PATH . '/galeri/' . basename($f);
             if (is_file($path)) unlink($path);
         }
-        setFlash('success', 'Foto galeri dihapus.');
+        setFlash('success', count($files) . ' foto dihapus dari galeri.');
         redirect('/admin/foto');
     }
 
@@ -91,11 +102,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare('INSERT INTO foto_galeri (nama_file,judul,kategori,is_aktif) VALUES (?,?,?,1)')->execute([$saved,$caption,'kehidupan']);
             $uploaded++;
         }
-        if ($uploaded && !$errors) { setFlash('success', $uploaded . ' foto berhasil ditambahkan ke carousel.'); redirect('/admin/foto'); }
+        if ($uploaded && !$errors) { setFlash('success', $uploaded . ' foto berhasil ditambahkan ke galeri.'); redirect('/admin/foto'); }
     }
 }
 
-$items = $pdo->query('SELECT * FROM foto_galeri ORDER BY urutan ASC, created_at DESC')->fetchAll();
+// Kelompokkan foto berdasarkan judul → satu album = satu baris
+$rows = $pdo->query('SELECT nama_file, judul FROM foto_galeri ORDER BY created_at ASC, id ASC')->fetchAll();
+$albums = [];
+foreach ($rows as $r) {
+    $key = trim((string) $r['judul']) !== '' ? $r['judul'] : '(tanpa judul)';
+    if (!isset($albums[$key])) $albums[$key] = ['judul' => $key, 'cover' => $r['nama_file'], 'jumlah' => 0];
+    $albums[$key]['jumlah']++;
+}
+$albums = array_reverse(array_values($albums)); // album terbaru di depan
 $adminTitle = 'Galeri Foto'; $adminPage = 'admin/foto';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -143,13 +162,20 @@ require __DIR__ . '/includes/header.php';
   <form method="post" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
     <div class="form-grid">
-      <div class="form-group"><label>Judul bersama (opsional)</label><input class="form-control" name="judul" placeholder="Kosongkan untuk memakai nama file"></div>
+      <div class="form-group"><label>Nama Album *</label><input class="form-control" name="judul" placeholder="contoh: Rihlah" required><small>Foto dengan nama album yang sama akan tampil sebagai 1 kartu di halaman Galeri. Contoh: Rihlah, Wisuda, Halaqah.</small></div>
       <div class="form-group"><label>Foto *</label><input class="form-control" type="file" name="foto[]" accept=".jpg,.jpeg,.png,.webp" multiple required><small>Bisa pilih banyak foto sekaligus. Maksimal 10 MB per foto.</small></div>
     </div>
-    <div class="form-actions"><button class="btn-sm btn-sm-primary">Upload ke Carousel</button></div>
+    <div class="form-actions"><button class="btn-sm btn-sm-primary">Simpan Album</button></div>
   </form>
 </div>
-<div class="admin-table-card"><table class="admin-table"><thead><tr><th>Foto</th><th>Judul</th><th>Status</th><th></th></tr></thead><tbody>
-<?php foreach ($items as $item): ?><tr><td><img src="<?=e(BASE_URL.'/uploads/galeri/'.$item['nama_file'])?>" alt="" style="width:90px;height:58px;object-fit:cover;border-radius:4px"></td><td><?=e($item['judul'] ?: 'Tanpa judul')?></td><td><?=$item['is_aktif']?'Aktif':'Nonaktif'?></td><td><form method="post" onsubmit="return confirm('Hapus foto ini?')"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?=$item['id']?>"><button class="btn-sm btn-sm-danger">Hapus</button></form></td></tr><?php endforeach; ?>
+<div class="admin-table-card"><table class="admin-table"><thead><tr><th>Album</th><th>Jumlah Foto</th><th></th></tr></thead><tbody>
+<?php if (!$albums): ?><tr><td colspan="3" class="table-empty">Belum ada foto galeri.</td></tr>
+<?php else: foreach ($albums as $a): ?>
+<tr>
+  <td><div style="display:flex;align-items:center;gap:12px"><img src="<?=e(BASE_URL.'/uploads/galeri/'.$a['cover'])?>" alt="" style="width:90px;height:58px;object-fit:cover;border-radius:4px"><strong><?=e($a['judul'])?></strong></div></td>
+  <td><?=$a['jumlah']?> foto</td>
+  <td><form method="post" onsubmit="return confirm('Hapus album <?=e($a['judul'])?> beserta <?=$a['jumlah']?> fotonya?')"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="judul" value="<?=e($a['judul'])?>"><button class="btn-sm btn-sm-danger">Hapus Album</button></form></td>
+</tr>
+<?php endforeach; endif; ?>
 </tbody></table></div>
 <?php require __DIR__ . '/includes/footer.php'; ?>

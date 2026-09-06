@@ -3,28 +3,51 @@ $activePage = 'galeri';
 $pageTitle = 'Galeri Kehidupan Santri | ' . APP_NAME;
 $pageDescription = 'Galeri foto kehidupan santri Pondok Pesantren Ash-Shiddiq: halaqah tahfidz, shalat berjamaah, asrama, dan kegiatan sehari-hari.';
 $pageCanonical = BASE_URL . '/galeri';
+
+// Kumpulkan foto lalu kelompokkan berdasarkan judul → satu album = satu kartu
 $galeri = [];
 try {
-    $galeri = getDB()->query("SELECT nama_file,judul FROM foto_galeri WHERE is_aktif=1 ORDER BY urutan ASC, created_at DESC")->fetchAll();
-} catch (PDOException $e) {}
+    $rows = getDB()->query(
+        "SELECT nama_file, judul FROM foto_galeri WHERE is_aktif=1 ORDER BY urutan ASC, created_at ASC, id ASC"
+    )->fetchAll();
+} catch (PDOException $e) {
+    $rows = [];
+}
+foreach ($rows as $r) {
+    $key = trim((string) $r['judul']) !== '' ? $r['judul'] : '(tanpa judul)';
+    if (!isset($galeri[$key])) {
+        $galeri[$key] = ['judul' => $key, 'fotos' => []];
+    }
+    $galeri[$key]['fotos'][] = $r['nama_file'];
+}
+$galeri = array_reverse(array_values($galeri)); // album terbaru di depan
 ?>
 <main class="page-section galeri-page">
   <div class="container">
     <div class="section-tag"><span></span><span class="section-tag-text">Galeri Pesantren</span><span></span></div>
     <h1 class="section-title">Galeri Kehidupan Santri</h1>
-    <p class="section-desc">Momen sehari-hari santri bersama Al-Qur'an di Pondok Pesantren Ash-Shiddiq. Klik foto untuk memperbesar.</p>
+    <p class="section-desc">Momen sehari-hari santri bersama Al-Qur'an di Pondok Pesantren Ash-Shiddiq. Klik album untuk melihat semua fotonya.</p>
     <?php if (!$galeri): ?><div class="empty-state">Belum ada foto galeri yang dipublikasikan.</div><?php endif; ?>
     <div class="galeri-grid" id="galeriGrid">
-    <?php foreach ($galeri as $i => $g): ?>
-      <figure class="galeri-item" tabindex="0" role="button" aria-label="Perbesar <?=e($g['judul'])?>">
-        <img src="<?=e(BASE_URL . '/uploads/galeri/' . $g['nama_file'])?>" alt="<?=e($g['judul'])?>" loading="<?= $i > 8 ? 'lazy' : 'eager' ?>">
-        <figcaption><?=e($g['judul'])?></figcaption>
+    <?php foreach ($galeri as $i => $album):
+        $jml = count($album['fotos']);
+        $cover = BASE_URL . '/uploads/galeri/' . $album['fotos'][0];
+        $fotosJson = htmlspecialchars(
+            json_encode(array_map(fn($f) => BASE_URL . '/uploads/galeri/' . $f, $album['fotos']), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            ENT_QUOTES, 'UTF-8'
+        );
+    ?>
+      <figure class="galeri-item" data-photos='<?= $fotosJson ?>' tabindex="0" role="button" aria-label="Buka album <?= e($album['judul']) ?> (<?= $jml ?> foto)">
+        <img src="<?= e($cover) ?>" alt="<?= e($album['judul']) ?>" loading="<?= $i > 5 ? 'lazy' : 'eager' ?>">
+        <?php if ($jml > 1): ?><span class="galeri-count"><?= $jml ?> foto</span><?php endif; ?>
+        <figcaption><span class="galeri-caption"><?= e($album['judul']) ?></span></figcaption>
       </figure>
     <?php endforeach; ?>
     </div>
   </div>
   <div class="gallery-lightbox" id="galleryLightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Tampilan foto galeri">
     <button class="lightbox-close" type="button" aria-label="Tutup">×</button>
+    <span class="lightbox-counter" aria-hidden="true"></span>
     <button class="lightbox-nav lightbox-prev" type="button" aria-label="Foto sebelumnya">‹</button>
     <figure><img src="" alt=""><figcaption></figcaption></figure>
     <button class="lightbox-nav lightbox-next" type="button" aria-label="Foto berikutnya">›</button>
@@ -39,6 +62,7 @@ $extraScripts = <<<'JS'
 .galeri-item:hover img{transform:scale(1.05)}
 .galeri-item figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 14px 12px;color:#fff;font-size:14px;background:linear-gradient(transparent,rgba(0,0,0,.72))}
 .galeri-item:focus{outline:2px solid var(--gold);outline-offset:2px}
+.galeri-count{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;backdrop-filter:blur(4px)}
 .gallery-lightbox{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:32px 80px;background:rgba(3,20,14,.94)}
 .gallery-lightbox.open{display:flex}
 .gallery-lightbox figure{margin:0;max-width:min(1100px,90vw);max-height:88vh;text-align:center}
@@ -48,7 +72,8 @@ $extraScripts = <<<'JS'
 .lightbox-close{right:24px;top:20px;width:46px;height:46px;font-size:32px}
 .lightbox-nav{top:50%;transform:translateY(-50%);width:52px;height:52px;font-size:38px}
 .lightbox-prev{left:20px}.lightbox-next{right:20px}
-@media(max-width:768px){.galeri-grid{grid-template-columns:repeat(2,1fr)}.gallery-lightbox{padding:60px 18px}}
+.lightbox-counter{position:absolute;top:24px;left:28px;color:#fff;background:rgba(255,255,255,.14);padding:6px 14px;border-radius:20px;font-size:14px}
+@media(max-width:768px){.galeri-grid{grid-template-columns:repeat(2,1fr)}.gallery-lightbox{padding:60px 18px}.lightbox-counter{left:18px;top:18px}}
 @media(max-width:480px){.galeri-grid{grid-template-columns:1fr}}
 </style>
 <script>
@@ -56,20 +81,29 @@ $extraScripts = <<<'JS'
   var items = Array.from(document.querySelectorAll('.galeri-item'));
   if (!items.length) return;
   var lightbox = document.getElementById('galleryLightbox');
-  var img = lightbox.querySelector('img'), cap = lightbox.querySelector('figcaption'), cur = 0;
-  function show(i){
-    cur = i;
-    var real = items[i].querySelector('img');
-    img.src = real.src; img.alt = real.alt;
-    cap.textContent = items[i].querySelector('figcaption').textContent;
+  var img = lightbox.querySelector('img'), cap = lightbox.querySelector('figcaption');
+  var counter = lightbox.querySelector('.lightbox-counter');
+  var photos = [], cur = 0, albumTitle = '';
+
+  function show(){
+    img.src = photos[cur]; img.alt = albumTitle;
+    cap.textContent = photos.length > 1 ? albumTitle + ' (' + (cur+1) + '/' + photos.length + ')' : albumTitle;
+    if (counter) counter.textContent = (cur+1) + ' / ' + photos.length;
+  }
+  function openAlbum(it){
+    photos = JSON.parse(it.getAttribute('data-photos') || '[]');
+    if (!photos.length) return;
+    albumTitle = (it.querySelector('.galeri-caption') || {textContent:''}).textContent;
+    cur = 0; show();
     lightbox.classList.add('open'); lightbox.setAttribute('aria-hidden','false');
     document.body.style.overflow = 'hidden';
   }
   function close(){ lightbox.classList.remove('open'); lightbox.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
-  function move(d){ show((cur + d + items.length) % items.length); }
-  items.forEach(function(it,i){
-    it.addEventListener('click', function(){ show(i); });
-    it.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();show(i);} });
+  function move(d){ if(!photos.length) return; cur = (cur + d + photos.length) % photos.length; show(); }
+
+  items.forEach(function(it){
+    it.addEventListener('click', function(){ openAlbum(it); });
+    it.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault();openAlbum(it);} });
   });
   lightbox.querySelector('.lightbox-close').addEventListener('click', close);
   lightbox.querySelector('.lightbox-prev').addEventListener('click', function(){ move(-1); });
