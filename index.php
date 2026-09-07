@@ -40,7 +40,7 @@ $authPages = [];
 $adminPages = [
     'admin', 'admin/dashboard',
     'admin/artikel', 'admin/artikel-tambah', 'admin/artikel-edit',
-    'admin/foto', 'admin/users', 'admin/psb', 'admin/dokumentasi', 'admin/alumni', 'admin/alumni-edit', 'admin/pengaturan', 'admin/berkas-lihat', 'admin/testimoni',
+    'admin/foto', 'admin/users', 'admin/psb', 'admin/dokumentasi', 'admin/alumni', 'admin/alumni-edit',    'admin/pengaturan', 'admin/berkas-lihat', 'admin/testimoni', 'admin/jalur-potongan',
 ];
 
 // ── Access Control ────────────────────────────────────────────
@@ -85,6 +85,7 @@ $pageMap = [
     'admin/pengaturan' => ROOT_PATH . '/admin/pengaturan.php',
     'admin/berkas-lihat' => ROOT_PATH . '/admin/berkas-lihat.php',
     'admin/testimoni' => ROOT_PATH . '/admin/testimoni.php',
+    'admin/jalur-potongan' => ROOT_PATH . '/admin/jalur-potongan.php',
 ];
 
 // Tangani logout langsung
