@@ -228,7 +228,10 @@ require_once __DIR__ . '/includes/header.php';
                            name="jalur_alumni_sdmua[potongan]"
                            value="<?= e($formatPersen($adminJalur['alumni-sdmua']['potongan'] ?? null)) ?>"
                            class="form-control" style="max-width:180px;">
-                    <small style="font-size:11px;color:var(--text-light);">Juknis: keringanan 25–50%. Kosongkan jika ingin menetapkan persen per-santri saat verifikasi.</small>
+                    <small style="font-size:11px;color:var(--text-light);">
+                        Juknis: keringanan 25–50%. Kosongkan jika ingin menetapkan persen per-santri saat verifikasi.
+                        Nilai ini dipakai sebagai estimasi awal di form PSB dan sebagai default di halaman verifikasi admin.
+                    </small>
                 </div>
             </div>
         </fieldset>
@@ -243,7 +246,10 @@ require_once __DIR__ . '/includes/header.php';
                            name="jalur_dhuafa[potongan]"
                            value="<?= e($formatPersen($adminJalur['dhuafa']['potongan'] ?? null)) ?>"
                            class="form-control" style="max-width:180px;">
-                    <small style="font-size:11px;color:var(--text-light);">Juknis: keringanan 20–60%. Kosongkan jika ingin menetapkan persen per-santri saat verifikasi.</small>
+                    <small style="font-size:11px;color:var(--text-light);">
+                        Juknis: keringanan 20–60%. Kosongkan jika ingin menetapkan persen per-santri saat verifikasi.
+                        Nilai ini dipakai sebagai estimasi awal di form PSB dan sebagai default di halaman verifikasi admin.
+                    </small>
                 </div>
                 <div class="form-group" style="align-items:center;">
                     <label style="display:flex;align-items:center;gap:8px;">

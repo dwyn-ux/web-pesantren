@@ -3,6 +3,7 @@ require_once __DIR__ . '/bootstrap.php';
 requireAdmin();
 
 $pdo = getDB();
+$adminJalur = getJalurPotonganAdmin($pdo);
 
 // ── Proses update status ──────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -217,12 +218,24 @@ require_once __DIR__ . '/includes/header.php';
                                 <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
                                 <input type="hidden" name="action" value="verifikasi_jalur">
                                 <input type="hidden" name="id" value="<?=$p['id']?>">
-                                <input type="number" name="potongan" min="<?= $p['jalur'] === 'alumni-sdmua' ? 25 : 20 ?>" max="<?= $p['jalur'] === 'alumni-sdmua' ? 50 : 60 ?>" step="0.5"
-                                       placeholder="Potongan %" style="width:90px;padding:4px;font-size:12px;" required>
+                                <?php
+                                $minP = $p['jalur'] === 'alumni-sdmua' ? 25 : 20;
+                                $maxP = $p['jalur'] === 'alumni-sdmua' ? 50 : 60;
+                                $defP = ($adminJalur[$p['jalur']]['potongan'] ?? null);
+                                ?>
+                                <input type="number" name="potongan" min="<?= $minP ?>" max="<?= $maxP ?>" step="0.5"
+                                       placeholder="<?= $defP !== null ? e($formatPersen($defP)) : 'Potongan %' ?>"
+                                       style="width:90px;padding:4px;font-size:12px;"
+                                       <?= $defP !== null ? ' value="' . e($formatPersen($defP)) . '"' : '' ?>
+                                       required>
                                 <button name="keputusan" value="disetujui" class="btn-sm btn-sm-primary">Setujui</button>
                                 <button name="keputusan" value="ditolak" class="btn-sm btn-sm-secondary">Tolak</button>
                             </form>
-                            <small style="font-size:11px;color:var(--text-light);">Alumni 25–50%, Dhuafa 20–60%. Berkas syarat: <?= e(implode(', ', array_map(fn($j) => berkasLabel($j), jalurBerkasUntuk($p['jalur'])))) ?>.</small>
+                            <small style="font-size:11px;color:var(--text-light);">
+                                <?= $p['jalur'] === 'alumni-sdmua' ? 'Alumni' : 'Dhuafa' ?> <?= $p['jalur'] === 'alumni-sdmua' ? '25–50%' : '20–60%' ?>.
+                                <?php if ($defP !== null): ?>Default global: <?= e($formatPersen($defP)) ?>% (bisa diganti).<?php endif; ?>
+                                Berkas syarat: <?= e(implode(', ', array_map(fn($j) => berkasLabel($j), jalurBerkasUntuk($p['jalur'])))) ?>.
+                            </small>
                             <?php elseif (in_array($p['jalur'], jalurPerluVerifikasi(), true) && $p['jalur_status'] === 'disetujui'): ?>
                             <form method="post" style="margin:8px 0;">
                                 <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
