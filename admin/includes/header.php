@@ -44,8 +44,9 @@
             'admin/testimoni' => ['icon' => '”', 'label' => 'Testimoni'],
             'admin/alumni'    => ['icon' => '♙', 'label' => 'Data Alumni'],
             'admin/pengaturan' => ['icon' => '⚙', 'label' => 'Pengaturan'],
-            'admin/psb'       => ['icon' => '◎', 'label' => 'Data PSB'],
-            'admin/users'     => ['icon' => '⊙', 'label' => 'Pengguna'],
+            'admin/psb'            => ['icon' => '◎', 'label' => 'Data PSB'],
+            'admin/jalur-potongan'=> ['icon' => '✂', 'label' => 'Potongan Jalur'],
+            'admin/users'          => ['icon' => '⊙', 'label' => 'Pengguna'],
         ];
         foreach ($adminNav as $key => $item):
             $isActive = ($adminPage ?? '') === $key;
