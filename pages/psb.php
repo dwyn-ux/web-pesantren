@@ -51,6 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
         'password_confirm'=> $_POST['password_confirm'] ?? '',
     ];
 
+    // Alumni SDMUA: asal sekolah terkunci sesuai sekolah asalnya (non-editable)
+    if ($data['alumni_sdmua']) {
+        $data['asal_sekolah'] = 'SD Muhammadiyah Unggulan Ashidiq';
+    }
+
     // Validasi wajib
     $validasiWajib = [
         'nama_lengkap'   => 'Nama lengkap',
@@ -376,6 +381,15 @@ $extraHead = <<<'CSS'
 .form-control:focus { border-color:var(--green-mid); background:white; }
 .form-control.is-error { border-color:#e55; }
 .form-control::placeholder { color:var(--text-light); }
+.form-control[readonly] { background:var(--cream-dark); cursor:not-allowed; }
+.form-control[readonly]:focus { border-color:var(--cream-dark); background:var(--cream-dark); }
+
+/* Simulasi biaya live (Step 3) */
+.sim-row { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:11px 0; border-bottom:1px solid rgba(255,255,255,0.1); }
+.sim-row:last-child { border-bottom:none; }
+.sim-row .sim-label { font-size:13px; color:rgba(255,255,255,0.75); line-height:1.4; }
+.sim-row .sim-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; color:var(--gold); white-space:nowrap; text-align:right; }
+.sim-val s { opacity:0.55; font-size:11px; margin-right:5px; }
 select.form-control { cursor:pointer; }
 .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
 .radio-group { display:flex; gap:10px; flex-wrap:wrap; }
@@ -455,6 +469,7 @@ CSS;
 
     <!-- ── INFO SISI KIRI ──────────────────────────────────────── -->
     <div class="psb-info">
+      <div id="jadwalPanel">
         <div class="section-tag reveal">
             <span></span><span class="section-tag-text">Jadwal PSB</span><span></span>
         </div>
@@ -543,6 +558,49 @@ CSS;
         if (!empty($tarifBiaya['infak'])) {
             $biayaTampil[] = ['Infak Wajib', formatRupiah($nilai($tarifBiaya['infak'][0]))];
         }
+
+        // Data tarif untuk simulasi biaya live di JS (sesuai jalur terpilih)
+        $mapTarif = function (array $rows) use ($nilai): array {
+            $out = [];
+            foreach ($rows as $t) {
+                $out[] = [
+                    'jenis'  => (string) $t['jenis'],
+                    'nama'   => (string) ($t['nama'] ?: ''),
+                    'asli'   => (float) $t['harga_asli'],
+                    'diskon' => !empty($t['gratis']) ? 0.0 : $nilai($t),
+                    'gratis' => !empty($t['gratis']),
+                ];
+            }
+            return $out;
+        };
+        $infakRow = null;
+        if (!empty($tarifBiaya['infak'])) {
+            $t = $tarifBiaya['infak'][0];
+            $infakRow = [
+                'jenis' => 'infak', 'nama' => (string) ($t['nama'] ?: 'Infak'),
+                'asli' => (float) $t['harga_asli'],
+                'diskon' => !empty($t['gratis']) ? 0.0 : $nilai($t),
+                'gratis' => !empty($t['gratis']),
+            ];
+        }
+        $tarifJs = [
+            'pendaftaran'  => $mapTarif($tarifBiaya['pendaftaran']),
+            'administrasi' => $mapTarif($tarifBiaya['administrasi']),
+            'wakaf'        => $mapTarif($tarifBiaya['wakaf']),
+            'syahriyah'    => $mapTarif($tarifBiaya['syahriyah']),
+            'laundry'      => ['L' => $laundryL, 'P' => $laundryP],
+            'infak'        => $infakRow,
+        ];
+
+        // Tarif khusus jalur kaderisasi dari pengaturan (fallback sama dengan snapshotPembiayaan)
+        $kaderJs = ['adm' => 5000000.0, 'spp_l' => 650000.0, 'spp_p' => 750000.0];
+        $kaderQ = $pdo->query("SELECT key_name, value FROM pengaturan WHERE key_name IN ('jalur_kaderisasi_adm','jalur_kaderisasi_spp_l','jalur_kaderisasi_spp_p')");
+        foreach ($kaderQ->fetchAll() as $r) {
+            if (is_numeric($r['value']) && (float) $r['value'] >= 0) {
+                $k = ['jalur_kaderisasi_adm' => 'adm', 'jalur_kaderisasi_spp_l' => 'spp_l', 'jalur_kaderisasi_spp_p' => 'spp_p'][$r['key_name']] ?? null;
+                if ($k) $kaderJs[$k] = (float) $r['value'];
+            }
+        }
         ?>
         <div class="biaya-box reveal">
             <h3>Estimasi Biaya Awal</h3>
@@ -556,6 +614,28 @@ CSS;
                 * Tarif final sesuai kesanggupan orang tua. Tersedia diskon dan jalur gratis bagi yang memenuhi syarat. Hubungi panitia untuk informasi lebih lanjut.
             </p>
         </div>
+      </div><!-- /#jadwalPanel -->
+
+      <!-- ── SIMULASI BIAYA LIVE (muncul saat Step 3) ───────────── -->
+      <div id="simulasiPanel" style="display:none;">
+          <div class="section-tag">
+              <span></span><span class="section-tag-text">Simulasi Biaya</span><span></span>
+          </div>
+          <div class="biaya-box" style="margin-top:20px;">
+              <h3 style="font-size:17px;">Estimasi Biaya — <span id="simJalur">Reguler</span></h3>
+              <p id="simCatatan" style="font-size:12px;color:rgba(255,255,255,0.55);margin:-8px 0 14px;line-height:1.6;"></p>
+              <div id="simRows"></div>
+              <div class="biaya-item" style="border-top:1px solid rgba(255,255,255,0.25);margin-top:6px;">
+                  <span class="biaya-label" style="color:white;font-weight:600;">Total Estimasi Awal</span>
+                  <span class="biaya-value" id="simTotal" style="font-size:22px;">-</span>
+              </div>
+              <p style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:14px;line-height:1.6;">
+                  * Estimasi, bukan tagihan final. Item bertanda "mulai dari" adalah opsi termurah —
+                  pilihan final dilakukan saat kesanggupan di portal santri. Syahriyah &amp; laundry
+                  (bulanan) belum termasuk total.
+              </p>
+          </div>
+      </div><!-- /#simulasiPanel -->
     </div>
 
     <!-- ── FORM SISI KANAN ─────────────────────────────────────── -->
@@ -737,7 +817,7 @@ CSS;
                 </div>
                 <div class="form-group">
                     <label class="radio-item" style="min-width:auto;text-align:left;flex:none;cursor:pointer;">
-                        <input type="checkbox" name="alumni_sdmua" value="1"
+                        <input type="checkbox" name="alumni_sdmua" id="alumni_sdmua" value="1"
                                style="width:auto;<?= isset($errors['alumni_sdmua']) ? 'outline:1px solid #e55;' : '' ?>"
                                <?= !empty($data['alumni_sdmua']) ? 'checked' : '' ?>>
                         Saya alumni SD Muhammadiyah Unggulan Ashidiq
@@ -813,7 +893,8 @@ CSS;
                     <input type="text" id="asal_sekolah" name="asal_sekolah"
                            class="form-control<?= isset($errors['asal_sekolah']) ? ' is-error' : '' ?>"
                            placeholder="Nama sekolah / madrasah asal" maxlength="150"
-                           value="<?= isset($data['asal_sekolah']) ? e($data['asal_sekolah']) : '' ?>" required>
+                           value="<?= isset($data['asal_sekolah']) ? e($data['asal_sekolah']) : '' ?>" required
+                           <?= !empty($data['alumni_sdmua']) ? 'readonly' : '' ?>>
                     <?php if (isset($errors['asal_sekolah'])): ?>
                     <p class="field-error"><?= e($errors['asal_sekolah']) ?></p>
                     <?php endif; ?>
@@ -952,6 +1033,16 @@ CSS;
             else               { num.textContent = i; }
         }
         currentStep = step;
+
+        // Step 3: panel kiri berganti jadi simulasi biaya sesuai jalur
+        var jp = document.getElementById('jadwalPanel');
+        var sp = document.getElementById('simulasiPanel');
+        if (jp && sp) {
+            jp.style.display = (step === 3) ? 'none' : 'block';
+            sp.style.display = (step === 3) ? 'block' : 'none';
+        }
+        if (step === 3) hitungSimulasi();
+
         var card = document.querySelector('.psb-form-card');
         if (card) card.scrollIntoView({ block: 'start', behavior: 'smooth' });
     };
@@ -1007,9 +1098,159 @@ CSS;
     }
 
     jalurRadios.forEach(function (r) { r.addEventListener('change', psbSyncJalur); });
-    var alumniCekInput = document.querySelector('input[name="alumni_sdmua"]');
-    if (alumniCekInput) alumniCekInput.addEventListener('change', psbSyncJalur);
+    var alumniCekInput = document.querySelector('input[name="alumni_sdmua"]');        if (alumniCekInput) {
+        alumniCekInput.addEventListener('change', function () {
+            psbSyncJalur();
+            if (currentStep === 3) hitungSimulasi();
+            // Alumni: asal sekolah otomatis terisi & terkunci
+            var sek = document.getElementById('asal_sekolah');
+            if (sek) {
+                if (alumniCekInput.checked) {
+                    if (!sek.value || !sek.readOnly) sek.value = 'SD Muhammadiyah Unggulan Ashidiq';
+                    sek.readOnly = true;
+                } else {
+                    sek.readOnly = false;
+                    if (sek.value === 'SD Muhammadiyah Unggulan Ashidiq') sek.value = '';
+                }
+            }
+        });
+        if (alumniCekInput.checked) {
+            var sekInit = document.getElementById('asal_sekolah');
+            if (sekInit) { sekInit.value = 'SD Muhammadiyah Unggulan Ashidiq'; sekInit.readOnly = true; }
+        }
+    }
     psbSyncJalur();
+
+    // ── Simulasi biaya live (Step 3) ──
+    var TARIF = <?= json_encode($tarifJs, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    var KADER = <?= json_encode($kaderJs) ?>;
+    var JALUR_LABEL = <?= json_encode(jalurPendaftaran(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    var JALUR_OPTS = <?= json_encode($optsJalur, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+
+    function fmtRp(n) {
+        return 'Rp ' + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+    function termurah(grup) {
+        if (!grup || !grup.length) return null;
+        return grup.reduce(function (a, b) { return b.diskon < a.diskon ? b : a; });
+    }
+    function genderDipilih() {
+        var g = document.querySelector('input[name="jenis_kelamin"]:checked');
+        return g ? g.value : 'L';
+    }
+
+    function hitungSimulasi() {
+        var jalurSel = document.querySelector('input[name="jalur"]:checked');
+        var jalur  = (jalurSel && !jalurSel.disabled) ? jalurSel.value : 'reguler';
+        var dSel   = document.querySelector('input[name="jalur_detail"]:checked');
+        var detail = (dSel && !dSel.disabled) ? dSel.value : '';
+
+        var potongan = 0, potonganLabel = '';
+        if ((jalur === 'prestasi' || jalur === 'tahfidz') && detail) {
+            var opt = (JALUR_OPTS[jalur] || {})[detail];
+            if (opt) { potongan = opt.potongan; potonganLabel = opt.label; }
+        }
+
+        var elLabel = document.getElementById('simJalur');
+        if (elLabel) elLabel.textContent = JALUR_LABEL[jalur] || jalur;
+
+        var catatan = '';
+        if (jalur === 'prestasi' || jalur === 'tahfidz') {
+            catatan = potongan > 0
+                ? 'Potongan ' + potongan + '% otomatis diterapkan (' + potonganLabel + ').'
+                : 'Pilih tingkat prestasi / kategori hafalan untuk melihat potongan.';
+        } else if (jalur === 'kaderisasi') {
+            catatan = 'Jalur kaderisasi memakai tarif khusus: ADM awal & syahriyah tetap (bukan persentase).';
+        } else if (jalur === 'alumni-sdmua') {
+            catatan = 'Tarif di bawah masih penuh — keringanan 25–50% aktif setelah panitia memverifikasi surat rekomendasi.';
+        } else if (jalur === 'dhuafa') {
+            catatan = 'Setelah verifikasi berkas, ADM awal dapat dibebaskan & syahriyah mendapat keringanan 20–60% (keputusan panitia).';
+        } else {
+            catatan = 'Tarif normal jalur reguler.';
+        }
+        var elCat = document.getElementById('simCatatan');
+        if (elCat) elCat.textContent = catatan;
+
+        var rows = [], total = 0;
+        function row(label, asli, tampil, sub) {
+            var html;
+            if (tampil <= 0) html = '<span style="color:#6ee7a0;font-weight:700;">GRATIS</span>';
+            else if (tampil < asli) html = '<s>' + fmtRp(asli) + '</s> ' + fmtRp(tampil);
+            else html = fmtRp(tampil);
+            rows.push('<div class="sim-row"><span class="sim-label">' + label + (sub ? '<br><small style="color:rgba(255,255,255,0.4);font-size:10.5px;">' + sub + '</small>' : '') + '</span><span class="sim-val">' + html + '</span></div>');
+        }
+
+        // 1. Biaya pendaftaran
+        var p0 = (TARIF.pendaftaran || [])[0];
+        if (p0) {
+            var tP = p0.gratis ? 0 : p0.diskon;
+            row('Biaya Pendaftaran', p0.asli, tP);
+            total += tP;
+        }
+
+        // 2. Administrasi awal (di sini potongan jalur diterapkan)
+        var adm = termurah(TARIF.administrasi);
+        if (adm) {
+            var tA, subA;
+            if (jalur === 'kaderisasi') {
+                tA = KADER.adm; subA = 'Tarif tetap jalur kaderisasi';
+            } else if (potongan > 0) {
+                tA = Math.max(0, Math.round(adm.asli * (1 - potongan / 100)));
+            } else {
+                tA = adm.diskon;
+                if (jalur === 'dhuafa') subA = 'Menunggu verifikasi — dapat dibebaskan 100%';
+            }
+            row('Administrasi Awal <small>(mulai dari)</small>', adm.asli, tA, subA);
+            total += tA;
+        }
+
+        // 3. Wakaf (tidak terpotong jalur)
+        var wk = termurah(TARIF.wakaf);
+        if (wk) {
+            row('Wakaf <small>(mulai dari)</small>', wk.asli, wk.diskon);
+            total += wk.diskon;
+        }
+
+        // 4. Infak wajib
+        var inf = TARIF.infak;
+        if (inf) {
+            var tI = inf.gratis ? 0 : inf.diskon;
+            row('Infak Wajib', inf.asli, tI);
+            total += tI;
+        }
+
+        // 5. Syahriyah (info, di luar total)
+        var sy = termurah(TARIF.syahriyah);
+        if (sy) {
+            var tS, subS = 'per bulan — pilihan final saat kesanggupan';
+            if (jalur === 'kaderisasi') {
+                tS = genderDipilih() === 'P' ? KADER.spp_p : KADER.spp_l;
+                subS = 'per bulan — tarif tetap jalur kaderisasi';
+            } else if (potongan > 0) {
+                tS = Math.max(0, Math.round(sy.diskon * (1 - potongan / 100)));
+            } else {
+                tS = sy.diskon;
+            }
+            row('Syahriyah <small>(mulai dari)</small>', sy.asli, tS, subS);
+        }
+
+        // 6. Laundry (info, di luar total)
+        var laun = genderDipilih() === 'P' ? TARIF.laundry.P : TARIF.laundry.L;
+        if (laun !== null && laun !== undefined) {
+            row('Laundry', laun, laun, 'per bulan');
+        }
+
+        var elRows = document.getElementById('simRows');
+        if (elRows) elRows.innerHTML = rows.join('');
+        var elTotal = document.getElementById('simTotal');
+        if (elTotal) elTotal.textContent = fmtRp(total);
+    }
+
+    // Re-render simulasi saat jalur/detail/gender berubah
+    document.querySelectorAll('input[name="jalur"], input[name="jalur_detail"], input[name="jenis_kelamin"]')
+        .forEach(function (r) {
+            r.addEventListener('change', function () { if (currentStep === 3) hitungSimulasi(); });
+        });
 
     if (lihatPassword) {
         lihatPassword.addEventListener('change', function () {
