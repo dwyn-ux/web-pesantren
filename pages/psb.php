@@ -1127,11 +1127,26 @@ CSS;
         var adminJ = JALUR_ADMIN[jalur];
         if ((jalur === 'prestasi' || jalur === 'tahfidz') && detail) {
             var opt = (JALUR_OPTS[jalur] || {})[detail];
-            if (adminJ && adminJ.potongan !== null && adminJ.potongan !== undefined) {
-                // Admin mengatur potongan global untuk jalur ini (tanpa memandang detail).
+            // 1. Potongan per detail dari admin (jika diatur)
+            var adminDetail = null;
+            if (adminJ && adminJ.prestasi) {
+                var pMap = { kecamatan: adminJ.prestasi.kecamatan, kabkota: adminJ.prestasi.kabkota,
+                              provinsi: adminJ.prestasi.provinsi, nasional: adminJ.prestasi.nasional };
+                adminDetail = pMap[detail] !== null && pMap[detail] !== undefined ? pMap[detail] : null;
+            } else if (adminJ && adminJ.tahfidz) {
+                var tMap = { 'juz-2': adminJ.tahfidz.juz2, 'juz-3': adminJ.tahfidz.juz3,
+                              'juz-5': adminJ.tahfidz.juz5 };
+                adminDetail = tMap[detail] !== null && tMap[detail] !== undefined ? tMap[detail] : null;
+            }
+            if (adminDetail !== null) {
+                potongan = adminDetail;
+                potonganLabel = opt ? opt.label : '';
+            } else if (adminJ && adminJ.potongan !== null && adminJ.potongan !== undefined) {
+                // 2. Potongan global dari admin (jika diatur)
                 potongan = adminJ.potongan;
                 potonganLabel = opt ? opt.label : '';
             } else if (opt) {
+                // 3. Fallback juknis
                 potongan = opt.potongan;
                 potonganLabel = opt.label;
             }

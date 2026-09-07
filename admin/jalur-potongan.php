@@ -18,27 +18,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 
     $upsert = $pdo->prepare(
-        'INSERT INTO jalur_potongan_admin (jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus, admin_dhuafa_bebas)
-         VALUES (?,?,?,?,?,?)
+        'INSERT INTO jalur_potongan_admin
+            (jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus, admin_dhuafa_bebas,
+             prestasi_kecamatan, prestasi_kabkota, prestasi_provinsi, prestasi_nasional,
+             tahfidz_juz2, tahfidz_juz3, tahfidz_juz5)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
          ON DUPLICATE KEY UPDATE
             potongan_persen   = VALUES(potongan_persen),
             adm_khusus       = VALUES(adm_khusus),
             spp_l_khusus     = VALUES(spp_l_khusus),
             spp_p_khusus     = VALUES(spp_p_khusus),
-            admin_dhuafa_bebas = VALUES(admin_dhuafa_bebas)'
+            admin_dhuafa_bebas = VALUES(admin_dhuafa_bebas),
+            prestasi_kecamatan = VALUES(prestasi_kecamatan),
+            prestasi_kabkota   = VALUES(prestasi_kabkota),
+            prestasi_provinsi  = VALUES(prestasi_provinsi),
+            prestasi_nasional  = VALUES(prestasi_nasional),
+            tahfidz_juz2       = VALUES(tahfidz_juz2),
+            tahfidz_juz3       = VALUES(tahfidz_juz3),
+            tahfidz_juz5       = VALUES(tahfidz_juz5)'
     );
 
-    $simpanJalur = function (string $jalur, array $val) use ($upsert): void {
-        $potongan  = isset($val['potongan']) && $val['potongan'] !== '' && $val['potongan'] !== null
-            ? (float) $val['potongan'] : null;
-        $adm       = isset($val['adm']) && $val['adm'] !== '' && $val['adm'] !== null
-            ? (float) $val['adm'] : null;
-        $spp_l     = isset($val['spp_l']) && $val['spp_l'] !== '' && $val['spp_l'] !== null
-            ? (float) $val['spp_l'] : null;
-        $spp_p     = isset($val['spp_p']) && $val['spp_p'] !== '' && $val['spp_p'] !== null
-            ? (float) $val['spp_p'] : null;
+    $floatOrNull = function ($v): ?float {
+        return (isset($v) && $v !== '' && $v !== null)
+            ? (float) $v : null;
+    };
+
+    $simpanJalur = function (string $jalur, array $val) use ($upsert, $floatOrNull): void {
+        // Potongan global
+        $potongan  = $floatOrNull($val['potongan']);
+        // Kaderisasi
+        $adm       = $floatOrNull($val['adm']);
+        $spp_l     = $floatOrNull($val['spp_l']);
+        $spp_p     = $floatOrNull($val['spp_p']);
         $bebas     = (int) ($val['bebas'] ?? 0) === 1;
-        $upsert->execute([$jalur, $potongan, $adm, $spp_l, $spp_p, $bebas ? 1 : 0]);
+        // Prestasi (per detail)
+        $prst      = $val['prestasi'] ?? [];
+        $pra_kec   = $floatOrNull($prst['kecamatan'] ?? null);
+        $pra_kab   = $floatOrNull($prst['kabkota'] ?? null);
+        $pra_prov  = $floatOrNull($prst['provinsi'] ?? null);
+        $pra_nas   = $floatOrNull($prst['nasional'] ?? null);
+        // Tahfidz (per detail)
+        $thzf      = $val['tahfidz'] ?? [];
+        $thz_j2    = $floatOrNull($thzf['juz2'] ?? null);
+        $thz_j3    = $floatOrNull($thzf['juz3'] ?? null);
+        $thz_j5    = $floatOrNull($thzf['juz5'] ?? null);
+
+        $upsert->execute([
+            $jalur, $potongan, $adm, $spp_l, $spp_p, $bebas ? 1 : 0,
+            $pra_kec, $pra_kab, $pra_prov, $pra_nas,
+            $thz_j2, $thz_j3, $thz_j5,
+        ]);
     };
 
     foreach ($raw as $jalur => $v) {
@@ -109,9 +138,17 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             <?php foreach ($optsJalur['prestasi'] as $val => $opt): ?>
             <div class="form-row" style="margin-top:10px;">
-                <div class="form-group" style="flex:1;">
+                <div class="form-group" style="flex:2;">
                     <label><?= e($opt['label']) ?></label>
-                    <div style="font-size:12px;color:var(--text-mid);">Juknis: <?= (int) $opt['potongan'] ?>%</div>
+                </div>
+                <div class="form-group" style="flex:1;max-width:140px;">
+                    <input type="number" min="0" max="100" step="0.5"
+                           name="jalur_prestasi[prestasi][<?= e($val) ?>]"
+                           value="<?= e($formatPersen($adminJalur['prestasi'][$val] ?? null)) ?>"
+                           class="form-control">
+                    <small style="font-size:11px;color:var(--text-light);">
+                        Kosongkan jika ingin memakai nilai juknis (<?= (int) $opt['potongan'] ?>%).
+                    </small>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -137,9 +174,17 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             <?php foreach ($optsJalur['tahfidz'] as $val => $opt): ?>
             <div class="form-row" style="margin-top:10px;">
-                <div class="form-group" style="flex:1;">
+                <div class="form-group" style="flex:2;">
                     <label><?= e($opt['label']) ?></label>
-                    <div style="font-size:12px;color:var(--text-mid);">Juknis: <?= (int) $opt['potongan'] ?>%</div>
+                </div>
+                <div class="form-group" style="flex:1;max-width:140px;">
+                    <input type="number" min="0" max="100" step="0.5"
+                           name="jalur_tahfidz[tahfidz][<?= e($val) ?>]"
+                           value="<?= e($formatPersen($adminJalur['tahfidz'][$val] ?? null)) ?>"
+                           class="form-control">
+                    <small style="font-size:11px;color:var(--text-light);">
+                        Kosongkan jika ingin memakai nilai juknis (<?= (int) $opt['potongan'] ?>%).
+                    </small>
                 </div>
             </div>
             <?php endforeach; ?>

@@ -453,18 +453,24 @@ function jalurDetailOptions(): array {
  *
  * Kembalikan array berindeks jalur (reguler/prestasi/tahfidz/kaderisasi/alumni-sdmua/dhuafa)
  * berisi:
- *   potongan       => persen (null jika tidak ada)
- *   adm            => tarif ADM khusus (null jika tidak ada)
- *   spp_l          => tarif SPP putra khusus (null jika tidak ada)
- *   spp_p          => tarif SPP putri khusus (null jika tidak ada)
- *   dhuafa_bebas   => bool, apakah ADM awal dhuafa dibebaskan 100%
+ *   potongan           => persen global per jalur (null jika tidak ada)
+ *   adm                => tarif ADM khusus (null jika tidak ada)
+ *   spp_l              => tarif SPP putra khusus (null jika tidak ada)
+ *   spp_p              => tarif SPP putri khusus (null jika tidak ada)
+ *   dhuafa_bebas       => bool, apakah ADM awal dhuafa dibebaskan 100%
+ *   prestasi           => array berisi potongan per detail (kecamatan, kabkota, provinsi, nasional)
+ *                        masing-masing null jika admin belum mengatur.
+ *   tahfidz            => array berisi potongan per detail (juz2, juz3, juz5)
+ *                        masing-masing null jika admin belum mengatur.
  *
  * Catatan: fungsi ini hanya pembaca global; keputusan per-santri tetap
  * di tabel pendaftaran (jalur_status, jalur_potongan) — terpisah.
  */
 function getJalurPotonganAdmin(PDO $pdo): array {
     $rows = $pdo->query(
-        "SELECT jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus, admin_dhuafa_bebas
+        "SELECT jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus, admin_dhuafa_bebas,
+                prestasi_kecamatan, prestasi_kabkota, prestasi_provinsi, prestasi_nasional,
+                tahfidz_juz2, tahfidz_juz3, tahfidz_juz5
          FROM jalur_potongan_admin"
     )->fetchAll();
     $out = [];
@@ -479,6 +485,24 @@ function getJalurPotonganAdmin(PDO $pdo): array {
             'spp_p'      => isset($r['spp_p_khusus']) && $r['spp_p_khusus'] !== null
                 ? (float) $r['spp_p_khusus'] : null,
             'dhuafa_bebas' => (int) ($r['admin_dhuafa_bebas'] ?? 0) === 1,
+            'prestasi'   => [
+                'kecamatan' => isset($r['prestasi_kecamatan']) && $r['prestasi_kecamatan'] !== null
+                    ? (float) $r['prestasi_kecamatan'] : null,
+                'kabkota'  => isset($r['prestasi_kabkota']) && $r['prestasi_kabkota'] !== null
+                    ? (float) $r['prestasi_kabkota'] : null,
+                'provinsi' => isset($r['prestasi_provinsi']) && $r['prestasi_provinsi'] !== null
+                    ? (float) $r['prestasi_provinsi'] : null,
+                'nasional' => isset($r['prestasi_nasional']) && $r['prestasi_nasional'] !== null
+                    ? (float) $r['prestasi_nasional'] : null,
+            ],
+            'tahfidz'    => [
+                'juz2' => isset($r['tahfidz_juz2']) && $r['tahfidz_juz2'] !== null
+                    ? (float) $r['tahfidz_juz2'] : null,
+                'juz3' => isset($r['tahfidz_juz3']) && $r['tahfidz_juz3'] !== null
+                    ? (float) $r['tahfidz_juz3'] : null,
+                'juz5' => isset($r['tahfidz_juz5']) && $r['tahfidz_juz5'] !== null
+                    ? (float) $r['tahfidz_juz5'] : null,
+            ],
         ];
     }
     return $out;
@@ -486,21 +510,41 @@ function getJalurPotonganAdmin(PDO $pdo): array {
 
 /**
  * Hitung persen potongan otomatis berdasar jalur & detail.
- * Kalau admin sudah mengatur potongan_persen di jalur_potongan_admin
- * untuk jalur prestasi/tahfidz, nilai tersebut diprioritaskan.
- * Kalau tidak, tetap pakai juknis (jalurDetailOptions).
+ * Prioritas:
+ *   1. Potongan per detail yang diatur admin (jika ada)
+ *   2. Potongan global per jalur yang diatur admin (jika ada)
+ *   3. Nilai juknis dari jalurDetailOptions() (fallback)
  *
  * Khusus kaderisasi: potongan berupa tarif tetap, ditangani terpisah
  * di snapshotPembiayaan(). Alumni & dhuafa ditetapkan admin (bukan di sini).
  */
 function jalurPotonganOtomatis(string $jalur, ?string $detail, ?array $adminJalur = null): float {
     if ($detail === null) return 0.0;
-
-    // Jika admin sudah mengatur potongan per jalur (tanpa detail), prioritaskan.
-    if ($adminJalur && isset($adminJalur[$jalur]['potongan'])) {
-        return $adminJalur[$jalur]['potongan'];
+    if ($adminJalur && isset($adminJalur[$jalur])) {
+        // 1. Potongan per detail (admin)
+        $detailAdmin = $adminJalur[$jalur];
+        if ($jalur === 'prestasi' && isset($detailAdmin['prestasi'])) {
+            $map = ['kecamatan' => 'kecamatan', 'kabkota' => 'kabkota',
+                    'provinsi' => 'provinsi', 'nasional' => 'nasional'];
+            $key = $map[$detail];
+            if ($key && isset($detailAdmin['prestasi'][$key])) {
+                return $detailAdmin['prestasi'][$key];
+            }
+        }
+        if ($jalur === 'tahfidz' && isset($detailAdmin['tahfidz'])) {
+            $map = ['juz-2' => 'juz2', 'juz-3' => 'juz3', 'juz-5' => 'juz5'];
+            $key = $map[$detail];
+            if ($key && isset($detailAdmin['tahfidz'][$key])) {
+                return $detailAdmin['tahfidz'][$key];
+            }
+        }
+        // 2. Potongan global (admin)
+        if (isset($detailAdmin['potongan'])) {
+            return $detailAdmin['potongan'];
+        }
     }
 
+    // 3. Fallback juknis
     $opt = jalurDetailOptions()[$jalur][$detail] ?? null;
     return $opt ? (float) $opt['potongan'] : 0.0;
 }
