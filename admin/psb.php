@@ -20,6 +20,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             )->execute([$status, $catatan ?: null, $id]);
             setFlash('success', 'Status pendaftaran berhasil diperbarui.');
         }
+    } elseif ($_POST['action'] === 'verifikasi_jalur') {
+        $id        = sanitizeInt($_POST['id'] ?? 0);
+        $keputusan = sanitizeString($_POST['keputusan'] ?? '');
+        $potongan  = $_POST['potongan'] !== '' && $_POST['potongan'] !== null ? sanitizeFloat($_POST['potongan']) : null;
+        if ($id > 0) {
+            $res = jalurTerapkanKeputusan($pdo, $id, $keputusan, $potongan);
+            setFlash($res['ok'] ? 'success' : 'error', $res['pesan']);
+        }
     } elseif ($_POST['action'] === 'issue_portal') {
         $id=sanitizeInt($_POST['id']??0);$nomorInduk=strtoupper(sanitizeString($_POST['nomor_induk']??''));$password=$_POST['portal_password']??'';
         if($id>0 && preg_match('/^[A-Z0-9.\/-]{4,40}$/',$nomorInduk) && ($password===''||strlen($password)>=8)){
@@ -86,6 +94,12 @@ $labelStatus = [
     'ditolak'      => 'Ditolak',
     'daftar-ulang' => 'Daftar Ulang',
 ];
+$optsJalur = jalurDetailOptions();
+// Format persen aman: "20.00" → "20", "27.50" → "27.5"
+$formatPersen = function ($nilai): string {
+    $s = (string) $nilai;
+    return strpos($s, '.') !== false ? rtrim(rtrim($s, '0'), '.') : $s;
+};
 
 require_once __DIR__ . '/includes/header.php';
 ?>
@@ -118,6 +132,7 @@ require_once __DIR__ . '/includes/header.php';
                 <th>Nomor</th>
                 <th>Nama Calon Santri</th>
                 <th>Jenjang</th>
+                <th>Jalur</th>
                 <th>WhatsApp</th>
                 <th>Tanggal Daftar</th>
                 <th>Status</th>
@@ -126,7 +141,7 @@ require_once __DIR__ . '/includes/header.php';
         </thead>
         <tbody>
             <?php if (empty($pendaftaran)): ?>
-            <tr><td colspan="7" class="table-empty">Tidak ada data pendaftaran.</td></tr>
+            <tr><td colspan="8" class="table-empty">Tidak ada data pendaftaran.</td></tr>
             <?php else: ?>
             <?php foreach ($pendaftaran as $p): ?>
             <tr>
@@ -138,6 +153,20 @@ require_once __DIR__ . '/includes/header.php';
                     </span>
                 </td>
                 <td><?= e($labelJenjang[$p['jenjang']] ?? $p['jenjang']) ?></td>
+                <td>
+                    <?php if (($p['jalur'] ?? 'reguler') !== 'reguler'): ?>
+                    <span class="badge badge-pending" style="font-size:10px;">
+                        <?= e(jalurPendaftaran()[$p['jalur']] ?? $p['jalur']) ?>
+                    </span>
+                    <?php if (in_array($p['jalur'], jalurPerluVerifikasi(), true) && $p['jalur_status'] !== 'none'): ?><br>
+                    <small style="font-size:10px;color:var(--text-light);">
+                        <?= e(jalurStatusLabel($p['jalur_status'])) ?><?= $p['jalur_status'] === 'disetujui' && $p['jalur_potongan'] !== null ? ' (' . e($formatPersen($p['jalur_potongan'])) . '%)' : '' ?>)
+                    </small>
+                    <?php endif; ?>
+                    <?php else: ?>
+                    <span style="font-size:11px;color:var(--text-light);">—</span>
+                    <?php endif; ?>
+                </td>
                 <td>
                     <a href="https://wa.me/<?= e(preg_replace('/^0/', '62', preg_replace('/\D/', '', $p['whatsapp']))) ?>"
                        target="_blank" rel="noopener noreferrer"
@@ -164,7 +193,7 @@ require_once __DIR__ . '/includes/header.php';
             </tr>
             <!-- Detail row (hidden) -->
             <tr id="detail-<?= $p['id'] ?>" style="display:none;">
-                <td colspan="7" style="background:#f8faf9;padding:20px;">
+                <td colspan="8" style="background:#f8faf9;padding:20px;">
                     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;font-size:13px;">
                         <div>
                             <strong>Orang Tua</strong><br>
@@ -181,6 +210,29 @@ require_once __DIR__ . '/includes/header.php';
                             Hafalan: <?= e($p['jumlah_hafalan'] ?? '-') ?>
                             <?php if (!empty($p['tinggi_badan']) || !empty($p['berat_badan'])): ?><br>
                             Seragam: <?= !empty($p['tinggi_badan']) ? e((float)$p['tinggi_badan']) . ' cm' : '-' ?> / <?= !empty($p['berat_badan']) ? e((float)$p['berat_badan']) . ' kg' : '-' ?>
+                            <?php endif; ?>
+                            <br><br><strong>Jalur:</strong> <?= e(jalurPendaftaran()[$p['jalur']] ?? $p['jalur']) ?><?= $p['jalur_detail'] ? ' — ' . e($optsJalur[$p['jalur']][$p['jalur_detail']]['label'] ?? $p['jalur_detail']) : '' ?>
+                            <?php if (in_array($p['jalur'], jalurPerluVerifikasi(), true) && $p['jalur_status'] === 'pending'): ?>
+                            <form method="post" style="margin:8px 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                                <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
+                                <input type="hidden" name="action" value="verifikasi_jalur">
+                                <input type="hidden" name="id" value="<?=$p['id']?>">
+                                <input type="number" name="potongan" min="<?= $p['jalur'] === 'alumni-sdmua' ? 25 : 20 ?>" max="<?= $p['jalur'] === 'alumni-sdmua' ? 50 : 60 ?>" step="0.5"
+                                       placeholder="Potongan %" style="width:90px;padding:4px;font-size:12px;" required>
+                                <button name="keputusan" value="disetujui" class="btn-sm btn-sm-primary">Setujui</button>
+                                <button name="keputusan" value="ditolak" class="btn-sm btn-sm-secondary">Tolak</button>
+                            </form>
+                            <small style="font-size:11px;color:var(--text-light);">Alumni 25–50%, Dhuafa 20–60%. Berkas syarat: <?= e(implode(', ', array_map(fn($j) => berkasLabel($j), jalurBerkasUntuk($p['jalur'])))) ?>.</small>
+                            <?php elseif (in_array($p['jalur'], jalurPerluVerifikasi(), true) && $p['jalur_status'] === 'disetujui'): ?>
+                            <form method="post" style="margin:8px 0;">
+                                <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
+                                <input type="hidden" name="action" value="verifikasi_jalur">
+                                <input type="hidden" name="id" value="<?=$p['id']?>">
+                                <input type="hidden" name="keputusan" value="ditolak">
+                                <button class="btn-sm btn-sm-secondary" style="font-size:11px;">Batalkan persetujuan (kembali reguler)</button>
+                            </form>
+                            <?php elseif (($p['jalur'] ?? 'reguler') !== 'reguler'): ?>
+                            <em style="font-size:11px;color:var(--text-light);">Tidak perlu verifikasi — potongan diterapkan otomatis.</em>
                             <?php endif; ?>
                             <br><br><strong>Pembiayaan:</strong><br>
                             <?php syncPembiayaan($pdo,(int)$p['id'],$p['jenis_kelamin']);

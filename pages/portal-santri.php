@@ -16,6 +16,14 @@ if (!$pendaftar) {
     redirect('/login-santri');
 }
 
+// ── Jalur pendaftaran (dipakai handler POST & tampilan) ──────
+$jalur        = $pendaftar['jalur'] ?? 'reguler';
+$jalurStatus  = $pendaftar['jalur_status'] ?? 'none';
+$jalurPerluVer = in_array($jalur, jalurPerluVerifikasi(), true);
+$jalurBerkas  = jalurBerkasUntuk($jalur); // slot tambahan sesuai jalur
+// Jalur diterima admin → slot berkas jalur tidak lagi wajib
+$jalurDisetujui = $jalurStatus === 'disetujui';
+
 // Pastikan snapshot pembiayaan sinkron dengan tarif admin (kecuali sudah terkunci)
 syncPembiayaan($pdo, $id, $pendaftar['jenis_kelamin']);
 
@@ -139,7 +147,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'Pemberkasan dibuka setelah pembayaran & kesanggupan selesai.';
         } else {
             $jenis = sanitizeString($_POST['jenis'] ?? '');
-            $allowed = ['kartu-keluarga', 'akta-lahir', 'ktp-ortu', 'foto', 'ijazah', 'sertifikat-tka', 'lainnya'];
+            // Slot dasar + slot tambahan sesuai jalur pendaftar
+            $allowed = array_merge(
+                ['kartu-keluarga', 'akta-lahir', 'ktp-ortu', 'foto', 'ijazah', 'sertifikat-tka', 'lainnya'],
+                $jalurBerkas
+            );
             if (!in_array($jenis, $allowed, true)) {
                 $errors[] = 'Jenis berkas tidak valid.';
             } else {
@@ -188,6 +200,38 @@ $pageCanonical = BASE_URL . '/portal-santri';
 <main class="page-section portal-page"><div class="container"><div class="portal-head"><div><small><?= e($pendaftar['nomor_induk'] ?: $pendaftar['nomor_daftar']) ?></small><h1>Assalamu'alaikum, <?= e($pendaftar['nama_lengkap']) ?></h1></div><a class="btn-outline" href="<?= BASE_URL ?>/login-santri?logout=1">Keluar</a></div>
 
 <?php if ($errors): ?><div class="flash-message flash-error"><?= e(implode(' ', $errors)) ?></div><?php endif; ?>
+
+<?php if ($jalur !== 'reguler'): ?>
+<!-- ── Info jalur pendaftaran ────────────────────────────────── -->
+<section class="portal-card" style="border-left:4px solid var(--gold);">
+    <h2 style="font-size:16px;">Jalur Pendaftaran: <?= e(jalurPendaftaran()[$jalur] ?? $jalur) ?></h2>
+    <?php if ($jalurPerluVer): ?>
+        <?php if ($jalurStatus === 'pending'): ?>
+            <p style="margin:8px 0 0;font-size:13px;color:var(--text-mid);">
+                Status: <span class="badge badge-gold">Menunggu Verifikasi</span><br>
+                <small>Siapkan berkas: <?= e(implode(', ', array_map(fn($j) => berkasLabel($j), $jalurBerkas))) ?>.
+                Panitia akan memverifikasi kelayakan jalur ini; keringanan biaya aktif setelah disetujui.</small>
+            </p>
+        <?php elseif ($jalurStatus === 'disetujui'): ?>
+            <p class="payment-success" style="margin:8px 0 0;text-align:left;">
+                <strong>Jalur disetujui panitia.</strong> Keringanan biaya sesuai jalur ini telah diterapkan pada rincian di bawah.
+            </p>
+        <?php elseif ($jalurStatus === 'ditolak'): ?>
+            <p style="margin:8px 0 0;font-size:13px;color:var(--text-mid);">
+                Pengajuan jalur ini tidak disetujui; pendaftaran kembali ke jalur reguler.
+            </p>
+        <?php endif; ?>
+    <?php else: ?>
+        <p style="margin:8px 0 0;font-size:13px;color:var(--text-mid);">
+            <?php if ($jalur === 'kaderisasi'): ?>
+                Mengikuti tarif khusus Jalur Kaderisasi (ADM awal &amp; syahriyah tetap) sesuai juknis PSB.
+            <?php else: ?>
+                Potongan biaya otomatis diterapkan pada rincian pembiayaan di bawah.
+            <?php endif; ?>
+        </p>
+    <?php endif; ?>
+</section>
+<?php endif; ?>
 
 <div class="portal-progress">
     <div class="progress-step active"><span>1</span><strong>Pendaftaran</strong></div>
@@ -316,12 +360,19 @@ $pageCanonical = BASE_URL . '/portal-santri';
     <section class="portal-card">
         <h2>3. Pemberkasan</h2>
         <p>Kelengkapan wajib: <?= count($wajibTerisi) ?>/<?= count($wajibJenis) ?></p>
+        <?php if ($jalurBerkas): ?>
+        <p class="form-note">Jalur pendaftaran <strong><?= e(jalurPendaftaran()[$jalur] ?? $jalur) ?></strong> menambahkan berkas: <strong><?= e(implode(', ', array_map(fn($j) => berkasLabel($j), $jalurBerkas))) ?></strong>.</p>
+        <?php endif; ?>
         <div class="berkas-grid">
             <?php
             $berkasJenis = [
                 'kartu-keluarga' => true, 'akta-lahir' => true, 'ktp-ortu' => true,
                 'foto' => true, 'ijazah' => false, 'sertifikat-tka' => false, 'lainnya' => false,
             ];
+            // Slot tambahan sesuai jalur (alumni/dhuafa) — otomatis hilang jika jalur ditolak
+            foreach ($jalurBerkas as $jx) {
+                if (!isset($berkasJenis[$jx])) $berkasJenis[$jx] = false;
+            }
             foreach ($berkasJenis as $j => $wajib):
                 $filesJ = array_values(array_filter($documentFiles, fn($f) => $f['jenis'] === $j));
             ?>

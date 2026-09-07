@@ -394,20 +394,97 @@ function pembiayaanStatusLabel(string $status): string {
 
 function berkasLabel(string $jenis): string {
     return match ($jenis) {
-        'kartu-keluarga' => 'Scan KK',
-        'akta-lahir'     => 'Scan Akta Lahir',
-        'ktp-ortu'       => 'Scan KTP Orang Tua',
-        'foto'           => 'Foto 3x4',
-        'ijazah'         => 'Scan SKL/Ijazah',
-        'sertifikat-tka' => 'Sertifikat TKA',
-        'lainnya'        => 'Lainnya',
-        default          => $jenis,
+        'kartu-keluarga'    => 'Scan KK',
+        'akta-lahir'        => 'Scan Akta Lahir',
+        'ktp-ortu'          => 'Scan KTP Orang Tua',
+        'foto'              => 'Foto 3x4',
+        'ijazah'            => 'Scan SKL/Ijazah',
+        'sertifikat-tka'    => 'Sertifikat TKA',
+        'surat-rekomendasi' => 'Surat Rekomendasi',
+        'sktm'              => 'SKTM (Ket. Tidak Mampu)',
+        'surat-pernyataan'  => 'Surat Pernyataan',
+        'lainnya'           => 'Lainnya',
+        default             => $jenis,
     };
+}
+
+// ── Jalur Pendaftaran PSB (Juknis TA 2027/2028) ──────────────
+
+/** Daftar jalur pendaftaran + label tampilan. */
+function jalurPendaftaran(): array {
+    return [
+        'reguler'      => 'Reguler',
+        'prestasi'     => 'Prestasi (Akademik/Non-Akademik)',
+        'tahfidz'      => 'Tahfidz Al-Qur\'an',
+        'kaderisasi'   => 'Kaderisasi (Jalur Khusus)',
+        'alumni-sdmua' => 'Alumni SD Muhammadiyah Unggulan Ashidiq',
+        'dhuafa'       => 'Dhuafa / Beasiswa Empowerment',
+    ];
+}
+
+/** Jalur yang butuh verifikasi berkas oleh admin sebelum potongan aktif. */
+function jalurPerluVerifikasi(): array {
+    return ['alumni-sdmua', 'dhuafa'];
+}
+
+/**
+ * Detail pilihan per jalur (radio form) + potongan otomatis.
+ * alumni-sdmua & dhuafa tidak di sini — potongannya ditetapkan admin.
+ */
+function jalurDetailOptions(): array {
+    return [
+        'prestasi' => [
+            'kecamatan' => ['label' => 'Tingkat Kecamatan', 'potongan' => 20],
+            'kabkota'   => ['label' => 'Tingkat Kabupaten/Kota', 'potongan' => 30],
+            'provinsi'  => ['label' => 'Tingkat Provinsi', 'potongan' => 40],
+            'nasional'  => ['label' => 'Tingkat Nasional/Internasional', 'potongan' => 50],
+        ],
+        'tahfidz' => [
+            'juz-2' => ['label' => 'Hafalan lebih dari 2 Juz', 'potongan' => 20],
+            'juz-3' => ['label' => 'Hafalan lebih dari 3 Juz', 'potongan' => 30],
+            'juz-5' => ['label' => 'Hafalan lebih dari 5 Juz', 'potongan' => 50],
+        ],
+    ];
+}
+
+/**
+ * Hitung persen potongan otomatis berdasar jalur & detail.
+ * Khusus kaderisasi: potongan berupa tarif tetap, ditangani terpisah
+ * di snapshotPembiayaan(). Alumni & dhuafa ditetapkan admin (bukan di sini).
+ */
+function jalurPotonganOtomatis(string $jalur, ?string $detail): float {
+    if ($detail === null) return 0.0;
+    $opt = jalurDetailOptions()[$jalur][$detail] ?? null;
+    return $opt ? (float) $opt['potongan'] : 0.0;
 }
 
 /** Berkas yang wajib dilengkapi (selain bisa menyusul). */
 function berkasWajib(): array {
     return ['kartu-keluarga', 'akta-lahir', 'ktp-ortu', 'foto'];
+}
+
+/**
+ * Berkas tambahan per jalur pendaftaran (Juknis PSB).
+ * Slot ini muncul kondisional di portal santri sesuai jalur pendaftar.
+ * Kembalikan [] untuk jalur tanpa syarat berkas khusus.
+ *
+ * @return array<string, list<string>>
+ */
+function jalurBerkasSyarat(): array {
+    return [
+        'alumni-sdmua' => ['surat-rekomendasi'],
+        'dhuafa'       => ['sktm', 'surat-rekomendasi', 'surat-pernyataan'],
+    ];
+}
+
+/**
+ * Berkas tambahan yang berlaku untuk satu pendaftar tertentu.
+ * Jalur yang ditolak (kembali reguler) otomatis kehilangan slot tambahan.
+ *
+ * @return list<string>
+ */
+function jalurBerkasUntuk(string $jalur): array {
+    return jalurBerkasSyarat()[$jalur] ?? [];
 }
 
 /**
@@ -429,13 +506,38 @@ function getPembiayaanTarif(PDO $pdo): array {
  * Buat snapshot pembiayaan per-santri dari tarif global.
  * Dipanggil saat santri mendaftar atau otomatis di portal/admin
  * jika snapshot belum ada (santri lama).
+ *
+ * $jalur/$jalurDetail/$jalurPotonganAdmin dipakai untuk menerapkan
+ * potongan jalur PSB: potongan otomatis (prestasi/tahfidz) langsung
+ * aktif, kaderisasi memakai tarif khusus, alumni/dhuafa memakai
+ * persen yang ditetapkan admin.
  */
 function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void {
     $chk = $pdo->prepare('SELECT COUNT(*) FROM pembiayaan WHERE pendaftaran_id = ?');
     $chk->execute([$pendaftaranId]);
     if ((int) $chk->fetchColumn() > 0) return;
 
+    // Baca jalur pendaftar (reguler/prestasi/tahfidz/kaderisasi/alumni-sdmua/dhuafa)
+    $s = $pdo->prepare('SELECT jalur, jalur_detail, jalur_status, jalur_potongan FROM pendaftaran WHERE id = ?');
+    $s->execute([$pendaftaranId]);
+    $jRow = $s->fetch() ?: [];
+    $jalur        = $jRow['jalur'] ?? 'reguler';
+    $jalurDetail  = $jRow['jalur_detail'] ?? null;
+    $jalurSetujui = ($jRow['jalur_status'] ?? 'none') === 'disetujui';
+
     $tarif = getPembiayaanTarif($pdo);
+
+    // Tarif jalur kaderisasi dari pengaturan (di-set admin, seed migration 009)
+    $kaderTarif = ['adm' => 5000000.0, 'spp_l' => 650000.0, 'spp_p' => 750000.0];
+    if ($jalur === 'kaderisasi') {
+        $q = $pdo->query("SELECT key_name, value FROM pengaturan WHERE key_name IN ('jalur_kaderisasi_adm','jalur_kaderisasi_spp_l','jalur_kaderisasi_spp_p')");
+        foreach ($q->fetchAll() as $r) {
+            if (is_numeric($r['value']) && (float) $r['value'] >= 0) {
+                $kaderTarif[substr($r['key_name'], strrpos($r['key_name'], '_') + 1)] = (float) $r['value'];
+            }
+        }
+    }
+
     $ins   = $pdo->prepare(
         "INSERT INTO pembiayaan
             (pendaftaran_id, jenis, nama, harga_asli, harga_diskon, gratis, nominal, status, urutan)
@@ -443,9 +545,21 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
     );
     $urutan = 0;
 
-    $add = function (array $t) use ($pdo, $ins, $pendaftaranId, &$urutan): void {
+    // Persen potongan aktif:
+    // - prestasi/tahfidz : otomatis sesuai juknis (langsung aktif)
+    // - alumni-sdmua     : persen dari admin, aktif setelah jalur disetujui
+    // - dhuafa           : persen keringanan SPP dari admin, setelah disetujui
+    $persenPotongan = 0.0;
+    if ($jalur === 'prestasi' || $jalur === 'tahfidz') {
+        $persenPotongan = jalurPotonganOtomatis($jalur, $jalurDetail);
+    } elseif (in_array($jalur, ['alumni-sdmua', 'dhuafa'], true) && $jalurSetujui) {
+        $persenPotongan = (float) ($jRow['jalur_potongan'] ?? 0);
+    }
+
+    $add = function (array $t, ?float $nominalOverride = null) use ($pdo, $ins, $pendaftaranId, &$urutan): void {
         $nominal = $t['gratis'] ? 0 : (float) ($t['harga_diskon'] ?? $t['harga_asli']);
-        $status  = $t['gratis'] ? 'gratis' : 'belum';
+        if ($nominalOverride !== null) $nominal = $nominalOverride;
+        $status  = ($t['gratis'] || $nominal <= 0) ? 'gratis' : 'belum';
         $ins->execute([
             $pendaftaranId, $t['jenis'], $t['nama'], $t['harga_asli'],
             $t['harga_diskon'], $t['gratis'], $nominal, $status, ++$urutan,
@@ -455,9 +569,42 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
     foreach (['pendaftaran', 'infak'] as $jenis) {
         foreach ($tarif[$jenis] as $t) $add($t);
     }
-    foreach (['administrasi', 'wakaf', 'syahriyah'] as $jenis) {
-        foreach ($tarif[$jenis] as $t) $add($t);
+
+    foreach (['administrasi', 'wakaf'] as $jenis) {
+        foreach ($tarif[$jenis] as $t) {
+            if (!$t['gratis'] && $jenis === 'administrasi') {
+                if ($jalur === 'kaderisasi') {
+                    // ADM Awal khusus kader: tarif tetap (Juknis VIII).
+                    $t['harga_diskon'] = $kaderTarif['adm'];
+                } elseif ($jalur === 'dhuafa' && $jalurSetujui) {
+                    // Dhuafa disetujui: ADM Awal dibebaskan 100% (Juknis IX).
+                    $t['gratis'] = 1;
+                } elseif ($persenPotongan > 0) {
+                    // Jalur potongan ADM Awal: nominal dipotong
+                    // (jadikan harga_diskon agar tampil coret di UI).
+                    $dasar   = (float) $t['harga_asli'];
+                    $potong  = round($dasar * $persenPotongan / 100);
+                    $t['harga_diskon'] = max(0, $dasar - $potong);
+                }
+            }
+            $add($t);
+        }
     }
+
+    foreach ($tarif['syahriyah'] as $t) {
+        if ($jalur === 'kaderisasi') {
+            // SPP khusus kader (Juknis VIII): tarif tetap per gender.
+            $kader             = $gender === 'P' ? $kaderTarif['spp_p'] : $kaderTarif['spp_l'];
+            $t['nama']         = trim((string) ($t['nama'] ?: 'Syahriyah')) . ' (Jalur Kaderisasi)';
+            $t['harga_diskon'] = $kader;
+        } elseif ($jalur === 'dhuafa' && $jalurSetujui && $persenPotongan > 0) {
+            // Keringanan SPP dhuafa sesuai keputusan admin (20-60%).
+            $dasar  = (float) ($t['harga_diskon'] ?? $t['harga_asli']);
+            $t['harga_diskon'] = max(0, round($dasar * (1 - $persenPotongan / 100)));
+        }
+        $add($t);
+    }
+
     foreach ($tarif['laundry'] as $t) {
         if ($t['gender'] === 'all' || $t['gender'] === $gender) $add($t);
     }
@@ -531,4 +678,74 @@ function saveSignature(string $dataUrl, string $destDir): string|false {
         return false;
     }
     return $file;
+}
+
+// ── Verifikasi Jalur PSB (alumni-sdmua & dhuafa) ─────────────
+
+/**
+ * Terapkan keputusan admin untuk jalur yang butuh verifikasi.
+ * - disetujui : jalur_potongan = persen (alumni 25-50, dhuafa 20-60),
+ *               snapshot pembiayaan di-rebuild agar potongan aktif.
+ * - ditolak   : jalur dikembalikan ke reguler, snapshot di-rebuild.
+ *
+ * Aman dipanggil kapan pun: snapshot hanya di-rebuild jika tagihan
+ * belum terkunci (belum bayar pendaftaran & belum tanda tangan).
+ *
+ * @return array{ok: bool, pesan: string}
+ */
+function jalurTerapkanKeputusan(PDO $pdo, int $pendaftaranId, string $keputusan, ?float $potongan = null): array {
+    $s = $pdo->prepare('SELECT jenis_kelamin, jalur, jalur_status FROM pendaftaran WHERE id = ?');
+    $s->execute([$pendaftaranId]);
+    $p = $s->fetch();
+    if (!$p) return ['ok' => false, 'pesan' => 'Data pendaftaran tidak ditemukan.'];
+
+    $jalurLama = $p['jalur'];
+
+    if ($keputusan === 'disetujui') {
+        if (!in_array($jalurLama, jalurPerluVerifikasi(), true)) {
+            return ['ok' => false, 'pesan' => 'Jalur ini tidak memerlukan verifikasi.'];
+        }
+        // Batas persen: alumni 25-50 (Juknis VII.C), dhuafa 20-60 (kebijakan).
+        $min = $jalurLama === 'alumni-sdmua' ? 25.0 : 20.0;
+        $max = $jalurLama === 'alumni-sdmua' ? 50.0 : 60.0;
+        if ($potongan === null || $potongan < $min || $potongan > $max) {
+            return ['ok' => false, 'pesan' => "Persen potongan harus antara " . (int) $min . "%–" . (int) $max . "% untuk jalur ini."];
+        }
+        $pdo->prepare("UPDATE pendaftaran SET jalur_status='disetujui', jalur_potongan=? WHERE id=?")
+            ->execute([$potongan, $pendaftaranId]);
+    } elseif ($keputusan === 'ditolak') {
+        $pdo->prepare("UPDATE pendaftaran SET jalur='reguler', jalur_detail=NULL, jalur_status='none', jalur_potongan=NULL WHERE id=?")
+            ->execute([$pendaftaranId]);
+    } else {
+        return ['ok' => false, 'pesan' => 'Keputusan tidak valid.'];
+    }
+
+    // Rebuild snapshot HANYA jika belum terkunci (belum bayar & belum ttd).
+    // Jika sudah terkunci, keputusan tetap tersimpan di pendaftaran;
+    // penyesuaian nominal tagihan dilakukan manual oleh admin.
+    $s = $pdo->prepare('SELECT kesanggupan_setuju FROM pendaftaran WHERE id=?');
+    $s->execute([$pendaftaranId]);
+    $ttd = (int) $s->fetchColumn() === 1;
+    $s   = $pdo->prepare("SELECT status FROM pembiayaan WHERE pendaftaran_id=? AND jenis='pendaftaran' LIMIT 1");
+    $s->execute([$pendaftaranId]);
+    $bayar = in_array($s->fetchColumn(), ['menunggu', 'lunas', 'gratis'], true);
+    if ($ttd || $bayar) {
+        return ['ok' => true, 'pesan' => 'Keputusan jalur tersimpan. Tagihan sudah terkunci — sesuaikan nominal manual bila perlu.'];
+    }
+
+    $pdo->prepare('DELETE FROM pembiayaan WHERE pendaftaran_id=?')->execute([$pendaftaranId]);
+    snapshotPembiayaan($pdo, $pendaftaranId, $p['jenis_kelamin']);
+
+    return ['ok' => true, 'pesan' => 'Keputusan jalur diterapkan. Tagihan santri diperbarui otomatis.'];
+}
+
+/** Label ringkas status verifikasi jalur untuk tabel admin. */
+function jalurStatusLabel(string $status): string {
+    return match ($status) {
+        'none'      => '—',
+        'pending'   => 'Menunggu Verifikasi',
+        'disetujui' => 'Disetujui',
+        'ditolak'   => 'Ditolak',
+        default     => $status,
+    };
 }

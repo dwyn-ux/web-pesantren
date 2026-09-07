@@ -41,6 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
         'tahun_lulus'     => sanitizeInt($_POST['tahun_lulus']        ?? date('Y')),
         'kemampuan_quran' => sanitizeString($_POST['kemampuan_quran'] ?? ''),
         'jumlah_hafalan'  => sanitizeString($_POST['jumlah_hafalan']  ?? ''),
+        'alumni_sdmua'    => !empty($_POST['alumni_sdmua']),
+        'jalur'           => sanitizeString($_POST['jalur'] ?? 'reguler'),
+        'jalur_detail'    => sanitizeString($_POST['jalur_detail'] ?? ''),
         'motivasi'        => sanitizeString($_POST['motivasi']        ?? ''),
         'tinggi_badan'    => sanitizeFloat($_POST['tinggi_badan']    ?? ''),
         'berat_badan'     => sanitizeFloat($_POST['berat_badan']     ?? ''),
@@ -83,6 +86,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
         $errors['kemampuan_quran'] = 'Kemampuan Al-Qur\'an tidak valid.';
     }
 
+    // Validasi jalur pendaftaran (Juknis PSB)
+    $validJalur = array_keys(jalurPendaftaran());
+    if (!in_array($data['jalur'], $validJalur, true)) {
+        $errors['jalur'] = 'Jalur pendaftaran tidak valid.';
+    }
+    if ($data['jalur'] === 'alumni-sdmua' && !$data['alumni_sdmua']) {
+        $errors['alumni_sdmua'] = 'Centang pernyataan alumni SD Muhammadiyah Unggulan Ashidiq untuk memilih jalur ini.';
+    }
+    if (in_array($data['jalur'], ['prestasi', 'tahfidz'], true)) {
+        if ($data['jalur_detail'] === '') {
+            $errors['jalur_detail'] = 'Pilih ' . ($data['jalur'] === 'prestasi' ? 'tingkat prestasi' : 'kategori hafalan') . '.';
+        } elseif (!isset(jalurDetailOptions()[$data['jalur']][$data['jalur_detail']])) {
+            $errors['jalur_detail'] = 'Pilihan tidak valid untuk jalur ini.';
+        }
+    } else {
+        $data['jalur_detail'] = '';
+    }
+
     // Validasi tanggal
     if (!empty($data['tanggal_lahir'])) {
         $tgl = date_create($data['tanggal_lahir']);
@@ -121,14 +142,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
         $urutan       = (int) $stmtMax->fetchColumn() + 1;
         $nomorDaftar  = "ASQ-$tahun-" . str_pad($urutan, 4, '0', STR_PAD_LEFT);
 
+        // Jalur alumni & dhuafa butuh verifikasi berkas oleh admin (status pending)
+        $jalurStatus = in_array($data['jalur'], jalurPerluVerifikasi(), true) ? 'pending' : 'none';
+
         $stmtInsert = $pdo->prepare(
             "INSERT INTO pendaftaran
                 (nomor_daftar, portal_password, nama_lengkap, tempat_lahir, tanggal_lahir,
                  jenis_kelamin, jenjang, whatsapp,
                  nama_ayah, nama_ibu, hp_ortu, pekerjaan_ortu, alamat,
-                 asal_sekolah, tahun_lulus, kemampuan_quran, jumlah_hafalan, motivasi,
+                 asal_sekolah, tahun_lulus, kemampuan_quran, jumlah_hafalan,
+                 jalur, jalur_detail, jalur_status, motivasi,
                  tinggi_badan, berat_badan)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
         );
         $stmtInsert->execute([
             $nomorDaftar,
@@ -148,6 +173,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
             $data['tahun_lulus'],
             $data['kemampuan_quran'],
             $data['jumlah_hafalan'] ?: null,
+            $data['jalur'],
+            $data['jalur_detail'] ?: null,
+            $jalurStatus,
             $data['motivasi'] ?: null,
             $data['tinggi_badan'] > 0 ? $data['tinggi_badan'] : null,
             $data['berat_badan'] > 0 ? $data['berat_badan'] : null,
@@ -160,6 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
         $_SESSION['psb_success'] = [
             'nomor' => $nomorDaftar,
             'nama'  => $data['nama_lengkap'],
+            'jalur' => $data['jalur'],
         ];
         redirect('/psb?daftar=sukses');
     }
@@ -191,6 +220,8 @@ $labelQuran = [
     'hafal-juz-30' => 'Hafal Juz 30',
     'hafal-lebih'  => 'Hafal Lebih dari Juz 30',
 ];
+$optsJalur = jalurDetailOptions();
+
 $errorLabels = [
     'nama_lengkap'    => 'Nama lengkap',
     'tempat_lahir'    => 'Tempat lahir',
@@ -209,6 +240,9 @@ $errorLabels = [
     'berat_badan'     => 'Berat badan',
     'portal_password' => 'Password akun',
     'password_confirm'=> 'Konfirmasi password',
+    'jalur'           => 'Jalur pendaftaran',
+    'jalur_detail'    => 'Detail jalur',
+    'alumni_sdmua'    => 'Pernyataan alumni',
 ];
 
 // Tahun lulus options
@@ -534,6 +568,11 @@ CSS;
             <h3>Alhamdulillah!</h3>
             <p>Pendaftaran <strong><?= e($successData['nama']) ?></strong> telah berhasil dikirim. Panitia akan menghubungi Anda melalui WhatsApp dalam 1×24 jam.</p>
             <div class="nomor-pendaftaran"><?= e($successData['nomor']) ?></div>
+            <?php if (!empty($successData['jalur']) && $successData['jalur'] !== 'reguler'): ?>
+            <p style="font-size:13px;color:var(--text-mid);margin-top:-10px;">
+                Jalur: <strong><?= e(jalurPendaftaran()[$successData['jalur']] ?? $successData['jalur']) ?></strong><?= in_array($successData['jalur'], jalurPerluVerifikasi(), true) ? ' — verifikasi berkas akan dilakukan panitia.' : '' ?>
+            </p>
+            <?php endif; ?>
             <p style="font-size:12px;color:var(--text-light);">Simpan nomor pendaftaran ini sebagai bukti.</p>
             <p style="font-size:13px;color:var(--text-mid);">Nomor pendaftaran tersebut sudah bisa digunakan untuk login dan menyelesaikan pembayaran.</p>
             <a href="<?= e(BASE_URL . '/login-santri') ?>" class="btn-primary" style="display:inline-block;margin:12px 0;">Login &amp; Lanjut Pembayaran</a><br>
@@ -696,6 +735,18 @@ CSS;
                     <p class="field-error"><?= e($errors['whatsapp']) ?></p>
                     <?php endif; ?>
                 </div>
+                <div class="form-group">
+                    <label class="radio-item" style="min-width:auto;text-align:left;flex:none;cursor:pointer;">
+                        <input type="checkbox" name="alumni_sdmua" value="1"
+                               style="width:auto;<?= isset($errors['alumni_sdmua']) ? 'outline:1px solid #e55;' : '' ?>"
+                               <?= !empty($data['alumni_sdmua']) ? 'checked' : '' ?>>
+                        Saya alumni SD Muhammadiyah Unggulan Ashidiq
+                    </label>
+                    <p class="form-note">Alumni SDMUA dapat mendaftar melalui <strong>Jalur Alumni</strong> dengan keringanan biaya (verifikasi berkas oleh panitia).</p>
+                    <?php if (isset($errors['alumni_sdmua'])): ?>
+                    <p class="field-error"><?= e($errors['alumni_sdmua']) ?></p>
+                    <?php endif; ?>
+                </div>
                 <div class="form-nav">
                     <button type="button" class="btn-next" onclick="psbGoTo(2)">Lanjut &rarr;</button>
                 </div>
@@ -801,6 +852,52 @@ CSS;
                            value="<?= isset($data['jumlah_hafalan']) ? e($data['jumlah_hafalan']) : '' ?>">
                 </div>
                 <div class="form-group">
+                    <label>Jalur Pendaftaran <span class="req">*</span></label>
+                    <div class="radio-group" style="flex-direction:column;gap:8px;">
+                        <?php foreach (jalurPendaftaran() as $val => $lbl): ?>
+                        <label class="radio-item" style="min-width:auto;text-align:left;flex:none;">
+                            <input type="radio" name="jalur" value="<?= e($val) ?>"
+                                   <?= (!isset($data['jalur']) && $val === 'reguler') ? 'checked' : '' ?>
+                                   <?= (isset($data['jalur']) && $data['jalur'] === $val) ? 'checked' : '' ?>>
+                            <?= e($lbl) ?><?php if (in_array($val, jalurPerluVerifikasi(), true)): ?> <small style="color:var(--text-light);">— verifikasi berkas</small><?php endif; ?>
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <p class="form-note" id="alumniNote" style="display:none;color:#b8860b;">
+                        Centang dulu pernyataan alumni SDMUA pada Langkah 1 untuk memilih jalur ini.
+                    </p>
+                    <?php if (isset($errors['jalur'])): ?>
+                    <p class="field-error"><?= e($errors['jalur']) ?></p>
+                    <?php endif; ?>
+                </div>
+                <div class="form-group" id="jalurDetailPrestasi" style="display:none;">
+                    <label>Tingkat Prestasi <span class="req">*</span></label>
+                    <div class="radio-group" style="flex-direction:column;gap:8px;">
+                        <?php foreach ($optsJalur['prestasi'] as $val => $opt): ?>
+                        <label class="radio-item" style="min-width:auto;text-align:left;flex:none;">
+                            <input type="radio" name="jalur_detail" value="<?= e($val) ?>" disabled
+                                   <?= (isset($data['jalur_detail']) && $data['jalur_detail'] === $val) ? 'checked' : '' ?>>
+                            <?= e($opt['label']) ?> — potongan <?= (int) $opt['potongan'] ?>%
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php if (isset($errors['jalur_detail'])): ?>
+                    <p class="field-error"><?= e($errors['jalur_detail']) ?></p>
+                    <?php endif; ?>
+                </div>
+                <div class="form-group" id="jalurDetailTahfidz" style="display:none;">
+                    <label>Kategori Hafalan <span class="req">*</span></label>
+                    <div class="radio-group" style="flex-direction:column;gap:8px;">
+                        <?php foreach ($optsJalur['tahfidz'] as $val => $opt): ?>
+                        <label class="radio-item" style="min-width:auto;text-align:left;flex:none;">
+                            <input type="radio" name="jalur_detail" value="<?= e($val) ?>" disabled
+                                   <?= (isset($data['jalur_detail']) && $data['jalur_detail'] === $val) ? 'checked' : '' ?>>
+                            <?= e($opt['label']) ?> — potongan <?= (int) $opt['potongan'] ?>%
+                        </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label for="motivasi">Motivasi Masuk Pesantren</label>
                     <textarea id="motivasi" name="motivasi" rows="3" class="form-control"
                               placeholder="Ceritakan motivasi Anda masuk pesantren..."
@@ -862,7 +959,7 @@ CSS;
     // Jika ada error, tampilkan step yang relevan lalu sorot field pertama yang salah
     <?php if (!empty($errors)): ?>
     var step2Fields = ['nama_ayah','nama_ibu','hp_ortu','alamat'];
-    var step3Fields = ['asal_sekolah','tahun_lulus','kemampuan_quran','portal_password','password_confirm'];
+    var step3Fields = ['asal_sekolah','tahun_lulus','kemampuan_quran','jalur','jalur_detail','portal_password','password_confirm'];
     var errorKeys   = <?= json_encode(array_keys($errors)) ?>;
     if (errorKeys.some(function(k){ return step3Fields.indexOf(k) !== -1; })) {
         currentStep = 3;
@@ -874,7 +971,46 @@ CSS;
     if (firstError) firstError.scrollIntoView({ block: 'center', behavior: 'smooth' });
     <?php endif; ?>
 
-    var lihatPassword = document.getElementById('lihatPassword');
+    // ── Jalur pendaftaran: tampilkan detail kondisional ──
+    var jalurRadios    = document.querySelectorAll('input[name="jalur"]');
+    var detailWrap     = { prestasi: document.getElementById('jalurDetailPrestasi'), tahfidz: document.getElementById('jalurDetailTahfidz') };
+    var alumniNote     = document.getElementById('alumniNote');
+
+    function psbSyncJalur() {
+        var selected = '';
+        jalurRadios.forEach(function (r) { if (r.checked) selected = r.value; });
+
+        // Detail prestasi/tahfidz hanya muncul & aktif untuk jalurnya masing-masing
+        ['prestasi', 'tahfidz'].forEach(function (j) {
+            var wrap = detailWrap[j];
+            if (!wrap) return;
+            var tampil = selected === j;
+            wrap.style.display = tampil ? 'block' : 'none';
+            wrap.querySelectorAll('input[name="jalur_detail"]').forEach(function (r) { r.disabled = !tampil; });
+            if (!tampil) {
+                wrap.querySelectorAll('input[name="jalur_detail"]').forEach(function (r) { r.checked = false; });
+            }
+        });
+
+        // Jalur alumni hanya valid jika checkbox alumni di langkah 1 dicentang
+        var alumniRadio = document.querySelector('input[name="jalur"][value="alumni-sdmua"]');
+        var alumniCek   = document.querySelector('input[name="alumni_sdmua"]');
+        if (alumniRadio && alumniCek) {
+            var alumniBoleh = alumniCek.checked;
+            alumniRadio.disabled = !alumniBoleh;
+            if (!alumniBoleh && alumniRadio.checked) {
+                var regulerRadio = document.querySelector('input[name="jalur"][value="reguler"]');
+                if (regulerRadio) regulerRadio.checked = true;
+            }
+            if (alumniNote) alumniNote.style.display = (!alumniBoleh && selected === 'alumni-sdmua') ? 'block' : 'none';
+        }
+    }
+
+    jalurRadios.forEach(function (r) { r.addEventListener('change', psbSyncJalur); });
+    var alumniCekInput = document.querySelector('input[name="alumni_sdmua"]');
+    if (alumniCekInput) alumniCekInput.addEventListener('change', psbSyncJalur);
+    psbSyncJalur();
+
     if (lihatPassword) {
         lihatPassword.addEventListener('change', function () {
             var type = this.checked ? 'text' : 'password';
