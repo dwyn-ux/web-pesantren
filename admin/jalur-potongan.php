@@ -1,0 +1,219 @@
+<?php
+require_once __DIR__ . '/bootstrap.php';
+requireAdmin();
+
+$pdo = getDB();
+
+// ── Proses simpan ────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validateCsrf();
+
+    $raw = [
+        'reguler'      => $_POST['jalur_reguler'] ?? [],
+        'prestasi'     => $_POST['jalur_prestasi'] ?? [],
+        'tahfidz'      => $_POST['jalur_tahfidz'] ?? [],
+        'kaderisasi'   => $_POST['jalur_kaderisasi'] ?? [],
+        'alumni-sdmua' => $_POST['jalur_alumni_sdmua'] ?? [],
+        'dhuafa'       => $_POST['jalur_dhuafa'] ?? [],
+    ];
+
+    $upsert = $pdo->prepare(
+        'INSERT INTO jalur_potongan_admin (jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus, admin_dhuafa_bebas)
+         VALUES (?,?,?,?,?,?)
+         ON DUPLICATE KEY UPDATE
+            potongan_persen   = VALUES(potongan_persen),
+            adm_khusus       = VALUES(adm_khusus),
+            spp_l_khusus     = VALUES(spp_l_khusus),
+            spp_p_khusus     = VALUES(spp_p_khusus),
+            admin_dhuafa_bebas = VALUES(admin_dhuafa_bebas)'
+    );
+
+    $simpanJalur = function (string $jalur, array $val) use ($upsert): void {
+        $potongan  = isset($val['potongan']) && $val['potongan'] !== '' && $val['potongan'] !== null
+            ? (float) $val['potongan'] : null;
+        $adm       = isset($val['adm']) && $val['adm'] !== '' && $val['adm'] !== null
+            ? (float) $val['adm'] : null;
+        $spp_l     = isset($val['spp_l']) && $val['spp_l'] !== '' && $val['spp_l'] !== null
+            ? (float) $val['spp_l'] : null;
+        $spp_p     = isset($val['spp_p']) && $val['spp_p'] !== '' && $val['spp_p'] !== null
+            ? (float) $val['spp_p'] : null;
+        $bebas     = (int) ($val['bebas'] ?? 0) === 1;
+        $upsert->execute([$jalur, $potongan, $adm, $spp_l, $spp_p, $bebas ? 1 : 0]);
+    };
+
+    foreach ($raw as $jalur => $v) {
+        $simpanJalur($jalur, $v);
+    }
+
+    setFlash('success', 'Pengaturan potongan jalur berhasil disimpan.');
+    redirect('/admin/jalur-potongan');
+}
+
+// ── Baca data ────────────────────────────────────────────────
+$adminJalur = getJalurPotonganAdmin($pdo);
+$optsJalur  = jalurDetailOptions();
+
+// format persen aman untuk value input
+$formatPersen = function ($nilai): string {
+    if ($nilai === null || $nilai === '') return '';
+    $s = (string) $nilai;
+    return strpos($s, '.') !== false ? rtrim(rtrim($s, '0'), '.') : $s;
+};
+
+$adminTitle = 'Potongan Jalur PSB';
+$adminPage  = 'admin/jalur-potongan';
+require_once __DIR__ . '/includes/header.php';
+?>
+
+<div class="admin-form-card" style="max-width:880px;">
+    <h2 class="admin-form-title">Pengaturan Potongan Jalur</h2>
+    <p style="font-size:13px;color:var(--text-mid);margin-bottom:20px;">
+        Sesuaikan potongan dan tarif khusus per jalur. Nilai ini dipakai di form PSB (estimasi live) dan saat membentuk tagihan santri.
+        Jalur yang tidak diatur tetap memakai nilai juknis default.
+    </p>
+
+    <form method="post" class="admin-form">
+        <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+
+        <!-- REGULER -->
+        <fieldset style="margin-bottom:24px;">
+            <legend style="font-size:14px;font-weight:600;padding:0 6px;color:var(--text-mid);">Reguler</legend>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tidak ada potongan untuk jalur reguler.</label>
+                    <input type="number" min="0" max="100" step="0.5" name="jalur_reguler[potongan]"
+                           value="<?= e($formatPersen($adminJalur['reguler']['potongan'] ?? null)) ?>"
+                           class="form-control" style="max-width:180px;">
+                    <small style="font-size:11px;color:var(--text-light);">Jika diisi, form PSB akan memotong persentase ini dari tagihan (hanya jika dipilih).</small>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- PRESTASI -->
+        <fieldset style="margin-bottom:24px;">
+            <legend style="font-size:14px;font-weight:600;padding:0 6px;color:var(--text-mid);">
+                Prestasi (Akademik/Non-Akademik)
+                <?php if (empty($optsJalur['prestasi'])): ?>
+                    <span style="font-weight:normal;font-size:11px;color:var(--text-light);">(belum ada opsi detail)</span>
+                <?php endif; ?>
+            </legend>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Potongan umum (persen) — jika diisi, akan mengalahkan detail tingkat prestasi.</label>
+                    <input type="number" min="0" max="100" step="0.5"
+                           name="jalur_prestasi[potongan]"
+                           value="<?= e($formatPersen($adminJalur['prestasi']['potongan'] ?? null)) ?>"
+                           class="form-control" style="max-width:180px;">
+                    <small style="font-size:11px;color:var(--text-light);">Kosongkan jika ingin memakai nilai per tingkat (kecamatan 20%, kabkota 30%, provinsi 40%, nasional 50%).</small>
+                </div>
+            </div>
+            <?php foreach ($optsJalur['prestasi'] as $val => $opt): ?>
+            <div class="form-row" style="margin-top:10px;">
+                <div class="form-group" style="flex:1;">
+                    <label><?= e($opt['label']) ?></label>
+                    <div style="font-size:12px;color:var(--text-mid);">Juknis: <?= (int) $opt['potongan'] ?>%</div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </fieldset>
+
+        <!-- TAHFIDZ -->
+        <fieldset style="margin-bottom:24px;">
+            <legend style="font-size:14px;font-weight:600;padding:0 6px;color:var(--text-mid);">
+                Tahfidz Al-Qur'an
+                <?php if (empty($optsJalur['tahfidz'])): ?>
+                    <span style="font-weight:normal;font-size:11px;color:var(--text-light);">(belum ada opsi detail)</span>
+                <?php endif; ?>
+            </legend>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Potongan umum (persen) — jika diisi, akan mengalahkan detail kategori hafalan.</label>
+                    <input type="number" min="0" max="100" step="0.5"
+                           name="jalur_tahfidz[potongan]"
+                           value="<?= e($formatPersen($adminJalur['tahfidz']['potongan'] ?? null)) ?>"
+                           class="form-control" style="max-width:180px;">
+                    <small style="font-size:11px;color:var(--text-light);">Kosongkan jika ingin memakai nilai per kategori (juz 2: 20%, juz 3: 30%, juz 5: 50%).</small>
+                </div>
+            </div>
+            <?php foreach ($optsJalur['tahfidz'] as $val => $opt): ?>
+            <div class="form-row" style="margin-top:10px;">
+                <div class="form-group" style="flex:1;">
+                    <label><?= e($opt['label']) ?></label>
+                    <div style="font-size:12px;color:var(--text-mid);">Juknis: <?= (int) $opt['potongan'] ?>%</div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </fieldset>
+
+        <!-- KADERISASI -->
+        <fieldset style="margin-bottom:24px;">
+            <legend style="font-size:14px;font-weight:600;padding:0 6px;color:var(--text-mid);">Kaderisasi (Jalur Khusus)</legend>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>ADM Awal khusus (Rp)</label>
+                    <input type="number" min="0" name="jalur_kaderisasi[adm]"
+                           value="<?= e($formatPersen($adminJalur['kaderisasi']['adm'] ?? null)) ?>"
+                           class="form-control" style="max-width:200px;">
+                    <small style="font-size:11px;color:var(--text-light);">Default juknis: Rp 5.000.000</small>
+                </div>
+                <div class="form-group">
+                    <label>SPP Putra/bulan (Rp)</label>
+                    <input type="number" min="0" name="jalur_kaderisasi[spp_l]"
+                           value="<?= e($formatPersen($adminJalur['kaderisasi']['spp_l'] ?? null)) ?>"
+                           class="form-control" style="max-width:200px;">
+                    <small style="font-size:11px;color:var(--text-light);">Default juknis: Rp 650.000</small>
+                </div>
+                <div class="form-group">
+                    <label>SPP Putri/bulan (Rp)</label>
+                    <input type="number" min="0" name="jalur_kaderisasi[spp_p]"
+                           value="<?= e($formatPersen($adminJalur['kaderisasi']['spp_p'] ?? null)) ?>"
+                           class="form-control" style="max-width:200px;">
+                    <small style="font-size:11px;color:var(--text-light);">Default juknis: Rp 750.000</small>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- ALUMNI SDMUa -->
+        <fieldset style="margin-bottom:24px;">
+            <legend style="font-size:14px;font-weight:600;padding:0 6px;color:var(--text-mid);">Alumni SD Muhammadiyah Unggulan Ashidiq</legend>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Potongan umum (persen) — jika diisi, akan memakai persen ini setelah jalur disetujui.</label>
+                    <input type="number" min="0" max="100" step="0.5"
+                           name="jalur_alumni_sdmua[potongan]"
+                           value="<?= e($formatPersen($adminJalur['alumni-sdmua']['potongan'] ?? null)) ?>"
+                           class="form-control" style="max-width:180px;">
+                    <small style="font-size:11px;color:var(--text-light);">Juknis: keringanan 25–50%. Kosongkan jika ingin menetapkan persen per-santri saat verifikasi.</small>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- DHUAFA -->
+        <fieldset style="margin-bottom:24px;">
+            <legend style="font-size:14px;font-weight:600;padding:0 6px;color:var(--text-mid);">Dhuafa / Beasiswa Empowerment</legend>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Potongan umum (persen) — jika diisi, akan memakai persen ini setelah jalur disetujui.</label>
+                    <input type="number" min="0" max="100" step="0.5"
+                           name="jalur_dhuafa[potongan]"
+                           value="<?= e($formatPersen($adminJalur['dhuafa']['potongan'] ?? null)) ?>"
+                           class="form-control" style="max-width:180px;">
+                    <small style="font-size:11px;color:var(--text-light);">Juknis: keringanan 20–60%. Kosongkan jika ingin menetapkan persen per-santri saat verifikasi.</small>
+                </div>
+                <div class="form-group" style="align-items:center;">
+                    <label style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" name="jalur_dhuafa[bebas]" value="1"
+                               style="width:auto;margin-top:0;"
+                               <?= !empty($adminJalur['dhuafa']['dhuafa_bebas']) ? 'checked' : '' ?>>
+                        ADM Awal DHUAFA dibebaskan 100%
+                    </label>
+                    <small style="font-size:11px;color:var(--text-light);">Jika dicentang, ADM awal dhuafa yang disetujui akan GRATIS.</small>
+                </div>
+            </div>
+        </fieldset>
+
+        <button class="btn-sm btn-sm-primary">Simpan Pengaturan</button>
+    </form>
+</div>
+
+<?php require_once __DIR__ . '/includes/footer.php'; ?>

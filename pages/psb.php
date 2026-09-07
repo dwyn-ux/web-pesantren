@@ -584,6 +584,15 @@ CSS;
                 if ($k) $kaderJs[$k] = (float) $r['value'];
             }
         }
+
+        // ── Potongan jalur dari setting admin (fallback juknis) ─────────
+        $jalurPotonganAdmin = getJalurPotonganAdmin($pdo);
+        // Siapkan data khusus kaderisasi dari admin (pakai nilai tabel baru, konsisten dengan snapshot).
+        $kaderAdmin = $jalurPotonganAdmin['kaderisasi'] ?? [];
+        $kaderJs['adm']  = $kaderAdmin['adm']  ?? $kaderJs['adm'];
+        $kaderJs['spp_l']= $kaderAdmin['spp_l'] ?? $kaderJs['spp_l'];
+        $kaderJs['spp_p']= $kaderAdmin['spp_p'] ?? $kaderJs['spp_p'];
+        $dhuafaBebasAdm = !empty($jalurPotonganAdmin['dhuafa']['dhuafa_bebas']);
         ?>
       </div><!-- /#jadwalPanel -->
 
@@ -1093,6 +1102,8 @@ CSS;
     var KADER = <?= json_encode($kaderJs) ?>;
     var JALUR_LABEL = <?= json_encode(jalurPendaftaran(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     var JALUR_OPTS = <?= json_encode($optsJalur, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    var JALUR_ADMIN = <?= json_encode($jalurPotonganAdmin, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    var DHUAGA_BEBAS = <?= json_encode($dhuafaBebasAdm) ?>;
 
     function fmtRp(n) {
         return 'Rp ' + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -1113,9 +1124,17 @@ CSS;
         var detail = (dSel && !dSel.disabled) ? dSel.value : '';
 
         var potongan = 0, potonganLabel = '';
+        var adminJ = JALUR_ADMIN[jalur];
         if ((jalur === 'prestasi' || jalur === 'tahfidz') && detail) {
             var opt = (JALUR_OPTS[jalur] || {})[detail];
-            if (opt) { potongan = opt.potongan; potonganLabel = opt.label; }
+            if (adminJ && adminJ.potongan !== null && adminJ.potongan !== undefined) {
+                // Admin mengatur potongan global untuk jalur ini (tanpa memandang detail).
+                potongan = adminJ.potongan;
+                potonganLabel = opt ? opt.label : '';
+            } else if (opt) {
+                potongan = opt.potongan;
+                potonganLabel = opt.label;
+            }
         }
 
         var elLabel = document.getElementById('simJalur');
@@ -1123,15 +1142,34 @@ CSS;
 
         var catatan = '';
         if (jalur === 'prestasi' || jalur === 'tahfidz') {
-            catatan = potongan > 0
-                ? 'Potongan ' + potongan + '% otomatis diterapkan (' + potonganLabel + ').'
-                : 'Pilih tingkat prestasi / kategori hafalan untuk melihat potongan.';
+            if (potongan > 0) {
+                catatan = 'Potongan ' + potongan + '% diterapkan' + (potonganLabel ? ' (' + potonganLabel + ').' : '.');
+            } else {
+                catatan = 'Pilih tingkat prestasi / kategori hafalan untuk melihat potongan.';
+            }
+            // Tambahan catatan kalau admin mengatur potongan prestasi/tahfidz dari halaman admin.
+            if (adminJ && adminJ.potongan !== null && adminJ.potongan !== undefined) {
+                catatan += ' (Tetapkan oleh admin di halaman potongan jalur.)';
+            }
         } else if (jalur === 'kaderisasi') {
-            catatan = 'Jalur kaderisasi memakai tarif khusus: ADM awal & syahriyah tetap (bukan persentase).';
+            var kAdm = KADER && KADER.adm;
+            var kSppL = KADER && KADER.spp_l;
+            var kSppP = KADER && KADER.spp_p;
+            var ketr = 'Jalur kaderisasi memakai tarif khusus: ADM awal Rp ' + (kAdm ? fmtRp(kAdm) : '—') + ', SPP Putra Rp ' + (kSppL ? fmtRp(kSppL) : '—') + ', SPP Putri Rp ' + (kSppP ? fmtRp(kSppP) : '—') + ' (bukan persentase).';
+            if (adminJ && (adminJ.adm !== null || adminJ.spp_l !== null || adminJ.spp_p !== null)) {
+                ketr += ' (Diatur oleh admin di halaman potongan jalur.)';
+            }
+            catatan = ketr;
         } else if (jalur === 'alumni-sdmua') {
-            catatan = 'Tarif di bawah masih penuh — keringanan 25–50% aktif setelah panitia memverifikasi surat rekomendasi.';
+            catatan = 'Tarif di bawah masih penuh — keringanan sesuai persen yang diset admin (25–50%) aktif setelah panitia memverifikasi surat rekomendasi.';
         } else if (jalur === 'dhuafa') {
-            catatan = 'Setelah verifikasi berkas, ADM awal dapat dibebaskan & syahriyah mendapat keringanan 20–60% (keputusan panitia).';
+            var dAdm = '';
+            if (DHUAGA_BEBAS) {
+                dAdm = ' ADM awal dibebaskan 100% (diset admin).';
+            } else {
+                dAdm = ' ADM awal dapat dibebaskan 100% (jika admin mengatur di halaman potongan jalur).';
+            }
+            catatan = 'Setelah verifikasi berkas, syahriyah mendapat keringanan 20–60% sesuai keputusan panitia.' + dAdm;
         } else {
             catatan = 'Tarif normal jalur reguler.';
         }
@@ -1160,12 +1198,21 @@ CSS;
         if (adm) {
             var tA, subA;
             if (jalur === 'kaderisasi') {
-                tA = KADER.adm; subA = 'Tarif tetap jalur kaderisasi';
+                tA = (KADER && KADER.adm !== null) ? KADER.adm : adm.diskon;
+                subA = (KADER && KADER.adm !== null) ? 'Tarif tetap jalur kaderisasi' : 'Tarif tetap (default)';
+                if (adminJ && adminJ.adm !== null) subA += ' (diset admin)';
+            } else if (jalur === 'dhuafa') {
+                if (DHUAGA_BEBAS) {
+                    tA = 0; subA = 'ADM awal dibebaskan 100% (diset admin)';
+                } else {
+                    tA = adm.diskon;
+                    subA = 'Menunggu verifikasi — dapat dibebaskan 100%';
+                }
             } else if (potongan > 0) {
                 tA = Math.max(0, Math.round(adm.asli * (1 - potongan / 100)));
+                subA = 'Potongan ' + potongan + '%';
             } else {
                 tA = adm.diskon;
-                if (jalur === 'dhuafa') subA = 'Menunggu verifikasi — dapat dibebaskan 100%';
             }
             row('Administrasi Awal <small>(mulai dari)</small>', adm.asli, tA, subA);
             total += tA;
@@ -1191,8 +1238,10 @@ CSS;
         if (sy) {
             var tS, subS = 'per bulan — pilihan final saat kesanggupan';
             if (jalur === 'kaderisasi') {
-                tS = genderDipilih() === 'P' ? KADER.spp_p : KADER.spp_l;
+                var kSpp = genderDipilih() === 'P' ? (KADER && KADER.spp_p !== null ? KADER.spp_p : sy.diskon) : (KADER && KADER.spp_l !== null ? KADER.spp_l : sy.diskon);
+                tS = kSpp;
                 subS = 'per bulan — tarif tetap jalur kaderisasi';
+                if (adminJ && (adminJ.spp_l !== null || adminJ.spp_p !== null)) subS += ' (diset admin)';
             } else if (potongan > 0) {
                 tS = Math.max(0, Math.round(sy.diskon * (1 - potongan / 100)));
             } else {

@@ -448,12 +448,59 @@ function jalurDetailOptions(): array {
 }
 
 /**
+ * Ambil pengaturan potongan jalur dari tabel jalur_potongan_admin.
+ * Kalau admin belum mengatur, fallback ke nilai juknis (default seed).
+ *
+ * Kembalikan array berindeks jalur (reguler/prestasi/tahfidz/kaderisasi/alumni-sdmua/dhuafa)
+ * berisi:
+ *   potongan       => persen (null jika tidak ada)
+ *   adm            => tarif ADM khusus (null jika tidak ada)
+ *   spp_l          => tarif SPP putra khusus (null jika tidak ada)
+ *   spp_p          => tarif SPP putri khusus (null jika tidak ada)
+ *   dhuafa_bebas   => bool, apakah ADM awal dhuafa dibebaskan 100%
+ *
+ * Catatan: fungsi ini hanya pembaca global; keputusan per-santri tetap
+ * di tabel pendaftaran (jalur_status, jalur_potongan) — terpisah.
+ */
+function getJalurPotonganAdmin(PDO $pdo): array {
+    $rows = $pdo->query(
+        "SELECT jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus, admin_dhuafa_bebas
+         FROM jalur_potongan_admin"
+    )->fetchAll();
+    $out = [];
+    foreach ($rows as $r) {
+        $out[$r['jalur']] = [
+            'potongan'   => isset($r['potongan_persen']) && $r['potongan_persen'] !== null
+                ? (float) $r['potongan_persen'] : null,
+            'adm'        => isset($r['adm_khusus']) && $r['adm_khusus'] !== null
+                ? (float) $r['adm_khusus'] : null,
+            'spp_l'      => isset($r['spp_l_khusus']) && $r['spp_l_khusus'] !== null
+                ? (float) $r['spp_l_khusus'] : null,
+            'spp_p'      => isset($r['spp_p_khusus']) && $r['spp_p_khusus'] !== null
+                ? (float) $r['spp_p_khusus'] : null,
+            'dhuafa_bebas' => (int) ($r['admin_dhuafa_bebas'] ?? 0) === 1,
+        ];
+    }
+    return $out;
+}
+
+/**
  * Hitung persen potongan otomatis berdasar jalur & detail.
+ * Kalau admin sudah mengatur potongan_persen di jalur_potongan_admin
+ * untuk jalur prestasi/tahfidz, nilai tersebut diprioritaskan.
+ * Kalau tidak, tetap pakai juknis (jalurDetailOptions).
+ *
  * Khusus kaderisasi: potongan berupa tarif tetap, ditangani terpisah
  * di snapshotPembiayaan(). Alumni & dhuafa ditetapkan admin (bukan di sini).
  */
-function jalurPotonganOtomatis(string $jalur, ?string $detail): float {
+function jalurPotonganOtomatis(string $jalur, ?string $detail, ?array $adminJalur = null): float {
     if ($detail === null) return 0.0;
+
+    // Jika admin sudah mengatur potongan per jalur (tanpa detail), prioritaskan.
+    if ($adminJalur && isset($adminJalur[$jalur]['potongan'])) {
+        return $adminJalur[$jalur]['potongan'];
+    }
+
     $opt = jalurDetailOptions()[$jalur][$detail] ?? null;
     return $opt ? (float) $opt['potongan'] : 0.0;
 }
@@ -526,17 +573,15 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
     $jalurSetujui = ($jRow['jalur_status'] ?? 'none') === 'disetujui';
 
     $tarif = getPembiayaanTarif($pdo);
+    $adminJalur = getJalurPotonganAdmin($pdo);
 
-    // Tarif jalur kaderisasi dari pengaturan (di-set admin, seed migration 009)
-    $kaderTarif = ['adm' => 5000000.0, 'spp_l' => 650000.0, 'spp_p' => 750000.0];
-    if ($jalur === 'kaderisasi') {
-        $q = $pdo->query("SELECT key_name, value FROM pengaturan WHERE key_name IN ('jalur_kaderisasi_adm','jalur_kaderisasi_spp_l','jalur_kaderisasi_spp_p')");
-        foreach ($q->fetchAll() as $r) {
-            if (is_numeric($r['value']) && (float) $r['value'] >= 0) {
-                $kaderTarif[substr($r['key_name'], strrpos($r['key_name'], '_') + 1)] = (float) $r['value'];
-            }
-        }
-    }
+    // Tarif jalur kaderisasi: prioritaskan jalur_potongan_admin, fallback ke pengaturan/or seed.
+    $kader = $adminJalur['kaderisasi'] ?? [];
+    $kaderTarif = [
+        'adm'  => $kader['adm']  ?? 5000000.0,
+        'spp_l'=> $kader['spp_l'] ?? 650000.0,
+        'spp_p'=> $kader['spp_p'] ?? 750000.0,
+    ];
 
     $ins   = $pdo->prepare(
         "INSERT INTO pembiayaan
@@ -546,12 +591,13 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
     $urutan = 0;
 
     // Persen potongan aktif:
-    // - prestasi/tahfidz : otomatis sesuai juknis (langsung aktif)
-    // - alumni-sdmua     : persen dari admin, aktif setelah jalur disetujui
-    // - dhuafa           : persen keringanan SPP dari admin, setelah disetujui
+    // - prestasi/tahfidz : apabila admin mengatur potongan_persen, pakai nilai itu (langsung aktif).
+    //   Kalau tidak, pakai juknis via jalurDetailOptions (jalurPotonganOtomatis).
+    // - alumni-sdmua     : persen dari admin, aktif setelah jalur disetujui.
+    // - dhuafa           : persen keringanan SPP dari admin, setelah disetujui.
     $persenPotongan = 0.0;
     if ($jalur === 'prestasi' || $jalur === 'tahfidz') {
-        $persenPotongan = jalurPotonganOtomatis($jalur, $jalurDetail);
+        $persenPotongan = jalurPotonganOtomatis($jalur, $jalurDetail, $adminJalur);
     } elseif (in_array($jalur, ['alumni-sdmua', 'dhuafa'], true) && $jalurSetujui) {
         $persenPotongan = (float) ($jRow['jalur_potongan'] ?? 0);
     }
@@ -574,11 +620,21 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
         foreach ($tarif[$jenis] as $t) {
             if (!$t['gratis'] && $jenis === 'administrasi') {
                 if ($jalur === 'kaderisasi') {
-                    // ADM Awal khusus kader: tarif tetap (Juknis VIII).
+                    // ADM Awal khusus kader: tarif tetap dari jalur_potongan_admin (atau fallback seed).
                     $t['harga_diskon'] = $kaderTarif['adm'];
                 } elseif ($jalur === 'dhuafa' && $jalurSetujui) {
-                    // Dhuafa disetujui: ADM Awal dibebaskan 100% (Juknis IX).
-                    $t['gratis'] = 1;
+                    // Dhuafa disetujui: kalau admin mengatur admin_dhuafa_bebas=1, ADM bebas 100%.
+                    $adh = $adminJalur['dhuafa'] ?? [];
+                    if (!empty($adh['dhuafa_bebas'])) {
+                        $t['gratis'] = 1;
+                    } else {
+                        // Jika tidak bebas, pakai persen potongan per santri.
+                        if ($persenPotongan > 0) {
+                            $dasar  = (float) $t['harga_asli'];
+                            $potong = round($dasar * $persenPotongan / 100);
+                            $t['harga_diskon'] = max(0, $dasar - $potong);
+                        }
+                    }
                 } elseif ($persenPotongan > 0) {
                     // Jalur potongan ADM Awal: nominal dipotong
                     // (jadikan harga_diskon agar tampil coret di UI).
@@ -593,7 +649,7 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
 
     foreach ($tarif['syahriyah'] as $t) {
         if ($jalur === 'kaderisasi') {
-            // SPP khusus kader (Juknis VIII): tarif tetap per gender.
+            // SPP khusus kader (Juknis VIII): tarif tetap per gender dari jalur_potongan_admin.
             $kader             = $gender === 'P' ? $kaderTarif['spp_p'] : $kaderTarif['spp_l'];
             $t['nama']         = trim((string) ($t['nama'] ?: 'Syahriyah')) . ' (Jalur Kaderisasi)';
             $t['harga_diskon'] = $kader;
