@@ -529,34 +529,17 @@ CSS;
         <!-- Biaya -->
         <?php
         $tarifBiaya = getPembiayaanTarif($pdo);
-        $biayaTampil = [];
         $nilai = fn(array $r): float => (float) ($r['harga_diskon'] ?? $r['harga_asli']);
-        $minOpt = function (array $rows) use ($nilai): float {
-            return min(array_map($nilai, $rows));
-        };
-        if (!empty($tarifBiaya['pendaftaran'])) {
-            $t = $tarifBiaya['pendaftaran'][0];
-            $biayaTampil[] = ['Biaya Pendaftaran', !empty($t['gratis']) ? 'GRATIS' : formatRupiah($nilai($t))];
-        }
-        if (!empty($tarifBiaya['administrasi'])) {
-            $biayaTampil[] = ['Administrasi Awal', 'mulai ' . formatRupiah($minOpt($tarifBiaya['administrasi']))];
-        }
-        if (!empty($tarifBiaya['wakaf'])) {
-            $biayaTampil[] = ['Wakaf', 'mulai ' . formatRupiah($minOpt($tarifBiaya['wakaf']))];
-        }
-        if (!empty($tarifBiaya['syahriyah'])) {
-            $biayaTampil[] = ['Syahriyah / Bulan', 'mulai ' . formatRupiah($minOpt($tarifBiaya['syahriyah']))];
-        }
         $laundryL = $laundryP = null;
         foreach ($tarifBiaya['laundry'] as $t) {
             if ($t['gender'] === 'L') $laundryL = $nilai($t);
             if ($t['gender'] === 'P') $laundryP = $nilai($t);
         }
         if ($laundryL !== null || $laundryP !== null) {
-            $biayaTampil[] = ['Laundry (L/P)', ($laundryL !== null ? formatRupiah($laundryL) : '-') . ' / ' . ($laundryP !== null ? formatRupiah($laundryP) : '-')];
+            // Laundry dipakai hanya untuk $tarifJs di bawah (simulasi live).
         }
         if (!empty($tarifBiaya['infak'])) {
-            $biayaTampil[] = ['Infak Wajib', formatRupiah($nilai($tarifBiaya['infak'][0]))];
+            // Infak dipakai hanya untuk $tarifJs di bawah (simulasi live).
         }
 
         // Data tarif untuk simulasi biaya live di JS (sesuai jalur terpilih)
@@ -602,22 +585,10 @@ CSS;
             }
         }
         ?>
-        <div class="biaya-box reveal">
-            <h3>Estimasi Biaya Awal</h3>
-            <?php foreach ($biayaTampil as [$biayaLabel, $biayaValue]): ?>
-            <div class="biaya-item">
-                <span class="biaya-label"><?= e($biayaLabel) ?></span>
-                <span class="biaya-value"><?= e($biayaValue) ?></span>
-            </div>
-            <?php endforeach; ?>
-            <p style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:16px;line-height:1.6;">
-                * Tarif final sesuai kesanggupan orang tua. Tersedia diskon dan jalur gratis bagi yang memenuhi syarat. Hubungi panitia untuk informasi lebih lanjut.
-            </p>
-        </div>
       </div><!-- /#jadwalPanel -->
 
-      <!-- ── SIMULASI BIAYA LIVE (muncul saat Step 3) ───────────── -->
-      <div id="simulasiPanel" style="display:none;">
+      <!-- ── SIMULASI BIAYA LIVE (selalu tampil di samping form) ──────────── -->
+      <div id="simulasiPanel">
           <div class="section-tag">
               <span></span><span class="section-tag-text">Simulasi Biaya</span><span></span>
           </div>
@@ -1034,13 +1005,9 @@ CSS;
         }
         currentStep = step;
 
-        // Step 3: panel kiri berganti jadi simulasi biaya sesuai jalur
+        // Simulasi biaya selalu tampil di samping form (live saat jalur dipilih)
         var jp = document.getElementById('jadwalPanel');
-        var sp = document.getElementById('simulasiPanel');
-        if (jp && sp) {
-            jp.style.display = (step === 3) ? 'none' : 'block';
-            sp.style.display = (step === 3) ? 'block' : 'none';
-        }
+        if (jp) jp.style.display = 'block';
         if (step === 3) hitungSimulasi();
 
         var card = document.querySelector('.psb-form-card');
@@ -1246,10 +1213,10 @@ CSS;
         if (elTotal) elTotal.textContent = fmtRp(total);
     }
 
-    // Re-render simulasi saat jalur/detail/gender berubah
+    // Re-render simulasi saat jalur/detail/gender berubah (selalu, tanpa perlu Step 3)
     document.querySelectorAll('input[name="jalur"], input[name="jalur_detail"], input[name="jenis_kelamin"]')
         .forEach(function (r) {
-            r.addEventListener('change', function () { if (currentStep === 3) hitungSimulasi(); });
+            r.addEventListener('change', function () { hitungSimulasi(); });
         });
 
     if (lihatPassword) {
