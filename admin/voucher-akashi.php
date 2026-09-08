@@ -179,7 +179,7 @@ include __DIR__ . '/includes/header.php';
             <span class="badge badge-muted" style="margin-left:6px;vertical-align:middle;"><?= $totalKode ?> kode</span>
             <span class="badge badge-success" style="margin-left:4px;vertical-align:middle;<?= $totalPakai ?> terpakai</span>
         </h2>
-        <a href="?export=1" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Ekspor CSV</a>
+        <button type="button" class="btn-sm btn-sm-secondary" onclick="window.location='?export=1'">Ekspor CSV</button>
     </div>
 
     <?php if (empty($rows)): ?>
@@ -210,7 +210,7 @@ include __DIR__ . '/includes/header.php';
                 <td><code><?= e($v['kode']) ?></code></td>
                 <td><?= e($v['nama_pemenang'] ?? '—') ?></td>
                 <td>Rp <?= number_format((float) $v['nominal_potongan'], 0, ',', '.') ?></td>
-                <td style="font-size:12px; <?= e($v['expire_at'] ?? '—') ?></td>
+                <td style="font-size:12px;"><?= e($v['expire_at'] ?? '—') ?></td>
                 <td>
                     <?php if ($v['pendaftaran_id']): ?>
                         <span class="badge badge-success">Terpakai</span>
