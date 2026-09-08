@@ -690,12 +690,28 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         Jalur Anda saat ini: <strong><?= e($labelJalur[$pendaftaran['jalur']] ?? '—') ?></strong>
       </p>
 
+      <?php
+      // Template dokumen yang bisa di-download per jalur
+      $templatePerJalur = [
+        'kaderisasi'   => [
+          ['slug' => 'mou-kaderisasi', 'label' => 'MOU Kaderisasi'],
+          ['slug' => 'rekomendasi-kaderisasi', 'label' => 'Surat Rekomendasi Kaderisasi'],
+        ],
+        'alumni-sdmua' => [
+          ['slug' => 'rekomendasi-alumni', 'label' => 'Surat Rekomendasi Alumni'],
+        ],
+        'dhuafa'       => [
+          ['slug' => 'rekomendasi-dhuafa', 'label' => 'Surat Rekomendasi Dhuafa'],
+          ['slug' => 'pernyataan-dhuafa', 'label' => 'Surat Pernyataan Dhuafa'],
+        ],
+      ];
+      $templates = $templatePerJalur[$pendaftaran['jalur']] ?? [];
+      ?>
       <?php if ($pendaftaran['jalur'] === 'kaderisasi'): ?>
       <div class="portal-info-box" style="margin-bottom:16px;">
         <h2>Langkah Jalur Kaderisasi</h2>
-        <p>1. <a href="<?= BASE_URL ?>/download-template?slug=mou-kaderisasi" target="_blank" class="btn-link">Download template MOU Kaderisasi</a></p>
-        <p>2. Isi, tanda tangan, lalu upload ulang pada slot di bawah ini.</p>
-        <p>3. Wajib mengikuti <strong>Tes Pemetaan</strong> sesuai jadwal gelombang.</p>
+        <p>1. Download template di bawah, isi, tanda tangan, lalu upload ulang pada slot di bawah ini.</p>
+        <p>2. Wajib mengikuti <strong>Tes Pemetaan</strong> sesuai jadwal gelombang.</p>
       </div>
       <?php elseif ($pendaftaran['jalur'] === 'tahfidz'): ?>
       <div class="portal-info-box" style="margin-bottom:16px;">
@@ -707,6 +723,27 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         <h2>Jalur Prestasi</h2>
         <p>Upload sertifikat / piagam prestasi <strong>tingkat tertinggi</strong> yang pernah diraih.</p>
       </div>
+      <?php endif; ?>
+
+      <?php if (!empty($templates)): ?>
+      <div class="portal-info-box" style="margin-bottom:16px;">
+        <h2>Template Dokumen</h2>
+        <p>Download, isi, tanda tangan, lalu upload ulang pada slot di bawah.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+          <?php foreach ($templates as $tpl): ?>
+          <a href="<?= BASE_URL ?>/download-template?slug=<?= e($tpl['slug']) ?>" target="_blank" rel="noopener"
+             class="btn-outline" style="text-decoration:none;">⬇ <?= e($tpl['label']) ?></a>
+          <button type="button" class="btn-outline" onclick="cetakTemplate('<?= e($tpl['slug']) ?>')">🖨 Print</button>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <script>
+      function cetakTemplate(slug) {
+        const w = window.open('<?= BASE_URL ?>/download-template?slug=' + encodeURIComponent(slug), '_blank');
+        if (!w) { alert('Popup diblokir. Izinkan popup untuk print.'); return; }
+        w.addEventListener('load', function () { w.focus(); w.print(); });
+      }
+      </script>
       <?php endif; ?>
 
       <?php if (empty($jalurBerkas)): ?>
