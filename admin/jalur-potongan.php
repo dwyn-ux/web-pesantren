@@ -22,29 +22,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
          AND TABLE_NAME='jalur_potongan_admin' AND COLUMN_NAME='wakaf_khusus'"
     )->fetchColumn();
-    $wakafCol = $hasWakaf ? ', wakaf_khusus' : '';
-    $wakafPh  = $hasWakaf ? ',?' : '';
-    $wakafUpd = $hasWakaf ? 'wakaf_khusus = VALUES(wakaf_khusus),' : '';
+    $cols = ['jalur', 'potongan_persen', 'adm_khusus', 'spp_l_khusus', 'spp_p_khusus'];
+    if ($hasWakaf) $cols[] = 'wakaf_khusus';
+    $cols = array_merge($cols, [
+        'admin_dhuafa_bebas',
+        'prestasi_kecamatan', 'prestasi_kabkota', 'prestasi_provinsi', 'prestasi_nasional',
+        'tahfidz_juz2', 'tahfidz_juz3', 'tahfidz_juz5',
+    ]);
+    $ph = implode(',', array_fill(0, count($cols), '?'));
+    $updParts = [];
+    foreach ($cols as $c) {
+        if ($c === 'jalur') continue;
+        $updParts[] = "$c = VALUES($c)";
+    }
     $upsert = $pdo->prepare(
-        'INSERT INTO jalur_potongan_admin
-            (jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus' . $wakafCol . ', admin_dhuafa_bebas,
-             prestasi_kecamatan, prestasi_kabkota, prestasi_provinsi, prestasi_nasional,
-             tahfidz_juz2, tahfidz_juz3, tahfidz_juz5)
-         VALUES (?,?,?,?,?,?' . $wakafPh . ',?,?,?,?,?,?,?,?)
-         ON DUPLICATE KEY UPDATE
-            potongan_persen   = VALUES(potongan_persen),
-            adm_khusus       = VALUES(adm_khusus),
-            spp_l_khusus     = VALUES(spp_l_khusus),
-            spp_p_khusus     = VALUES(spp_p_khusus),
-            ' . $wakafUpd . '
-            admin_dhuafa_bebas = VALUES(admin_dhuafa_bebas),
-            prestasi_kecamatan = VALUES(prestasi_kecamatan),
-            prestasi_kabkota   = VALUES(prestasi_kabkota),
-            prestasi_provinsi  = VALUES(prestasi_provinsi),
-            prestasi_nasional  = VALUES(prestasi_nasional),
-            tahfidz_juz2       = VALUES(tahfidz_juz2),
-            tahfidz_juz3       = VALUES(tahfidz_juz3),
-            tahfidz_juz5       = VALUES(tahfidz_juz5)'
+        'INSERT INTO jalur_potongan_admin (' . implode(',', $cols) . ')'
+        . ' VALUES (' . $ph . ')'
+        . ' ON DUPLICATE KEY UPDATE ' . implode(',', $updParts)
     );
 
     $floatOrNull = function ($v): ?float {
