@@ -71,6 +71,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
             if (!in_array($jalur, $validJalur, true)) {
                 $errors['jalur'] = 'Jalur tidak valid.';
             }
+            // Jalur alumni hanya boleh disimpan kalau voucher sudah divalidasi
+            // (kode + NISN cocok) untuk pendaftaran ini.
+            if ($jalur === 'alumni-sdmua') {
+                $cekV = $pdo->prepare(
+                    "SELECT id FROM voucher_alumni
+                      WHERE pendaftaran_id = ? AND jalur = 'alumni-sdmua' LIMIT 1"
+                );
+                $cekV->execute([$pendaftaranId]);
+                if (!$cekV->fetch()) {
+                    $errors['jalur'] = 'Isi voucher + NISN yang cocok dulu lewat kartu "+" sebelum memilih jalur Alumni.';
+                }
+            }
             if (in_array($jalur, ['prestasi', 'tahfidz'], true)) {
                 $opts = jalurDetailOptions()[$jalur] ?? [];
                 if (!$jalurDetail || !isset($opts[$jalurDetail])) {
@@ -84,10 +96,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
                 $jalurStatus = in_array($jalur, jalurPerluVerifikasi(), true) ? 'pending' : 'none';
                 $upd = $pdo->prepare(
                     'UPDATE pendaftaran
-                     SET jalur = ?, jalur_detail = ?, jalur_status = ?
+                     SET jalur = ?, jalur_detail = ?, jalur_status = ?, jalur_potongan = NULL
                      WHERE id = ?'
                 );
                 $upd->execute([$jalur, $jalurDetail, $jalurStatus, $pendaftaranId]);
+                // Simpan jalur non-alumni → lepas tandai voucher milik pendaftaran ini
+                if ($jalur !== 'alumni-sdmua') {
+                    $lepas = $pdo->prepare(
+                        'UPDATE voucher_alumni SET pendaftaran_id = NULL WHERE pendaftaran_id = ?'
+                    );
+                    $lepas->execute([$pendaftaranId]);
+                }
                 $successMsg = 'Jalur pendaftaran tersimpan.';
             }
         }
@@ -182,8 +201,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'alumni-
         $res = klaimJalurAlumni($pdo, $pendaftaranId, $kodeV, $nisnV);
         if ($res['ok']) {
             $_SESSION['alumni_klaim_attempts'] = 0;
-            $_SESSION['flash_success'] = $res['pesan'];
-            redirect('/portal-santri?step=berkas-jalur');
+            $_SESSION['flash_success'] = $res['pesan'] . ' Pilih kartu "Alumni SD Ashidiq" di bawah lalu Simpan Jalur.';
+            redirect('/portal-santri?step=jalur');
         }
         $_SESSION['alumni_klaim_attempts'] = $attempts + 1;
         $_SESSION['alumni_klaim_at'] = time();
@@ -394,10 +413,23 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
               </span>
             </label>
           <?php endforeach; ?>
-          <?php if (($pendaftaran['jalur'] ?? '') === 'alumni-sdmua'): ?>
+          <?php
+          // Kartu alumni terbuka kalau voucher sudah divalidasi (kode+NISN cocok)
+          // ATAU jalur tersimpan sudah alumni. Selama belum valid, tampil kartu "+" misteri.
+          $cekVoucher = $pdo->prepare(
+              "SELECT kode FROM voucher_alumni WHERE pendaftaran_id = ? AND jalur = 'alumni-sdmua' LIMIT 1"
+          );
+          $cekVoucher->execute([$pendaftaranId]);
+          $voucherValid = $cekVoucher->fetchColumn() ?: null;
+          $alumniTerbuka = (bool) $voucherValid;
+          ?>
+          <?php if ($alumniTerbuka): ?>
           <label class="jalur-radio-item">
-            <input type="radio" name="jalur" value="alumni-sdmua" checked onchange="psbSyncJalur()">
-            <span class="jalur-radio-label">Alumni SD Ashidiq</span>
+            <input type="radio" name="jalur" value="alumni-sdmua"
+                   <?= ($pendaftaran['jalur'] ?? '') === 'alumni-sdmua' ? 'checked' : '' ?> onchange="psbSyncJalur()">
+            <span class="jalur-radio-label">Alumni SD Ashidiq
+              <small style="color:var(--text-light);">— verifikasi berkas</small>
+            </span>
           </label>
           <?php else: ?>
           <button type="button" id="jalurMystery" class="jalur-radio-item" aria-expanded="<?= !empty($errors['alumni_klaim']) ? 'true' : 'false' ?>" aria-controls="klaimWrap"
@@ -437,7 +469,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         </div>
       </form>
 
-      <?php if (($pendaftaran['jalur'] ?? '') !== 'alumni-sdmua'): ?>
+      <?php if (!$alumniTerbuka): ?>
       <div id="klaimWrap" <?= !empty($errors['alumni_klaim']) ? '' : 'hidden' ?> style="margin-top:20px;">
         <div class="portal-info-box">
           <form method="post" style="max-width:420px;">

@@ -614,11 +614,13 @@ function generateVoucherKode(int $len = 10): string {
 }
 
 /**
- * Klaim jalur alumni lewat kode undangan + NISN (sistem voucher hibrida).
+ * Validasi kode undangan + NISN (sistem voucher hibrida).
  * Satu kode boleh dipakai banyak NISN; tiap pasangan kode+NISN hanya 1x pakai.
  * NISN yang boleh klaim adalah yang terdaftar di baris voucher kode tersebut.
+ * Fungsi ini TIDAK mengubah jalur — hanya menandai pasangan valid di sesi.
+ * Jalur alumni ditempel saat user menyimpan form jalur (lihat handler 'jalur').
  *
- * @return array{ok: bool, pesan: string}
+ * @return array{ok: bool, pesan: string, voucher_id?: int}
  */
 function klaimJalurAlumni(PDO $pdo, int $pendaftaranId, string $kode, string $nisn): array {
     $kode = strtoupper(trim($kode));
@@ -661,24 +663,31 @@ function klaimJalurAlumni(PDO $pdo, int $pendaftaranId, string $kode, string $ni
         return ['ok' => false, 'pesan' => 'Kode undangan sudah kedaluwarsa.'];
     }
 
+    // Tandai pasangan ini dipakai pendaftaran ini (tetap boleh ganti jalur
+    // lain nanti — baris voucher dilepas saat user simpan jalur non-alumni).
     try {
         $pdo->beginTransaction();
-        $upd = $pdo->prepare(
-            'UPDATE voucher_alumni SET pendaftaran_id = ? WHERE id = ? AND pendaftaran_id IS NULL'
+        // Lepas tandai lama milik pendaftaran ini (kalau sebelumnya validasi kode lain)
+        $lepas = $pdo->prepare(
+            'UPDATE voucher_alumni SET pendaftaran_id = NULL
+              WHERE pendaftaran_id = ? AND id <> ?'
         );
-        $upd->execute([$pendaftaranId, $v['id']]);
+        $lepas->execute([$pendaftaranId, $v['id']]);
+        $upd = $pdo->prepare(
+            'UPDATE voucher_alumni SET pendaftaran_id = ?
+              WHERE id = ? AND (pendaftaran_id IS NULL OR pendaftaran_id = ?)'
+        );
+        $upd->execute([$pendaftaranId, $v['id'], $pendaftaranId]);
         if ($upd->rowCount() !== 1) {
             $pdo->rollBack();
             return ['ok' => false, 'pesan' => 'Kode undangan sudah terpakai.'];
         }
-        $updP = $pdo->prepare(
-            "UPDATE pendaftaran
-             SET jalur = 'alumni-sdmua', jalur_status = 'pending', jalur_potongan = NULL
-             WHERE id = ?"
-        );
-        $updP->execute([$pendaftaranId]);
         $pdo->commit();
-        return ['ok' => true, 'pesan' => 'Jalur Alumni berhasil diklaim. Lengkapi berkas jalur selanjutnya.'];
+        return [
+            'ok' => true,
+            'pesan' => 'Kode cocok. Kartu "Alumni SD Ashidiq" terbuka — pilih lalu Simpan Jalur.',
+            'voucher_id' => (int) $v['id'],
+        ];
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         error_log('Klaim jalur alumni error: ' . $e->getMessage());
