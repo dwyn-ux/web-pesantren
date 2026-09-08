@@ -132,8 +132,7 @@ include __DIR__ . '/includes/header.php';
 <div class="admin-form-card">
     <div class="admin-form-title">Kode yang baru dibuat — cetak & tempel di voucher hadiah</div>
     <p class="muted">Satu baris = satu kode unik. Tempel di voucher fisik pemenang.</p>
-    <textarea readonly rows="<?= min(10, max(3, count($baruDibuat))) ?>" style="width:100%;font-family:monospace;font-size:13px;background:#f5f2eb;border:1px solid #d9d2c5;border-radius:4px;padding:10px;" onclick="this.select()"><?= e(implode("
-", $baruDibuat)) ?></textarea>
+    <textarea readonly rows="<?= min(10, max(3, count($baruDibuat))) ?>" style="width:100%;font-family:monospace;font-size:13px;background:#f5f2eb;border:1px solid #d9d2c5;border-radius:4px;padding:10px;" onclick="this.select()"><?= e(implode("\n", $baruDibuat)) ?></textarea>
 </div>
 <?php endif; ?>
 
