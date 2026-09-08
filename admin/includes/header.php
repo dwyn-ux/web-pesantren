@@ -66,12 +66,6 @@
         <?php endforeach; ?>
     </nav>
 
-    <div class="sidebar-footer">
-        <a href="<?= e(BASE_URL . '/') ?>" class="sidebar-link" target="_blank">
-            <span class="sidebar-link-icon" aria-hidden="true">↗</span>
-            <span>Lihat Website</span>
-        </a>
-    </div>
 </aside>
 <button type="button" class="admin-sidebar-backdrop" id="adminSidebarBackdrop" aria-label="Tutup menu admin"></button>
 
@@ -87,7 +81,8 @@
         <div class="topbar-user">
             <span class="topbar-user-avatar" aria-hidden="true">👤</span>
             <span class="topbar-user-name"><?= e(getCurrentUser()['name'] ?? '') ?></span>
-            <a href="<?= e(BASE_URL . '/logout') ?>" class="btn-sm btn-sm-danger" style="margin-left:8px;text-decoration:none;">Logout</a>
+            <a href="<?= e(BASE_URL . '/') ?>" class="btn-sm btn-sm-secondary" target="_blank" rel="noopener" style="margin-left:8px;text-decoration:none;">Lihat Website</a>
+            <a href="<?= e(BASE_URL . '/logout') ?>" class="btn-sm btn-sm-danger" style="margin-left:6px;text-decoration:none;">Logout</a>
         </div>
     </header>
 
