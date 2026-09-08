@@ -204,6 +204,8 @@ $pageDescription = 'Daftarkan putra-putri Anda ke Pondok Pesantren Ash-Shiddiq. 
 $pageCanonical   = BASE_URL . '/psb';
 $bodyClass       = 'psb-page';
 
+$extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/psb.css?v=' . ASSET_VERSION . '">';
+
 $labelJenjang = [
     'smp'              => 'SMP Muhammadiyah Unggulan Ashidiq',
     'sma'              => 'SMA Pondok Pesantren Ash-Shiddiq',

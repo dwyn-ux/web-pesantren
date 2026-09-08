@@ -1,0 +1,282 @@
+/* ═══════════════════════════════════════════════════════════
+   Halaman PSB (Pendaftaran Santri Baru)
+   Dipakai oleh pages/psb.php — di-load via $extraHead
+   Sumber desain: prototype/psb.html (disesuaikan font aplikasi)
+   ═══════════════════════════════════════════════════════════ */
+
+.psb-page {
+  background: var(--cream);
+}
+
+/* ── Layout 2 kolom: info kiri, form kanan ───────────────── */
+.psb-wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 80px 5%;
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 60px;
+  align-items: start;
+}
+
+/* ── INFO SIDE ───────────────────────────────────────────── */
+
+.syarat-box {
+  background: var(--white);
+  border-radius: 4px;
+  padding: 28px;
+}
+.syarat-box h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--text-dark);
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--cream-dark);
+  position: relative;
+}
+.syarat-box h3::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 36px;
+  height: 2px;
+  background: var(--gold);
+}
+.syarat-list { list-style: none; margin: 0; padding: 0; }
+.syarat-list li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cream-dark);
+  font-size: 14px;
+  color: var(--text-mid);
+  line-height: 1.5;
+}
+.syarat-list li:last-child { border-bottom: none; }
+.syarat-check {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  background: var(--cream-dark);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--green-deep);
+  margin-top: 1px;
+}
+
+.biaya-box {
+  background: var(--green-deep);
+  border-radius: 4px;
+  padding: 28px;
+  color: white;
+}
+.biaya-box h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 20px;
+}
+.biaya-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.biaya-item:last-child { border-bottom: none; }
+.biaya-label { font-size: 14px; color: rgba(255, 255, 255, 0.7); }
+.biaya-value { font-size: 18px; font-weight: 700; color: var(--gold); }
+
+/* ── FORM SIDE ───────────────────────────────────────────── */
+.psb-form-card {
+  background: var(--white);
+  border-radius: 4px;
+  padding: 40px 36px;
+  box-shadow: 0 8px 40px rgba(13, 122, 74, 0.08);
+  position: sticky;
+  top: 90px;
+}
+
+.form-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--cream-dark);
+}
+.form-header .arabic {
+  font-family: 'Amiri', serif;
+  font-size: 24px;
+  color: var(--green-mid);
+  margin-bottom: 8px;
+  direction: rtl;
+}
+.form-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+.form-header p { font-size: 13px; color: var(--text-light); }
+
+/* Indikator langkah (step) */
+.form-step {
+  display: flex;
+  margin-bottom: 32px;
+}
+.step-item {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+.step-item::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  right: -50%;
+  height: 1px;
+  background: var(--cream-dark);
+  z-index: 0;
+}
+.step-item:last-child::after { display: none; }
+.step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--cream-dark);
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 auto 6px;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s;
+}
+.step-num.active { background: var(--green-deep); color: white; }
+.step-num.done { background: var(--gold); color: var(--text-dark); }
+.step-label { font-size: 11px; color: var(--text-light); }
+.step-item.active .step-label { color: var(--green-deep); font-weight: 600; }
+
+/* Field form */
+.form-group { margin-bottom: 20px; }
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 7px;
+  letter-spacing: 0.5px;
+}
+.form-group label .req { color: #e55; margin-left: 2px; }
+.form-control {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 3px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text-dark);
+  background: var(--cream);
+  outline: none;
+  transition: border-color 0.3s, background 0.3s;
+}
+.form-control:focus {
+  border-color: var(--green-mid);
+  background: white;
+}
+.form-control::placeholder { color: var(--text-light); }
+select.form-control { cursor: pointer; }
+textarea.form-control { resize: vertical; }
+.form-control.is-error { border-color: #e55; }
+.field-error { font-size: 12px; color: #e55; margin-top: 6px; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.radio-group { display: flex; gap: 12px; flex-wrap: wrap; }
+.radio-item {
+  flex: 1;
+  min-width: 80px;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 3px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-mid);
+}
+.radio-item:has(input:checked) {
+  border-color: var(--green-mid);
+  background: rgba(13, 122, 74, 0.06);
+  color: var(--green-deep);
+  font-weight: 600;
+}
+.radio-item input { display: none; }
+
+.form-note {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* Navigasi form (Lanjut / Kembali / Submit) */
+.form-nav {
+  display: flex;
+  gap: 12px;
+  margin-top: 28px;
+}
+.btn-next {
+  flex: 1;
+  padding: 14px;
+  background: var(--green-deep);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.btn-next:hover {
+  background: var(--green-mid);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(13, 122, 74, 0.25);
+}
+.btn-prev {
+  padding: 14px 20px;
+  background: transparent;
+  color: var(--text-mid);
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 3px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.btn-prev:hover { border-color: var(--text-mid); }
+
+/* Halaman form bertahap */
+.form-page { display: none; }
+.form-page.active { display: block; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .psb-wrapper { grid-template-columns: 1fr; gap: 40px; padding: 60px 5%; }
+  .psb-form-card { position: static; }
+}
+@media (max-width: 480px) {
+  .psb-wrapper { padding: 40px 4%; }
+  .psb-form-card { padding: 28px 20px; }
+  .form-row { grid-template-columns: 1fr; }
+}

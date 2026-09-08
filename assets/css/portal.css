@@ -1,0 +1,329 @@
+/* ═══════════════════════════════════════════════════════════
+   Halaman Portal Santri
+   Dipakai oleh pages/portal-santri.php — di-load via $extraHead
+   Tema mengikuti variabel global (custom.css)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Header portal ───────────────────────────────────────── */
+.portal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.portal-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+.portal-subtitle {
+  font-size: 14px;
+  color: var(--text-mid);
+}
+
+/* Badge status pendaftaran */
+.status-badge {
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.status-info    { background: rgba(100, 116, 139, 0.1); color: #64748b; }
+.status-warning { background: rgba(249, 115, 22, 0.12); color: #c2560a; }
+.status-success { background: rgba(13, 122, 74, 0.12); color: var(--green-deep); }
+.status-error   { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+
+/* Info box (semua fase selesai) */
+.portal-info-box {
+  background: rgba(13, 122, 74, 0.06);
+  border: 1.5px solid rgba(13, 122, 74, 0.25);
+  border-radius: 6px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.portal-info-box h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--green-deep);
+}
+.portal-info-box p {
+  font-size: 14px;
+  color: var(--text-mid);
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+
+/* ── Navigasi step ───────────────────────────────────────── */
+.portal-steps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.portal-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  background: var(--white);
+  border: 1.5px solid var(--cream-dark);
+  color: var(--text-mid);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.portal-step .num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--cream-dark);
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.portal-step .lbl { line-height: 1; }
+.portal-step:hover { border-color: var(--green-mid); }
+.portal-step.active {
+  background: var(--green-deep);
+  border-color: var(--green-deep);
+  color: white;
+}
+.portal-step.active .num { background: rgba(255, 255, 255, 0.2); color: white; }
+
+/* ── Elemen umum konten portal ───────────────────────────── */
+.portal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+.portal-note {
+  font-size: 13px;
+  color: var(--text-mid);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* ── Pilih Jalur ─────────────────────────────────────────── */
+.jalur-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.jalur-radio-item {
+  display: block;
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 6px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--white);
+}
+.jalur-radio-item:has(input:checked) {
+  border-color: var(--green-mid);
+  background: rgba(13, 122, 74, 0.06);
+}
+.jalur-radio-item input { display: none; }
+.jalur-radio-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.jalur-radio-label small {
+  display: block;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.jalur-detail-wrap {
+  margin: 8px 0 20px;
+  padding: 16px;
+  background: var(--cream);
+  border: 1px solid var(--cream-dark);
+  border-radius: 6px;
+}
+.jalur-detail-wrap h4 {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--text-dark);
+}
+.radio-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-mid);
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+/* Simulasi biaya */
+.simulasi-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 14px;
+}
+.simulasi-table td {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cream-dark);
+  color: var(--text-mid);
+}
+.simulasi-table td.text-right {
+  text-align: right;
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+.simulasi-potongan td { color: #c2560a; }
+.simulasi-total td {
+  border-top: 2px solid var(--green-deep);
+  font-size: 15px;
+  color: var(--green-deep);
+}
+.simulasi-spp td { color: var(--text-light); font-size: 13px; }
+.text-right { text-align: right; }
+
+/* ── Upload Berkas ───────────────────────────────────────── */
+.berkas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.berkas-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--white);
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 6px;
+  padding: 16px 18px;
+}
+.berkas-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.berkas-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+.berkas-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.berkas-status.success { background: rgba(13, 122, 74, 0.1); color: var(--green-deep); }
+.berkas-status.pending { background: rgba(100, 116, 139, 0.1); color: #64748b; }
+.berkas-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.berkas-input { max-width: 220px; font-size: 12px; }
+.btn-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--green-deep);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.btn-link:hover { border-bottom-color: var(--green-deep); }
+
+/* ── Ringkasan finalisasi ────────────────────────────────── */
+.ringkasan-box {
+  background: var(--cream);
+  border: 1px solid var(--cream-dark);
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin: 16px 0 24px;
+}
+.ringkasan-box h4 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-dark);
+}
+.ringkasan-box ul { list-style: none; margin: 0; padding: 0; }
+.ringkasan-box li {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--cream-dark);
+  font-size: 14px;
+  color: var(--text-mid);
+}
+.ringkasan-box li:last-child { border-bottom: none; }
+
+/* ── Tagihan & Cicilan ───────────────────────────────────── */
+.tagihan-item {
+  background: var(--white);
+  border: 1.5px solid var(--cream-dark);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.tagihan-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.tagihan-head h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+.tagihan-head h4 small {
+  font-size: 12px;
+  color: var(--text-light);
+  font-weight: 400;
+}
+.cicilan-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 13px;
+}
+.cicilan-table th,
+.cicilan-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--cream-dark);
+}
+.cicilan-table th {
+  background: var(--cream);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-mid);
+}
+.cicilan-form {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--cream-dark);
+}
+
+/* Badge varian (dipakai di tabel cicilan) */
+.badge-success { background: rgba(13, 122, 74, 0.12); color: var(--green-deep); }
+.badge-warning { background: rgba(249, 115, 22, 0.12); color: #c2560a; }
+.badge-error   { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+.badge-muted   { background: rgba(100, 116, 139, 0.1); color: #64748b; }

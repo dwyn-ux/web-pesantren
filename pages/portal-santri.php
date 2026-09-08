@@ -228,6 +228,8 @@ $pageTitle       = 'Portal Santri — ' . APP_NAME;
 $pageDescription = 'Portal calon peserta PSB Pondok Pesantren Ash-Shiddiq.';
 $pageCanonical   = BASE_URL . '/portal-santri';
 $bodyClass       = 'portal-santri-page';
+
+$extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.css?v=' . ASSET_VERSION . '">';
 ?>
 <main class="page-section">
 <div class="container portal-container">

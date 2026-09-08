@@ -360,3 +360,55 @@ body.admin-body {
 .article-editor .editor-surface blockquote{color:#46544d!important;-webkit-text-fill-color:#46544d!important}
 .article-editor .editor-surface a{color:#28634f!important;-webkit-text-fill-color:#28634f!important}
 @media(max-width:800px){.article-editor .editor-toolbar{position:relative;top:auto;padding:7px}.article-editor .editor-toolbar button{padding:0 7px}}
+
+/* ── KOMPONEN: muted, filter tab, filter form, detail grid ───── */
+.muted { color: #8a9390; font-size: 13px; line-height: 1.6; }
+
+.filter-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.filter-tab {
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--text-mid);
+    background: #fff;
+    border: 1.5px solid var(--cream-dark);
+    transition: all 0.2s;
+}
+.filter-tab:hover { border-color: var(--green-mid); }
+.filter-tab.active {
+    background: var(--green-deep);
+    border-color: var(--green-deep);
+    color: #fff;
+}
+
+.filter-form { margin-bottom: 20px; }
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 8px;
+}
+.detail-grid h4 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--green-deep);
+    margin: 16px 0 6px;
+}
+.detail-grid h4:first-child { margin-top: 0; }
+.detail-grid p {
+    font-size: 14px;
+    color: var(--text-mid);
+    line-height: 1.7;
+}
+@media (max-width: 800px) {
+    .detail-grid { grid-template-columns: 1fr; }
+}
