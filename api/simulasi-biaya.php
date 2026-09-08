@@ -52,12 +52,21 @@ if (!in_array($jalur, $validJalur, true)) {
     exit;
 }
 
+// Baca voucher Akashi yang valid menempel pada pendaftaran ini (jika ada)
+$akashiJuara = null;
+if ($jalur === 'prestasi' && $jalurDetail === 'internal') {
+    $ak = getDB()->prepare("SELECT juara FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1");
+    $ak->execute([(int) $pendaftaran['id']]);
+    $akashiJuara = $ak->fetchColumn() ?: null;
+}
+
 $simulasi = getSimulasiBiaya(
     getDB(),
     $jalur,
     $jalurDetail,
     (int) $pendaftaran['gelombang_id'],
-    $pendaftaran['jenis_kelamin']
+    $pendaftaran['jenis_kelamin'],
+    $akashiJuara
 );
 
 echo json_encode(['success' => true, 'simulasi' => $simulasi]);

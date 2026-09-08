@@ -440,6 +440,7 @@ function jalurDetailOptions(): array {
             'kabkota'   => ['label' => 'Tingkat Kabupaten/Kota', 'potongan' => 30],
             'provinsi'  => ['label' => 'Tingkat Provinsi', 'potongan' => 40],
             'nasional'  => ['label' => 'Tingkat Nasional/Internasional', 'potongan' => 50],
+            'internal'  => ['label' => 'Tingkat Internal (Akashi)', 'potongan' => 0],
         ],
         'tahfidz' => [
             'juz-2' => ['label' => 'Hafalan lebih dari 2 Juz', 'potongan' => 20],
@@ -470,14 +471,20 @@ function jalurDetailOptions(): array {
  * di tabel pendaftaran (jalur_status, jalur_potongan) — terpisah.
  */
 function getJalurPotonganAdmin(PDO $pdo): array {
-    // Kolom wakaf_khusus opsional (migration 020) — fallback kalau belum ada
-    $hasWakaf = (bool) $pdo->query(
-        "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
-         AND TABLE_NAME='jalur_potongan_admin' AND COLUMN_NAME='wakaf_khusus'"
-    )->fetchColumn();
+    // Kolom opsional — fallback NULL kalau migration belum dijalankan
+    $hasKolom = function (string $kolom) use ($pdo): bool {
+        return (bool) $pdo->query(
+            "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+             AND TABLE_NAME='jalur_potongan_admin' AND COLUMN_NAME='$kolom'"
+        )->fetchColumn();
+    };
+    $selWakaf = $hasKolom('wakaf_khusus') ? 'wakaf_khusus' : 'NULL AS wakaf_khusus';
+    $selA1 = $hasKolom('akashi_juara1') ? 'akashi_juara1' : 'NULL AS akashi_juara1';
+    $selA2 = $hasKolom('akashi_juara2') ? 'akashi_juara2' : 'NULL AS akashi_juara2';
+    $selA3 = $hasKolom('akashi_juara3') ? 'akashi_juara3' : 'NULL AS akashi_juara3';
     $rows = $pdo->query(
         "SELECT jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus,"
-        . ($hasWakaf ? " wakaf_khusus," : " NULL AS wakaf_khusus,")
+        . " $selWakaf, $selA1, $selA2, $selA3,"
         . " admin_dhuafa_bebas,
                 prestasi_kecamatan, prestasi_kabkota, prestasi_provinsi, prestasi_nasional,
                 tahfidz_juz2, tahfidz_juz3, tahfidz_juz5
@@ -496,6 +503,14 @@ function getJalurPotonganAdmin(PDO $pdo): array {
                 ? (float) $r['spp_p_khusus'] : null,
             'wakaf'      => isset($r['wakaf_khusus']) && $r['wakaf_khusus'] !== null
                 ? (float) $r['wakaf_khusus'] : null,
+            'akashi'     => [
+                'juara1' => isset($r['akashi_juara1']) && $r['akashi_juara1'] !== null
+                    ? (float) $r['akashi_juara1'] : null,
+                'juara2' => isset($r['akashi_juara2']) && $r['akashi_juara2'] !== null
+                    ? (float) $r['akashi_juara2'] : null,
+                'juara3' => isset($r['akashi_juara3']) && $r['akashi_juara3'] !== null
+                    ? (float) $r['akashi_juara3'] : null,
+            ],
             'dhuafa_bebas' => (int) ($r['admin_dhuafa_bebas'] ?? 0) === 1,
             'prestasi'   => [
                 'kecamatan' => isset($r['prestasi_kecamatan']) && $r['prestasi_kecamatan'] !== null
@@ -615,6 +630,103 @@ function jalurBerkasSyarat(): array {
  */
 function jalurBerkasUntuk(string $jalur): array {
     return jalurBerkasSyarat()[$jalur] ?? [];
+}
+
+/**
+ * Generate kode voucher Akashi (acak, tanpa karakter membingungkan).
+ * Format: AKS-XXXXXXXXXX (huruf besar + angka, tanpa 0/O/1/I/L).
+ */
+function generateAkashiKode(int $len = 10): string {
+    $chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    $max = strlen($chars) - 1;
+    $kode = '';
+    for ($i = 0; $i < $len; $i++) {
+        $kode .= $chars[random_int(0, $max)];
+    }
+    return 'AKS-' . $kode;
+}
+
+/**
+ * Ambil nominal potongan Akashi per juara (Rp, pengurang ADM awal).
+ * Prioritas: 1. setelan admin di jalur_potongan_admin
+ *           2. juknis default (juara-1: 2jt, juara-2: 1,5jt, juara-3: 1jt)
+ *
+ * @return array{juara-1: float, juara-2: float, juara-3: float}
+ */
+function getPotonganAkashi(?array $adminJalur = null): array {
+    $default = ['juara-1' => 2000000.0, 'juara-2' => 1500000.0, 'juara-3' => 1000000.0];
+    $out = $default;
+    if ($adminJalur && isset($adminJalur['akashi'])) {
+        $ak = $adminJalur['akashi'];
+        if ($ak['juara1'] !== null) $out['juara-1'] = (float) $ak['juara1'];
+        if ($ak['juara2'] !== null) $out['juara-2'] = (float) $ak['juara2'];
+        if ($ak['juara3'] !== null) $out['juara-3'] = (float) $ak['juara3'];
+    }
+    return $out;
+}
+
+/**
+ * Validasi + klaim voucher Akashi (prestasi internal).
+ * Voucher terikat hadiah fisik, BUKAN NISN: klaim dengan KODE saja.
+ * Setelah valid, kartu "Tingkat Internal (Akashi)" terbuka di portal.
+ *
+ * @return array{ok: bool, pesan: string, voucher_id?: int, nominal?: float, juara?: string}
+ */
+function klaimVoucherAkashi(PDO $pdo, int $pendaftaranId, string $kode): array {
+    $kode = strtoupper(trim($kode));
+    if ($kode === '') {
+        return ['ok' => false, 'pesan' => 'Kode voucher wajib diisi.'];
+    }
+
+    $s = $pdo->prepare('SELECT status FROM pendaftaran WHERE id = ?');
+    $s->execute([$pendaftaranId]);
+    if ($s->fetchColumn() !== 'pending') {
+        return ['ok' => false, 'pesan' => 'Pendaftaran sudah tidak bisa mengubah jalur.'];
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT * FROM voucher_akashi WHERE kode = ? LIMIT 1"
+    );
+    $stmt->execute([$kode]);
+    $v = $stmt->fetch();
+    if (!$v) {
+        return ['ok' => false, 'pesan' => 'Kode voucher tidak ditemukan.'];
+    }
+    if ($v['pendaftaran_id'] !== null && (int) $v['pendaftaran_id'] !== $pendaftaranId) {
+        return ['ok' => false, 'pesan' => 'Kode voucher sudah terpakai.'];
+    }
+    if ($v['expire_at'] && $v['expire_at'] < date('Y-m-d')) {
+        return ['ok' => false, 'pesan' => 'Kode voucher sudah kedaluwarsa.'];
+    }
+
+    try {
+        $pdo->beginTransaction();
+        $lepas = $pdo->prepare(
+            'UPDATE voucher_akashi SET pendaftaran_id = NULL WHERE pendaftaran_id = ? AND id <> ?'
+        );
+        $lepas->execute([$pendaftaranId, $v['id']]);
+        $upd = $pdo->prepare(
+            'UPDATE voucher_akashi SET pendaftaran_id = ?
+              WHERE id = ?'
+        );
+        $upd->execute([$pendaftaranId, $v['id']]);
+        if ($upd->rowCount() !== 1) {
+            $pdo->rollBack();
+            return ['ok' => false, 'pesan' => 'Kode voucher sudah terpakai.'];
+        }
+        $pdo->commit();
+        return [
+            'ok' => true,
+            'pesan' => 'Kode valid. Kartu "Tingkat Internal (Akashi)" terbuka — pilih lalu Simpan Jalur.',
+            'voucher_id' => (int) $v['id'],
+            'nominal' => (float) $v['nominal_potongan'],
+            'juara' => $v['juara'],
+        ];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('Klaim voucher Akashi error: ' . $e->getMessage());
+        return ['ok' => false, 'pesan' => 'Terjadi kesalahan sistem. Silakan coba lagi.'];
+    }
 }
 
 /**
@@ -1050,7 +1162,8 @@ function getTarifByGelombang(PDO $pdo, int $gelombangId, ?string $gender = null)
 
 /** Hitung simulasi biaya (untuk AJAX + JS live). */
 function getSimulasiBiaya(PDO $pdo, string $jalur, ?string $jalurDetail,
-                          int $gelombangId, string $gender): array {
+                           int $gelombangId, string $gender,
+                           ?string $akashiJuara = null): array {
     $tarif = getTarifByGelombang($pdo, $gelombangId, $gender);
     $adminJalur = getJalurPotonganAdmin($pdo);
     $kader = $adminJalur['kaderisasi'] ?? [];
@@ -1061,6 +1174,11 @@ function getSimulasiBiaya(PDO $pdo, string $jalur, ?string $jalurDetail,
         'potongan' => 0, 'potongan_label' => '',
         'total' => 0, 'detail' => [],
     ];
+
+    // Simpan juara Akashi di result (agar snapshot + tampilan bisa baca)
+    if ($jalur === 'prestasi' && $jalurDetail === 'internal' && $akashiJuara) {
+        $result['__akashi_juara'] = $akashiJuara;
+    }
 
     foreach ($tarif as $t) {
         if ($t['jenis'] !== 'pendaftaran') continue;
@@ -1082,6 +1200,19 @@ function getSimulasiBiaya(PDO $pdo, string $jalur, ?string $jalurDetail,
             $potonganPct = jalurPotonganOtomatis($jalur, null, $adminJalur);
             $harga_setelah = $harga_asli * (1 - $potonganPct / 100);
             $result['potongan_label'] = "Potongan Alumni SD Ashidiq ({$potonganPct}%)";
+        } elseif ($jalur === 'prestasi' && $jalurDetail === 'internal') {
+            // Potongan Akashi: nominal Rp pengurang ADM awal sesuai juara voucher
+            $akashiCfg = getPotonganAkashi($adminJalur);
+            $nominal = $akashiCfg['juara-3'];
+            $juaraLbl = 'Juara 3';
+            if (!empty($result['__akashi_juara'])) {
+                $j = $result['__akashi_juara'];
+                $nominal = $akashiCfg[$j] ?? $nominal;
+                $juaraLbl = $j === 'juara-1' ? 'Juara 1'
+                    : ($j === 'juara-2' ? 'Juara 2' : 'Juara 3');
+            }
+            $harga_setelah = max(0.0, $harga_asli - $nominal);
+            $result['potongan_label'] = "Potongan Akashi {$juaraLbl} (Rp " . number_format($nominal, 0, ',', '.') . ')';
         } elseif (in_array($jalur, ['prestasi', 'tahfidz'], true) && $jalurDetail) {
             $potonganPct = jalurPotonganOtomatis($jalur, $jalurDetail, $adminJalur);
             $harga_setelah = $harga_asli * (1 - $potonganPct / 100);

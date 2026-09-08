@@ -45,6 +45,7 @@
             'admin/kelola-gelombang' => ['icon' => '⏱', 'label' => 'Gelombang'],
             'admin/kelola-template' => ['icon' => '📄', 'label' => 'Template'],
             'admin/voucher-alumni' => ['icon' => '🎟', 'label' => 'Voucher Alumni'],
+            'admin/voucher-akashi' => ['icon' => '🏆', 'label' => 'Voucher Akashi'],
             'admin/artikel'   => ['icon' => '✎', 'label' => 'Artikel'],
             'admin/foto'      => ['icon' => '▧', 'label' => 'Galeri Foto'],
             'admin/dokumentasi' => ['icon' => '▣', 'label' => 'Dokumentasi'],

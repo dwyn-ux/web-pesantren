@@ -61,6 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pra_kab   = $floatOrNull($prst['kabkota'] ?? null);
         $pra_prov  = $floatOrNull($prst['provinsi'] ?? null);
         $pra_nas   = $floatOrNull($prst['nasional'] ?? null);
+        $pra_ak1   = $floatOrNull($prst['akashi']['juara1'] ?? null);
+        $pra_ak2   = $floatOrNull($prst['akashi']['juara2'] ?? null);
+        $pra_ak3   = $floatOrNull($prst['akashi']['juara3'] ?? null);
         // Tahfidz (per detail)
         $thzf      = $val['tahfidz'] ?? [];
         $thz_j2    = $floatOrNull($thzf['juz-2'] ?? $thzf['juz2'] ?? null);
@@ -72,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $params = array_merge($params, [
             $bebas ? 1 : 0,
             $pra_kec, $pra_kab, $pra_prov, $pra_nas,
+            $pra_ak1, $pra_ak2, $pra_ak3,
             $thz_j2, $thz_j3, $thz_j5,
         ]);
         $upsert->execute($params);
@@ -269,6 +273,36 @@ require_once __DIR__ . '/includes/header.php';
                     <p class="muted">
                         Kosongkan = ikut tarif gelombang normal.
                     </p>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- AKASHI (Prestasi Internal) -->
+        <fieldset class="jalur-fieldset">
+            <legend>Akashi — Potongan ADM Awal per Juara</legend>
+            <p class="muted" style="margin-bottom:14px;">
+                Nominal Rp pengurang ADM awal sesuai juara voucher Akashi.
+                Juknis: Juara 1 = Rp 2.000.000, Juara 2 = Rp 1.500.000, Juara 3 = Rp 1.000.000.
+                Kosongkan = pakai juknis default.
+            </p>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Juara 1 (Rp)</label>
+                    <input type="number" min="0" name="jalur_prestasi[akashi][juara1]"
+                           value="<?= e($formatPersen($adminJalur['prestasi']['akashi']['juara1'] ?? null)) ?>"
+                           class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Juara 2 (Rp)</label>
+                    <input type="number" min="0" name="jalur_prestasi[akashi][juara2]"
+                           value="<?= e($formatPersen($adminJalur['prestasi']['akashi']['juara2'] ?? null)) ?>"
+                           class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Juara 3 (Rp)</label>
+                    <input type="number" min="0" name="jalur_prestasi[akashi][juara3]"
+                           value="<?= e($formatPersen($adminJalur['prestasi']['akashi']['juara3'] ?? null)) ?>"
+                           class="form-control">
                 </div>
             </div>
         </fieldset>

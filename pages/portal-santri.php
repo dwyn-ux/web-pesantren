@@ -83,6 +83,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
                     $errors['jalur'] = 'Isi voucher + NISN yang cocok dulu lewat kartu "+" sebelum memilih jalur Alumni.';
                 }
             }
+            // Prestasi internal (Akashi) hanya boleh disimpan kalau voucher
+            // Akashi valid menempel pada pendaftaran ini.
+            if ($jalur === 'prestasi' && $jalurDetail === 'internal') {
+                $cekA = $pdo->prepare(
+                    "SELECT id FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1"
+                );
+                $cekA->execute([$pendaftaranId]);
+                if (!$cekA->fetch()) {
+                    $errors['jalur'] = 'Isi kode voucher Akashi yang valid dulu sebelum memilih Tingkat Internal.';
+                }
+            }
             if (in_array($jalur, ['prestasi', 'tahfidz'], true)) {
                 $opts = jalurDetailOptions()[$jalur] ?? [];
                 if (!$jalurDetail || !isset($opts[$jalurDetail])) {
@@ -106,6 +117,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
                         'UPDATE voucher_alumni SET pendaftaran_id = NULL WHERE pendaftaran_id = ?'
                     );
                     $lepas->execute([$pendaftaranId]);
+                }
+                // Simpan jalur selain prestasi-internal → lepas voucher Akashi
+                if (!($jalur === 'prestasi' && $jalurDetail === 'internal')) {
+                    $lepasA = $pdo->prepare(
+                        'UPDATE voucher_akashi SET pendaftaran_id = NULL WHERE pendaftaran_id = ?'
+                    );
+                    $lepasA->execute([$pendaftaranId]);
                 }
                 $successMsg = 'Jalur pendaftaran tersimpan.';
             }
@@ -200,9 +218,16 @@ $optsJalur = jalurDetailOptions();
 $jalurBerkas = jalurBerkasUntuk($pendaftaran['jalur'] ?? 'reguler');
 
 // Simulasi biaya
+$akashiJuara = null;
+if (($pendaftaran['jalur'] ?? '') === 'prestasi' && ($pendaftaran['jalur_detail'] ?? '') === 'internal') {
+    $ak = $pdo->prepare("SELECT juara FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1");
+    $ak->execute([$pendaftaranId]);
+    $akashiJuara = $ak->fetchColumn() ?: null;
+}
 $simulasi = ($pendaftaran['gelombang_id'] && !empty($pendaftaran['jalur']))
     ? getSimulasiBiaya($pdo, $pendaftaran['jalur'], $pendaftaran['jalur_detail'],
-                       (int) $pendaftaran['gelombang_id'], $pendaftaran['jenis_kelamin'])
+                       (int) $pendaftaran['gelombang_id'], $pendaftaran['jenis_kelamin'],
+                       $akashiJuara)
     : null;
 
 $stepSekarang = sanitizeString($_GET['step'] ?? 'akademik');
@@ -235,6 +260,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'alumni-
         $_SESSION['alumni_klaim_attempts'] = $attempts + 1;
         $_SESSION['alumni_klaim_at'] = time();
         $errors['alumni_klaim'] = $res['pesan'];
+    }
+}
+
+// ── Klaim voucher Akashi (prestasi internal, kode saja) ────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'akashi-klaim' && !$faseSelesai) {
+    validateCsrf();
+    $kodeA = sanitizeString($_POST['kode_voucher'] ?? '');
+
+    $attempts = (int) ($_SESSION['akashi_klaim_attempts'] ?? 0);
+    $attemptsAt = (int) ($_SESSION['akashi_klaim_at'] ?? 0);
+    if (time() - $attemptsAt > 3600) $attempts = 0;
+
+    if ($attempts >= 10) {
+        $errors['akashi_klaim'] = 'Terlalu banyak percobaan. Silakan coba lagi 1 jam lagi.';
+    } elseif ($kodeA === '') {
+        $errors['akashi_klaim'] = 'Kode voucher wajib diisi.';
+    } else {
+        usleep(600000);
+        $res = klaimVoucherAkashi($pdo, $pendaftaranId, $kodeA);
+        if ($res['ok']) {
+            $_SESSION['akashi_klaim_attempts'] = 0;
+            $_SESSION['flash_success'] = $res['pesan'];
+            redirect('/portal-santri?step=jalur');
+        }
+        $_SESSION['akashi_klaim_attempts'] = $attempts + 1;
+        $_SESSION['akashi_klaim_at'] = time();
+        $errors['akashi_klaim'] = $res['pesan'];
     }
 }
 
@@ -477,18 +529,45 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         </p>
         <?php endif; ?>
 
+<?php
+      // Voucher Akashi valid yang menempel pada pendaftaran ini
+      $cekAk = $pdo->prepare("SELECT juara, nominal_potongan FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1");
+      $cekAk->execute([$pendaftaranId]);
+      $akVoucher = $cekAk->fetch();
+      $akashiTerbuka = (bool) $akVoucher;
+      $akashiCfg = getPotonganAkashi(getJalurPotonganAdmin($pdo));
+      $akashiLabel = ['juara-1' => 'Juara 1', 'juara-2' => 'Juara 2', 'juara-3' => 'Juara 3'];
+      ?>
         <?php foreach ($optsJalur as $jalurKey => $details): ?>
           <div class="jalur-detail-wrap" id="detail-<?= e($jalurKey) ?>" style="display:none;">
             <h4>Pilih <?= $jalurKey === 'prestasi' ? 'Tingkat Prestasi' : 'Kategori Hafalan' ?>:</h4>
             <?php foreach ($details as $val => $opt): ?>
+              <?php if ($jalurKey === 'prestasi' && $val === 'internal' && !$akashiTerbuka) continue; ?>
               <label class="radio-inline">
                 <input type="radio" name="jalur_detail" value="<?= e($val) ?>"
                        <?= ($pendaftaran['jalur_detail'] ?? '') === $val ? 'checked' : '' ?>>
-                <?= e($opt['label']) ?> &mdash; potongan <?= (int)$opt['potongan'] ?>%
+                <?= e($opt['label']) ?>
+                <?php if (!($jalurKey === 'prestasi' && $val === 'internal')): ?>
+                  &mdash; potongan <?= (int)$opt['potongan'] ?>%
+                <?php endif; ?>
               </label>
             <?php endforeach; ?>
+            <?php if ($jalurKey === 'prestasi' && $akashiTerbuka): ?>
+              <p class="portal-note" style="margin-top:8px;">
+                Voucher <strong><?= e($akVoucher['juara'] ? ($akashiLabel[$akVoucher['juara']] ?? $akVoucher['juara']) : '') ?></strong>
+                — potongan ADM awal <strong>Rp <?= number_format((float) $akVoucher['nominal_potongan'], 0, ',', '.') ?></strong>.
+              </p>
+            <?php endif; ?>
           </div>
         <?php endforeach; ?>
+
+        <?php if (!$akashiTerbuka): ?>
+        <div class="jalur-detail-wrap" id="detail-akashi" style="display:none;">
+          <h4>Tingkat Internal (Akashi)</h4>
+          <p class="portal-note">Khusus juara lomba Akashi. Masukkan kode voucher hadiah (tanpa NISN):</p>
+          <?php if (!empty($errors['akashi_klaim'])): ?><p class="field-error"><?= e($errors['akashi_klaim']) ?></p><?php endif; ?>
+        </div>
+        <?php endif; ?>
 
         <div id="simulasiBox" style="display:none;">
           <h4>Simulasi Biaya</h4>
@@ -543,6 +622,24 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       </script>
       <?php endif; ?>
     </section>
+
+    <?php if (!$akashiTerbuka && !$faseSelesai): ?>
+    <section class="portal-card" id="akashiCard" style="margin-top:20px;">
+      <h2>Voucher Prestasi Internal (Akashi)</h2>
+      <p class="portal-note">Khusus juara lomba Akashi (SD umum). Masukkan kode voucher hadiah (tanpa NISN). Setelah valid, radio "Tingkat Internal (Akashi)" terbuka di kartu Prestasi.</p>
+      <form method="post" style="max-width:420px;" novalidate>
+        <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+        <input type="hidden" name="step" value="akashi-klaim">
+        <div class="form-group">
+          <label>Kode Voucher</label>
+          <input type="text" name="kode_voucher" class="form-control" placeholder="AKS-XXXXXXXXXX"
+                 required autocomplete="off" style="text-transform:uppercase;">
+        </div>
+        <?php if (!empty($errors['akashi_klaim'])): ?><p class="field-error"><?= e($errors['akashi_klaim']) ?></p><?php endif; ?>
+        <button type="submit" class="btn-primary">Gunakan Kode</button>
+      </form>
+    </section>
+    <?php endif; ?>
 
     <script>
     const JALUR_OPTS = <?= json_encode($optsJalur, JSON_UNESCAPED_UNICODE) ?>;

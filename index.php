@@ -40,7 +40,7 @@ $authPages = [];
 $adminPages = [
     'admin', 'admin/dashboard',
     'admin/artikel', 'admin/artikel-tambah', 'admin/artikel-edit',
-    'admin/foto', 'admin/users', 'admin/psb', 'admin/dokumentasi', 'admin/alumni', 'admin/alumni-edit',    'admin/pengaturan',     'admin/berkas-lihat', 'admin/testimoni', 'admin/jalur-potongan', 'admin/kelola-template', 'admin/kelola-gelombang', 'admin/verifikasi-berkas', 'admin/input-tes', 'admin/cicilan-verifikasi', 'admin/daftar-ulang', 'admin/voucher-alumni',
+    'admin/foto', 'admin/users', 'admin/psb', 'admin/dokumentasi', 'admin/alumni', 'admin/alumni-edit',    'admin/pengaturan',     'admin/berkas-lihat', 'admin/testimoni', 'admin/jalur-potongan', 'admin/kelola-template', 'admin/kelola-gelombang', 'admin/verifikasi-berkas', 'admin/input-tes', 'admin/cicilan-verifikasi', 'admin/daftar-ulang', 'admin/voucher-alumni', 'admin/voucher-akashi',
 ];
 
 // ── Access Control ────────────────────────────────────────────
@@ -94,6 +94,7 @@ $pageMap = [
     'admin/cicilan-verifikasi' => ROOT_PATH . '/admin/cicilan-verifikasi.php',
     'admin/daftar-ulang' => ROOT_PATH . '/admin/daftar-ulang.php',
     'admin/voucher-alumni' => ROOT_PATH . '/admin/voucher-alumni.php',
+    'admin/voucher-akashi' => ROOT_PATH . '/admin/voucher-akashi.php',
     'download-template' => ROOT_PATH . '/pages/download-template.php',
 ];
 
