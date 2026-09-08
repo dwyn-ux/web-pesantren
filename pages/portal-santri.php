@@ -632,7 +632,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         <input type="hidden" name="step" value="akashi-klaim">
         <div class="form-group">
           <label>Kode Voucher</label>
-          <input type="text" name="kode_voucher" class="form-control" placeholder="AKS-XXXXXXXXXX"
+          <input type="text" name="voucher_akashi" class="form-control" placeholder="AKS-XXXXXXXXXX"
                  required autocomplete="off" style="text-transform:uppercase;">
         </div>
         <?php if (!empty($errors['akashi_klaim'])): ?><p class="field-error"><?= e($errors['akashi_klaim']) ?></p><?php endif; ?>
