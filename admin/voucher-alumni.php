@@ -115,20 +115,21 @@ include __DIR__ . '/includes/header.php';
 <?php endif; ?>
 
 <?php if (!empty($baruDibuat)): ?>
-<div class="card" style="margin-bottom:20px;">
-    <h3>Kode yang baru dibuat — salin & bagikan ke sekolah</h3>
-    <p class="muted">Format: KODE;NISN;Nama — siap di-paste ke Excel/WhatsApp.</p>
+<div class="admin-form-card" style="margin-bottom:28px;">
+    <div class="admin-form-title">Kode yang baru dibuat — salin &amp; bagikan ke sekolah</div>
+    <p class="muted" style="margin-bottom:14px;">Format: KODE;NISN;Nama — siap di-paste ke Excel/WhatsApp.</p>
     <textarea readonly rows="<?= min(10, max(3, count($baruDibuat))) ?>" style="width:100%;font-family:monospace;font-size:13px;background:#f5f2eb;border:1px solid #d9d2c5;border-radius:4px;padding:10px;" onclick="this.select()"><?= e(implode("\n", $baruDibuat)) ?></textarea>
 </div>
 <?php endif; ?>
 
-<div class="card" style="margin-bottom:20px;">
-    <h3>Buat Voucher Jalur Alumni (SD Muhammadiyah Unggulan Ashidiq)</h3>
-    <p class="muted">
-        Voucher diberikan khusus siswa SD Ashidiq (satu yayasan). Setiap baris: <strong>NISN;Nama</strong>.
-        Satu NISN = satu voucher sekali pakai. Setelah dicetak, calon memasukkan kode + NISN di portal untuk mengklaim jalur Alumni.
+<div class="admin-form-card">
+    <div class="admin-form-title">Buat Voucher Jalur Alumni</div>
+    <p class="muted" style="margin-bottom:20px;">
+        Voucher diberikan khusus siswa SD Muhammadiyah Unggulan Ashidiq (satu yayasan).
+        Setiap baris: <strong>NISN;Nama</strong>. Satu NISN = satu voucher sekali pakai.
+        Setelah dicetak, calon memasukkan kode + NISN di portal untuk mengklaim jalur Alumni.
     </p>
-    <form method="post">
+    <form method="post" class="admin-form">
         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
         <input type="hidden" name="act" value="generate">
         <div class="form-group">
@@ -140,59 +141,69 @@ include __DIR__ . '/includes/header.php';
             <label>Masa berlaku (opsional)</label>
             <input type="date" name="expire_at" class="form-control">
         </div>
-        <button type="submit" class="btn-primary">Generate Voucher</button>
+        <div class="form-actions">
+            <button type="submit" class="btn-sm btn-sm-primary">Generate Voucher</button>
+        </div>
     </form>
 </div>
 
-<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-        <h3 style="margin:0;">Daftar Voucher
-            <span class="badge"><?= $total ?></span>
-            <span class="badge badge-success"><?= $terpakai ?> terpakai</span>
-            <span class="badge badge-muted"><?= $total - $terpakai ?> sisa</span>
-        </h3>
-        <a href="?export=1" class="btn-outline">⬇ Ekspor CSV</a>
+<div class="admin-table-wrap">
+    <div class="table-head">
+        <h2>Daftar Voucher
+            <span class="badge" style="margin-left:6px;vertical-align:middle;"><?= $total ?></span>
+            <span class="badge badge-success" style="margin-left:4px;vertical-align:middle;"><?= $terpakai ?> terpakai</span>
+            <span class="badge badge-muted" style="margin-left:4px;vertical-align:middle;"><?= $total - $terpakai ?> sisa</span>
+        </h2>
+        <a href="?export=1" class="btn-sm btn-sm-secondary">⬇ Ekspor CSV</a>
     </div>
 
     <?php if (empty($vouchers)): ?>
-    <p class="muted">Belum ada voucher. Buat lewat form di atas.</p>
+    <div class="table-empty">Belum ada voucher. Buat lewat form di atas.</div>
     <?php else: ?>
-    <table class="admin-table" style="font-size:13px;">
-        <tr>
-            <th>Kode</th>
-            <th>NISN</th>
-            <th>Nama</th>
-            <th>Masa Berlaku</th>
-            <th>Status</th>
-            <th></th>
-        </tr>
+    <div style="overflow-x:auto;">
+    <table class="admin-table" style="min-width:640px;">
+        <thead>
+            <tr>
+                <th>Kode</th>
+                <th>NISN</th>
+                <th>Nama</th>
+                <th>Masa Berlaku</th>
+                <th>Status</th>
+                <th style="width:90px;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
         <?php foreach ($vouchers as $v): ?>
         <tr>
             <td><code><?= e($v['kode']) ?></code></td>
             <td><?= e($v['nisn']) ?></td>
             <td><?= e($v['nama_siswa'] ?? '—') ?></td>
-            <td><?= e($v['expire_at'] ?? '—') ?></td>
+            <td style="font-size:12px;"><?= e($v['expire_at'] ?? '—') ?></td>
             <td>
                 <?php if ($v['pendaftaran_id']): ?>
                     <span class="badge badge-success">Terpakai</span>
-                    <small class="muted"><?= e($v['nomor_daftar']) ?><br><?= e($v['pendaftar']) ?></small>
+                    <div class="muted" style="font-size:11px;margin-top:4px;line-height:1.5;">
+                        <?= e($v['nomor_daftar']) ?><br><?= e($v['pendaftar']) ?>
+                    </div>
                 <?php else: ?>
                     <span class="badge badge-muted">Belum</span>
                 <?php endif; ?>
             </td>
             <td>
                 <?php if (!$v['pendaftaran_id']): ?>
-                <form method="post" style="margin:0;" onsubmit="return confirm('Hapus voucher ini?')">
+                <form method="post" onsubmit="return confirm('Hapus voucher ini?')">
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="act" value="hapus">
                     <input type="hidden" name="id" value="<?= (int) $v['id'] ?>">
-                    <button class="btn-sm btn-sm-secondary" style="font-size:11px;">Hapus</button>
+                    <button type="submit" class="btn-sm btn-sm-danger">Hapus</button>
                 </form>
                 <?php endif; ?>
             </td>
         </tr>
         <?php endforeach; ?>
+        </tbody>
     </table>
+    </div>
     <?php endif; ?>
 </div>
 
