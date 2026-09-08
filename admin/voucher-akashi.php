@@ -48,7 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $act = sanitizeString($_POST['act'] ?? '');
 
     if ($act === 'generate') {
-        // Generate N kode baru untuk 1 juara (tiap kode unik, 1x pakai)
         $juara = sanitizeString($_POST['juara'] ?? 'juara-3');
         if (!isset($akashiDefault[$juara])) $juara = 'juara-3';
         $jumlah = min(100, max(1, sanitizeInt($_POST['jumlah'] ?? 1)));
@@ -72,7 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = "$dibuat kode {$labelJuara[$juara]} dibuat (potongan Rp " . number_format($akashiDefault[$juara], 0, ',', '.') . ', berlaku s/d ' . $expire . ').';
         $msgType = 'success';
     } elseif ($act === 'edit') {
-        // Edit nama / nominal / masa berlaku 1 kode
         $id = sanitizeInt($_POST['id'] ?? 0);
         $nama = sanitizeString($_POST['nama_pemenang'] ?? '') ?: null;
         $nominal = sanitizeFloat($_POST['nominal'] ?? 0);
@@ -88,7 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msgType = 'error';
         }
     } elseif ($act === 'hapus') {
-        // Hapus 1 kode (hanya boleh kalau belum terpakai)
         $id = sanitizeInt($_POST['id'] ?? 0);
         $cek = $pdo->prepare('SELECT pendaftaran_id FROM voucher_akashi WHERE id = ?');
         $cek->execute([$id]);
@@ -130,9 +127,9 @@ include __DIR__ . '/includes/header.php';
 
 <?php if (!empty($baruDibuat)): ?>
 <div class="admin-form-card">
-    <div class="admin-form-title">Kode yang baru dibuat — cetak & tempel di voucher hadiah</div>
+    <div class="admin-form-title">Kode yang baru dibuat — cetak &amp; tempel di voucher hadiah</div>
     <p class="muted">Satu baris = satu kode unik. Tempel di voucher fisik pemenang.</p>
-    <textarea readonly rows="<?= min(10, max(3, count($baruDibuat))) ?>" style="width:100%;font-family:monospace;font-size:13px;background:#f5f2eb;border:1px solid #d9d2c5;border-radius:4px;padding:10px;" onclick="this.select()"><?= e(implode("\n", $baruDibuat)) ?></textarea>
+    <textarea readonly rows="<?= min(10, max(3, count($baruDibuat))) ?>" class="akashi-code-box" onclick="this.select()"><?= e(implode("\n", $baruDibuat)) ?></textarea>
 </div>
 <?php endif; ?>
 
@@ -175,9 +172,9 @@ include __DIR__ . '/includes/header.php';
 
 <div class="admin-table-wrap">
     <div class="table-head">
-        <h2>Daftar Voucher Akashi
-            <span class="badge badge-muted" style="margin-left:6px;vertical-align:middle;"><?= $totalKode ?> kode</span>
-            <span class="badge badge-success" style="margin-left:4px;vertical-align:middle;"><?= $totalPakai ?> terpakai</span>
+        <h2>Daftar Voucher
+            <span class="badge badge-muted"><?= $totalKode ?> kode</span>
+            <span class="badge badge-success"><?= $totalPakai ?> terpakai</span>
         </h2>
         <button type="button" class="btn-sm btn-sm-secondary" onclick="window.location='?export=1'">Ekspor CSV</button>
     </div>
@@ -187,62 +184,62 @@ include __DIR__ . '/includes/header.php';
     <?php else: ?>
     <?php foreach (['juara-1', 'juara-2', 'juara-3'] as $jk): ?>
     <?php if (empty($groups[$jk])) continue; ?>
-    <div style="padding:14px 20px;border-bottom:1px solid var(--cream-dark);">
+    <div class="akashi-group-header">
         <strong><?= e($labelJuara[$jk]) ?></strong>
-        <span class="badge badge-muted" style="margin-left:8px;vertical-align:middle;"><?= count($groups[$jk]) ?> kode</span>
-        <span class="muted" style="margin-left:8px;vertical-align:middle;">Potongan Rp <?= number_format($akashiDefault[$jk], 0, ',', '.') ?></span>
+        <span class="badge badge-muted"><?= count($groups[$jk]) ?> kode</span>
+        <span class="muted">Potongan Rp <?= number_format($akashiDefault[$jk], 0, ',', '.') ?></span>
     </div>
-    <div style="overflow-x:auto;">
-    <table class="admin-table" style="min-width:680px;">
+    <table class="admin-table">
         <thead>
             <tr>
                 <th>Kode</th>
                 <th>Nama Pemenang</th>
-                <th>Nominal (Rp)</th>
+                <th>Nominal</th>
                 <th>Berlaku s/d</th>
                 <th>Status</th>
-                <th style="width:170px;">Aksi</th>
+                <th class="col-aksi">Aksi</th>
             </tr>
         </thead>
         <tbody>
             <?php foreach ($groups[$jk] as $v): ?>
             <tr>
                 <td><code><?= e($v['kode']) ?></code></td>
-                <td><?= e($v['nama_pemenang'] ?? '—') ?></td>
+                <td><?= e($v['nama_pemenang'] ?: '—') ?></td>
                 <td>Rp <?= number_format((float) $v['nominal_potongan'], 0, ',', '.') ?></td>
-                <td style="font-size:12px;"><?= e($v['expire_at'] ?? '—') ?></td>
+                <td><?= e($v['expire_at'] ?: '—') ?></td>
                 <td>
                     <?php if ($v['pendaftaran_id']): ?>
                         <span class="badge badge-success">Terpakai</span>
-                        <div class="muted" style="font-size:11px;margin-top:4px;line-height:1.5;"><?= e($v['nomor_daftar']) ?><br><?= e($v['pendaftar']) ?></div>
+                        <span class="muted" style="display:block;margin-top:3px;font-size:11px;"><?= e($v['nomor_daftar']) ?> &middot; <?= e($v['pendaftar']) ?></span>
                     <?php else: ?>
                         <span class="badge badge-muted">Belum</span>
                     <?php endif; ?>
                 </td>
-                <td>
-                    <button type="button" class="btn-sm btn-sm-warning" onclick="openEditAkashi(<?= (int)$v['id'] ?>, '<?= e(addslashes($v['kode'])) ?>', '<?= e(addslashes($v['nama_pemenang'] ?? '')) ?>', <?= (int)$v['nominal_potongan'] ?>, '<?= e(addslashes($v['expire_at'] ?? '')) ?>')">Edit</button>
-                    <?php if (!$v['pendaftaran_id']): ?>
-                    <form method="post" style="display:inline;" onsubmit="return confirm('Hapus kode <?= e($v['kode']) ?>?')">
-                        <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-                        <input type="hidden" name="act" value="hapus">
-                        <input type="hidden" name="id" value="<?= (int) $v['id'] ?>">
-                        <button type="submit" class="btn-sm btn-sm-danger">Hapus</button>
-                    </form>
-                    <?php endif; ?>
+                <td class="col-aksi">
+                    <div class="aksi-group">
+                        <button type="button" class="btn-sm btn-sm-warning" onclick="openEditAkashi(<?= (int)$v['id'] ?>, '<?= e(addslashes($v['kode'])) ?>', '<?= e(addslashes($v['nama_pemenang'] ?? '')) ?>', <?= (int)$v['nominal_potongan'] ?>, '<?= e(addslashes($v['expire_at'] ?? '')) ?>')">Edit</button>
+                        <?php if (!$v['pendaftaran_id']): ?>
+                        <form method="post" class="inline" onsubmit="return confirm('Hapus kode <?= e($v['kode']) ?>?')">
+                            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                            <input type="hidden" name="act" value="hapus">
+                            <input type="hidden" name="id" value="<?= (int) $v['id'] ?>">
+                            <button type="submit" class="btn-sm btn-sm-danger">Hapus</button>
+                        </form>
+                        <?php endif; ?>
+                    </div>
                 </td>
             </tr>
             <?php endforeach; ?>
-            </tbody>
-        </table>
-        </div>
+        </tbody>
+    </table>
     <?php endforeach; ?>
     <?php endif; ?>
 </div>
 
 <!-- ── MODAL EDIT VOUCHER ─────────────────────────────────────── -->
-<div id="editAkashiModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:20px;" hidden>
-    <div class="admin-form-card" style="width:100%;max-width:440px;margin-bottom:0;">
-        <div class="admin-form-title" style="display:flex;justify-content:space-between;align-items:center;">
+<div id="editAkashiModal" class="modal-backdrop" hidden>
+    <div class="modal-card admin-form-card">
+        <div class="admin-form-title modal-title-bar">
             <span>Edit Voucher — <code id="modalKode"></code></span>
             <button type="button" class="btn-sm btn-sm-secondary" onclick="closeEditAkashi()" aria-label="Tutup">&times;</button>
         </div>

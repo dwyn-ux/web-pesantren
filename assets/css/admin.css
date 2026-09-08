@@ -425,3 +425,44 @@ body.admin-body {
 .jalur-fieldset .form-control { width:100%; padding:9px 12px; box-sizing:border-box; border:1.5px solid var(--cream-dark); border-radius:4px; font-size:14px; color:var(--text-dark); background:#fff; outline:none; }
 .jalur-fieldset .form-control:focus { border-color:var(--green-mid); }
 .jalur-fieldset .muted { font-size:12px; color:var(--text-light); margin-top:6px; line-height:1.5; }
+
+/* ── VOUCHER AKASHI GROUP ────────────────────────────────────── */
+.akashi-group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: #f8faf9;
+    border-bottom: 1px solid var(--cream-dark);
+    font-size: 14px;
+}
+.akashi-group-header strong {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+.akashi-group-header .muted {
+    margin-left: auto;
+    font-size: 12px;
+}
+.akashi-group-header + .admin-table { margin-top: 0; }
+.akashi-code-box {
+    width: 100%; font-family: monospace; font-size: 13px;
+    background: #f5f2eb; border: 1px solid #d9d2c5;
+    border-radius: 4px; padding: 10px; resize: vertical;
+}
+.col-aksi { width: 150px; text-align: right; }
+.aksi-group { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+.aksi-group .inline { display: inline; }
+
+/* ── MODAL ───────────────────────────────────────────────────── */
+.modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 999; display: flex; align-items: center;
+    justify-content: center; padding: 20px;
+}
+.modal-card { width: 100%; max-width: 440px; margin-bottom: 0; }
+.modal-title-bar {
+    display: flex; justify-content: space-between;
+    align-items: center;
+}
