@@ -482,12 +482,21 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
         <input type="hidden" name="step" value="jalur">
 
+        <?php
+      // Voucher Akashi valid yang menempel pada pendaftaran ini
+      $cekAk = $pdo->prepare("SELECT juara, nominal_potongan FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1");
+      $cekAk->execute([$pendaftaranId]);
+      $akVoucher = $cekAk->fetch();
+      $akashiTerbuka = (bool) $akVoucher;
+      $akashiCfg = getPotonganAkashi(getJalurPotonganAdmin($pdo));
+      $akashiLabel = ['juara-1' => 'Juara 1', 'juara-2' => 'Juara 2', 'juara-3' => 'Juara 3'];
+      ?>
         <div class="jalur-grid">
           <?php foreach ($labelJalur as $val => $lbl): ?>
             <?php if (in_array($val, jalurTersembunyi(), true)) continue; ?>
             <label class="jalur-radio-item">
               <input type="radio" name="jalur" value="<?= e($val) ?>"
-                     <?= ($pendaftaran['jalur'] ?? 'reguler') === $val ? 'checked' : '' ?>
+                     <?= (($pendaftaran['jalur'] ?? 'reguler') === $val || ($val === 'prestasi' && $akashiTerbuka)) ? 'checked' : '' ?>
                      onchange="psbSyncJalur()">
               <span class="jalur-radio-label"><?= e($lbl) ?>
                 <?php if (in_array($val, jalurPerluVerifikasi(), true)): ?>
@@ -529,22 +538,13 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         </p>
         <?php endif; ?>
 
-<?php
-      // Voucher Akashi valid yang menempel pada pendaftaran ini
-      $cekAk = $pdo->prepare("SELECT juara, nominal_potongan FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1");
-      $cekAk->execute([$pendaftaranId]);
-      $akVoucher = $cekAk->fetch();
-      $akashiTerbuka = (bool) $akVoucher;
-      $akashiCfg = getPotonganAkashi(getJalurPotonganAdmin($pdo));
-      $akashiLabel = ['juara-1' => 'Juara 1', 'juara-2' => 'Juara 2', 'juara-3' => 'Juara 3'];
-      ?>
-        <?php foreach ($optsJalur as $jalurKey => $details): ?>
+<?php foreach ($optsJalur as $jalurKey => $details): ?>
           <div class="jalur-detail-wrap" id="detail-<?= e($jalurKey) ?>" style="display:none;">
             <h4>Pilih <?= $jalurKey === 'prestasi' ? 'Tingkat Prestasi' : 'Kategori Hafalan' ?>:</h4>
             <?php foreach ($details as $val => $opt): ?>
               <label class="radio-inline">
                 <input type="radio" name="jalur_detail" value="<?= e($val) ?>"
-                       <?= ($pendaftaran['jalur_detail'] ?? '') === $val ? 'checked' : '' ?>>
+                       <?= (($pendaftaran['jalur_detail'] ?? '') === $val || ($jalurKey === 'prestasi' && $val === 'internal' && $akashiTerbuka)) ? 'checked' : '' ?>>
                 <?php if ($jalurKey === 'prestasi' && $val === 'internal'): ?>
                   <?= e($opt['label']) ?>
                   <?php if (!$akashiTerbuka): ?>
