@@ -102,10 +102,6 @@ body.admin-body {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    position: sticky;
-    bottom: 0;
-    background: var(--green-deep);
-    margin-top: auto;
 }
 
 /* ── MAIN AREA ────────────────────────────────────────────────── */
