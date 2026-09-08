@@ -177,7 +177,7 @@ include __DIR__ . '/includes/header.php';
     <div class="table-head">
         <h2>Daftar Voucher Akashi
             <span class="badge badge-muted" style="margin-left:6px;vertical-align:middle;"><?= $totalKode ?> kode</span>
-            <span class="badge badge-success" style="margin-left:4px;vertical-align:middle;<?= $totalPakai ?> terpakai</span>
+            <span class="badge badge-success" style="margin-left:4px;vertical-align:middle;"><?= $totalPakai ?> terpakai</span>
         </h2>
         <button type="button" class="btn-sm btn-sm-secondary" onclick="window.location='?export=1'">Ekspor CSV</button>
     </div>
@@ -189,7 +189,7 @@ include __DIR__ . '/includes/header.php';
     <?php if (empty($groups[$jk])) continue; ?>
     <div style="padding:14px 20px;border-bottom:1px solid var(--cream-dark);">
         <strong><?= e($labelJuara[$jk]) ?></strong>
-        <span class="badge badge-muted" style="margin-left:8px;vertical-align:middle;<?= count($groups[$jk]) ?> kode</span>
+        <span class="badge badge-muted" style="margin-left:8px;vertical-align:middle;"><?= count($groups[$jk]) ?> kode</span>
         <span class="muted" style="margin-left:8px;vertical-align:middle;">Potongan Rp <?= number_format($akashiDefault[$jk], 0, ',', '.') ?></span>
     </div>
     <div style="overflow-x:auto;">
@@ -197,7 +197,7 @@ include __DIR__ . '/includes/header.php';
         <thead>
             <tr>
                 <th>Kode</th>
-                <thNama Pemenang</th>
+                <th>Nama Pemenang</th>
                 <th>Nominal (Rp)</th>
                 <th>Berlaku s/d</th>
                 <th>Status</th>
@@ -214,7 +214,7 @@ include __DIR__ . '/includes/header.php';
                 <td>
                     <?php if ($v['pendaftaran_id']): ?>
                         <span class="badge badge-success">Terpakai</span>
-                        <div class="muted" style="font-size:11px;margin-top:4px;line-height:1.5;<?= e($v['nomor_daftar']) ?><br><?= e($v['pendaftar']) ?></div>
+                        <div class="muted" style="font-size:11px;margin-top:4px;line-height:1.5;"><?= e($v['nomor_daftar']) ?><br><?= e($v['pendaftar']) ?></div>
                     <?php else: ?>
                         <span class="badge badge-muted">Belum</span>
                     <?php endif; ?>
@@ -227,7 +227,7 @@ include __DIR__ . '/includes/header.php';
                             <input type="hidden" name="act" value="edit">
                             <input type="hidden" name="id" value="<?= (int) $v['id'] ?>">
                             <div class="form-group" style="margin-bottom:8px;">
-                                <labelNama pemenang</label>
+                                <label>Nama pemenang</label>
                                 <input type="text" name="nama_pemenang" class="form-control" value="<?= e($v['nama_pemenang'] ?? '') ?>">
                             </div>
                             <div class="form-group" style="margin-bottom:8px;">
