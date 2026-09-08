@@ -123,7 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
 
         if (empty($errors) && $successMsg) {
             $_SESSION['flash_success'] = $successMsg;
-            redirect('/portal-santri?step=' . $step);
+            $lanjut = ['akademik' => 'jalur', 'jalur' => 'berkas-wajib'];
+            redirect('/portal-santri?step=' . ($lanjut[$step] ?? $step));
         }
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
