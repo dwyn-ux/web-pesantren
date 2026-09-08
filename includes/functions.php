@@ -637,7 +637,18 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
     $jalurDetail  = $jRow['jalur_detail'] ?? null;
     $jalurSetujui = ($jRow['jalur_status'] ?? 'none') === 'disetujui';
 
-    $tarif = getPembiayaanTarif($pdo);
+    // Tarif per gelombang pendaftar (Juknis: Indent/G1/G2/G3 berbeda).
+    // Pendaftar lama tanpa gelombang_id tidak di-rebuild — snapshot
+    // yang sudah ada dipertahankan agar tagihannya tidak hilang.
+    $g = $pdo->prepare('SELECT gelombang_id FROM pendaftaran WHERE id = ?');
+    $g->execute([$pendaftaranId]);
+    $gelombangId = (int) ($g->fetchColumn() ?: 0);
+    if ($gelombangId <= 0) return;
+
+    $tarif = [];
+    foreach (getTarifByGelombang($pdo, $gelombangId, $gender) as $r) {
+        $tarif[$r['jenis']][] = $r;
+    }
     $adminJalur = getJalurPotonganAdmin($pdo);
 
     // Tarif jalur kaderisasi: prioritaskan jalur_potongan_admin, fallback ke pengaturan/or seed.
