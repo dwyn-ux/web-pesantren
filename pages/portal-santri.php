@@ -162,6 +162,35 @@ $stepSekarang = sanitizeString($_GET['step'] ?? 'akademik');
 $stepValid = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi', 'pembayaran'];
 if (!in_array($stepSekarang, $stepValid, true)) $stepSekarang = 'akademik';
 
+// ── Klaim jalur alumni (voucher + NISN) ────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'alumni-klaim' && !$faseSelesai) {
+    validateCsrf();
+    $kodeV = sanitizeString($_POST['kode_voucher'] ?? '');
+    $nisnV = sanitizeString($_POST['nisn'] ?? '');
+
+    // Rate limit sederhana: maks 10 percobaan per jam per sesi
+    $attempts = (int) ($_SESSION['alumni_klaim_attempts'] ?? 0);
+    $attemptsAt = (int) ($_SESSION['alumni_klaim_at'] ?? 0);
+    if (time() - $attemptsAt > 3600) $attempts = 0;
+
+    if ($attempts >= 10) {
+        $errors['alumni_klaim'] = 'Terlalu banyak percobaan. Silakan coba lagi 1 jam lagi.';
+    } elseif ($kodeV === '' || $nisnV === '') {
+        $errors['alumni_klaim'] = 'Kode undangan dan NISN wajib diisi.';
+    } else {
+        usleep(600000);
+        $res = klaimJalurAlumni($pdo, $pendaftaranId, $kodeV, $nisnV);
+        if ($res['ok']) {
+            $_SESSION['alumni_klaim_attempts'] = 0;
+            $_SESSION['flash_success'] = $res['pesan'];
+            redirect('/portal-santri?step=berkas-jalur');
+        }
+        $_SESSION['alumni_klaim_attempts'] = $attempts + 1;
+        $_SESSION['alumni_klaim_at'] = time();
+        $errors['alumni_klaim'] = $res['pesan'];
+    }
+}
+
 // ── Submit cicilan (handler inline) ─────────────────────────
 $msgCicilan = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan') {
@@ -372,6 +401,34 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           Jalur Anda (<strong><?= e($labelJalur[$pendaftaran['jalur']] ?? $pendaftaran['jalur']) ?></strong>)
           ditetapkan oleh panitia dan tidak dapat diubah lewat portal. Hubungi panitia untuk informasi lebih lanjut.
         </p>
+        <?php endif; ?>
+
+        <?php if ($pendaftaran['jalur'] === 'alumni-sdmua'): ?>
+        <div class="portal-info-box" style="margin-top:20px;">
+          <h2>Jalur Alumni SD Ashidiq — Aktif</h2>
+          <p>Jalur Alumni Anda sudah diklaim. Lanjutkan ke <a href="?step=berkas-jalur" class="btn-link">Upload Berkas Jalur</a> untuk melengkapi surat rekomendasi.</p>
+        </div>
+        <?php else: ?>
+        <div class="portal-info-box" style="margin-top:20px;">
+          <h2>Jalur Alumni SD Ashidiq</h2>
+          <p>Khusus siswa SD Muhammadiyah Unggulan Ashidiq (satu yayasan). Masukkan <strong>kode undangan</strong> dan <strong>NISN</strong> yang dibagikan sekolah untuk membuka jalur ini.</p>
+          <form method="post" style="margin-top:14px;max-width:420px;">
+            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+            <input type="hidden" name="step" value="alumni-klaim">
+            <div class="form-group">
+              <label>Kode Undangan</label>
+              <input type="text" name="kode_voucher" class="form-control" placeholder="ASQ-XXXXXXXXXX"
+                     required autocomplete="off" style="text-transform:uppercase;">
+            </div>
+            <div class="form-group">
+              <label>NISN</label>
+              <input type="text" name="nisn" class="form-control" placeholder="NISN dari SD Ashidiq"
+                     required autocomplete="off">
+            </div>
+            <?php if (!empty($errors['alumni_klaim'])): ?><p class="field-error"><?= e($errors['alumni_klaim']) ?></p><?php endif; ?>
+            <button type="submit" class="btn-primary">Klaim Jalur Alumni</button>
+          </form>
+        </div>
         <?php endif; ?>
 
         <?php foreach ($optsJalur as $jalurKey => $details): ?>

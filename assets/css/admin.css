@@ -226,6 +226,8 @@ body.admin-body {
 .badge-diterima  { background: rgba(13,122,74,0.12); color: var(--green-deep); }
 .badge-ditolak   { background: rgba(220,38,38,0.1); color: #dc2626; }
 .badge-daftar-ulang { background: rgba(59,130,246,0.1); color: #2563eb; }
+.badge-success { background: rgba(13,122,74,0.12); color: var(--green-deep); }
+.badge-muted   { background: rgba(100,116,139,0.1); color: #64748b; }
 
 /* ── FORM ADMIN ───────────────────────────────────────────────── */
 .admin-form-card {

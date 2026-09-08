@@ -600,6 +600,84 @@ function jalurBerkasUntuk(string $jalur): array {
 }
 
 /**
+ * Generate kode undangan voucher jalur alumni (acak, tanpa karakter membingungkan).
+ * Format: ASQ-XXXXXXXXXX (huruf besar + angka, tanpa 0/O/1/I/L).
+ */
+function generateVoucherKode(int $len = 10): string {
+    $chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    $max = strlen($chars) - 1;
+    $kode = '';
+    for ($i = 0; $i < $len; $i++) {
+        $kode .= $chars[random_int(0, $max)];
+    }
+    return 'ASQ-' . $kode;
+}
+
+/**
+ * Klaim jalur alumni lewat kode undangan + NISN (sistem voucher hibrida).
+ * Voucher dibuat admin per NISN siswa SD Ashidiq; satu voucher satu pemakaian.
+ *
+ * @return array{ok: bool, pesan: string}
+ */
+function klaimJalurAlumni(PDO $pdo, int $pendaftaranId, string $kode, string $nisn): array {
+    $kode = strtoupper(trim($kode));
+    $nisn = trim($nisn);
+    if ($kode === '' || $nisn === '') {
+        return ['ok' => false, 'pesan' => 'Kode undangan dan NISN wajib diisi.'];
+    }
+
+    // Status pendaftaran harus masih bisa diedit (belum dikirim/finalisasi)
+    $s = $pdo->prepare('SELECT status FROM pendaftaran WHERE id = ?');
+    $s->execute([$pendaftaranId]);
+    if ($s->fetchColumn() !== 'pending') {
+        return ['ok' => false, 'pesan' => 'Pendaftaran sudah tidak bisa mengubah jalur.'];
+    }
+
+    $stmt = $pdo->prepare(
+        "SELECT * FROM voucher_alumni WHERE kode = ? AND jalur = 'alumni-sdmua' LIMIT 1"
+    );
+    $stmt->execute([$kode]);
+    $v = $stmt->fetch();
+
+    if (!$v) {
+        return ['ok' => false, 'pesan' => 'Kode undangan tidak ditemukan.'];
+    }
+    if ($v['pendaftaran_id'] !== null) {
+        return ['ok' => false, 'pesan' => 'Kode undangan sudah terpakai.'];
+    }
+    if ($v['expire_at'] && $v['expire_at'] < date('Y-m-d')) {
+        return ['ok' => false, 'pesan' => 'Kode undangan sudah kedaluwarsa.'];
+    }
+    if (strcasecmp((string) $v['nisn'], $nisn) !== 0) {
+        return ['ok' => false, 'pesan' => 'NISN tidak cocok dengan kode undangan.'];
+    }
+
+    try {
+        $pdo->beginTransaction();
+        $upd = $pdo->prepare(
+            'UPDATE voucher_alumni SET pendaftaran_id = ? WHERE id = ? AND pendaftaran_id IS NULL'
+        );
+        $upd->execute([$pendaftaranId, $v['id']]);
+        if ($upd->rowCount() !== 1) {
+            $pdo->rollBack();
+            return ['ok' => false, 'pesan' => 'Kode undangan sudah terpakai.'];
+        }
+        $updP = $pdo->prepare(
+            "UPDATE pendaftaran
+             SET jalur = 'alumni-sdmua', jalur_status = 'pending', jalur_potongan = NULL
+             WHERE id = ?"
+        );
+        $updP->execute([$pendaftaranId]);
+        $pdo->commit();
+        return ['ok' => true, 'pesan' => 'Jalur Alumni berhasil diklaim. Lengkapi berkas jalur selanjutnya.'];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('Klaim jalur alumni error: ' . $e->getMessage());
+        return ['ok' => false, 'pesan' => 'Terjadi kesalahan sistem. Silakan coba lagi.'];
+    }
+}
+
+/**
  * Ambil tarif pembiayaan aktif dari pembiayaan_tarif.
  * Kembalikan array berkelompok per jenis.
  */

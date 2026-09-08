@@ -44,6 +44,7 @@
             'admin/daftar-ulang' => ['icon' => '🎓', 'label' => 'Daftar Ulang'],
             'admin/kelola-gelombang' => ['icon' => '⏱', 'label' => 'Gelombang'],
             'admin/kelola-template' => ['icon' => '📄', 'label' => 'Template'],
+            'admin/voucher-alumni' => ['icon' => '🎟', 'label' => 'Voucher Alumni'],
             'admin/artikel'   => ['icon' => '✎', 'label' => 'Artikel'],
             'admin/foto'      => ['icon' => '▧', 'label' => 'Galeri Foto'],
             'admin/dokumentasi' => ['icon' => '▣', 'label' => 'Dokumentasi'],

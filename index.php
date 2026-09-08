@@ -40,7 +40,7 @@ $authPages = [];
 $adminPages = [
     'admin', 'admin/dashboard',
     'admin/artikel', 'admin/artikel-tambah', 'admin/artikel-edit',
-    'admin/foto', 'admin/users', 'admin/psb', 'admin/dokumentasi', 'admin/alumni', 'admin/alumni-edit',    'admin/pengaturan',     'admin/berkas-lihat', 'admin/testimoni', 'admin/jalur-potongan', 'admin/kelola-template', 'admin/kelola-gelombang', 'admin/verifikasi-berkas', 'admin/input-tes', 'admin/cicilan-verifikasi', 'admin/daftar-ulang',
+    'admin/foto', 'admin/users', 'admin/psb', 'admin/dokumentasi', 'admin/alumni', 'admin/alumni-edit',    'admin/pengaturan',     'admin/berkas-lihat', 'admin/testimoni', 'admin/jalur-potongan', 'admin/kelola-template', 'admin/kelola-gelombang', 'admin/verifikasi-berkas', 'admin/input-tes', 'admin/cicilan-verifikasi', 'admin/daftar-ulang', 'admin/voucher-alumni',
 ];
 
 // ── Access Control ────────────────────────────────────────────
@@ -88,6 +88,12 @@ $pageMap = [
     'admin/testimoni' => ROOT_PATH . '/admin/testimoni.php',
     'admin/jalur-potongan' => ROOT_PATH . '/admin/jalur-potongan.php',
     'admin/kelola-template' => ROOT_PATH . '/admin/kelola-template.php',
+    'admin/kelola-gelombang' => ROOT_PATH . '/admin/kelola-gelombang.php',
+    'admin/verifikasi-berkas' => ROOT_PATH . '/admin/verifikasi-berkas.php',
+    'admin/input-tes' => ROOT_PATH . '/admin/input-tes.php',
+    'admin/cicilan-verifikasi' => ROOT_PATH . '/admin/cicilan-verifikasi.php',
+    'admin/daftar-ulang' => ROOT_PATH . '/admin/daftar-ulang.php',
+    'admin/voucher-alumni' => ROOT_PATH . '/admin/voucher-alumni.php',
     'download-template' => ROOT_PATH . '/pages/download-template.php',
 ];
 
