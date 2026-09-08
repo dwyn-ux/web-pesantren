@@ -728,22 +728,14 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       <?php if (!empty($templates)): ?>
       <div class="portal-info-box" style="margin-bottom:16px;">
         <h2>Template Dokumen</h2>
-        <p>Download, isi, tanda tangan, lalu upload ulang pada slot di bawah.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-          <?php foreach ($templates as $tpl): ?>
-          <a href="<?= BASE_URL ?>/download-template?slug=<?= e($tpl['slug']) ?>" target="_blank" rel="noopener"
-             class="btn-outline" style="text-decoration:none;">⬇ <?= e($tpl['label']) ?></a>
-          <button type="button" class="btn-outline" onclick="cetakTemplate('<?= e($tpl['slug']) ?>')">🖨 Print</button>
+        <p>
+          <?php foreach ($templates as $i => $tpl): ?>
+            <?= $i > 0 ? '<br>' : '' ?>
+            <a href="<?= BASE_URL ?>/download-template?slug=<?= e($tpl['slug']) ?>" target="_blank" rel="noopener" class="btn-link">Download <?= e($tpl['label']) ?></a>
           <?php endforeach; ?>
-        </div>
+        </p>
+        <p class="portal-note">Setelah terbuka, gunakan tombol Download / Print di halaman dokumen.</p>
       </div>
-      <script>
-      function cetakTemplate(slug) {
-        const w = window.open('<?= BASE_URL ?>/download-template?slug=' + encodeURIComponent(slug), '_blank');
-        if (!w) { alert('Popup diblokir. Izinkan popup untuk print.'); return; }
-        w.addEventListener('load', function () { w.focus(); w.print(); });
-      }
-      </script>
       <?php endif; ?>
 
       <?php if (empty($jalurBerkas)): ?>

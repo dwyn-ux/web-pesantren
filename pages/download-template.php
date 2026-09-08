@@ -88,5 +88,9 @@ $html = str_replace(
 
 header('Content-Type: text/html; charset=UTF-8');
 echo '<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><title>' . e($tpl['judul']) . '</title>';
-echo '<style>body{font-family:Times New Roman,serif;padding:20px;background:#f5f5f5;} .doc{background:#fff;padding:40px;max-width:800px;margin:auto;box-shadow:0 2px 20px rgba(0,0,0,0.1);} @media print{body{background:#fff;padding:0;}.doc{box-shadow:none;max-width:none;}}</style>';
-echo '</head><body><div class="doc">' . $html . '</div></body></html>';
+echo '<style>body{font-family:Times New Roman,serif;padding:20px;background:#f5f5f5;} .doc{background:#fff;padding:40px;max-width:800px;margin:16px auto;box-shadow:0 2px 20px rgba(0,0,0,0.1);} .toolbar{max-width:800px;margin:0 auto;display:flex;gap:8px;} .toolbar button{padding:8px 16px;border:1px solid #ccc;border-radius:4px;background:#fff;cursor:pointer;font-size:14px;} .toolbar button:hover{background:#f0f0f0;} @media print{body{background:#fff;padding:0;} .doc{box-shadow:none;max-width:none;margin:0;} .toolbar{display:none;}}</style>';
+echo '</head><body>';
+echo '<div class="toolbar"><button onclick="window.print()">🖨 Print</button><button onclick="downloadDoc()">⬇ Download</button></div>';
+echo '<div class="doc">' . $html . '</div>';
+echo '<script>function downloadDoc(){const blob=new Blob([document.querySelector(".doc").outerHTML],{type:"text/html"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=' . json_encode(preg_replace('/[^a-z0-9]+/i', '-', strtolower($tpl['judul'])) . '.html') . ';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}</script>';
+echo '</body></html>';
