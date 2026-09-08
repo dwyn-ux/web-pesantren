@@ -14,7 +14,8 @@ $jenis = sanitizeString($_GET['jenis'] ?? '');
 $jenisValid = [
     'kartu-keluarga', 'akta-lahir', 'ijazah', 'foto', 'ktp-ortu',
     'bukti-bayar',
-    'sertifikat-tka', 'surat-rekomendasi', 'sktm', 'surat-pernyataan', 'mou-kaderisasi',
+    'sertifikat-tka', 'sertifikat-tahfidz',
+    'surat-rekomendasi', 'sktm', 'surat-pernyataan', 'mou-kaderisasi',
 ];
 if (!in_array($jenis, $jenisValid, true)) {
     http_response_code(400);

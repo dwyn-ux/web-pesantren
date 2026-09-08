@@ -51,7 +51,8 @@ $jenis = sanitizeString($_POST['jenis'] ?? '');
 $jenisValid = [
     'kartu-keluarga', 'akta-lahir', 'ijazah', 'foto', 'ktp-ortu',
     'bukti-bayar',
-    'sertifikat-tka', 'surat-rekomendasi', 'sktm', 'surat-pernyataan', 'mou-kaderisasi',
+    'sertifikat-tka', 'sertifikat-tahfidz',
+    'surat-rekomendasi', 'sktm', 'surat-pernyataan', 'mou-kaderisasi',
 ];
 if (!in_array($jenis, $jenisValid, true)) {
     echo json_encode(['success' => false, 'message' => 'Jenis berkas tidak valid.']);

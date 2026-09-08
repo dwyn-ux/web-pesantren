@@ -394,17 +394,19 @@ function pembiayaanStatusLabel(string $status): string {
 
 function berkasLabel(string $jenis): string {
     return match ($jenis) {
-        'kartu-keluarga'    => 'Scan KK',
-        'akta-lahir'        => 'Scan Akta Lahir',
-        'ktp-ortu'          => 'Scan KTP Orang Tua',
-        'foto'              => 'Foto 3x4',
-        'ijazah'            => 'Scan SKL/Ijazah',
-        'sertifikat-tka'    => 'Sertifikat TKA',
-        'surat-rekomendasi' => 'Surat Rekomendasi',
-        'sktm'              => 'SKTM (Ket. Tidak Mampu)',
-        'surat-pernyataan'  => 'Surat Pernyataan',
-        'lainnya'           => 'Lainnya',
-        default             => $jenis,
+        'kartu-keluarga'     => 'Scan KK',
+        'akta-lahir'         => 'Scan Akta Lahir',
+        'ktp-ortu'           => 'Scan KTP Orang Tua',
+        'foto'               => 'Foto 3x4',
+        'ijazah'             => 'Scan SKL/Ijazah',
+        'sertifikat-tka'     => 'Sertifikat / Piagam Prestasi',
+        'sertifikat-tahfidz' => 'Sertifikat Tahfidz',
+        'mou-kaderisasi'     => 'MOU Kaderisasi (sudah ditandatangani)',
+        'surat-rekomendasi'  => 'Surat Rekomendasi',
+        'sktm'               => 'SKTM (Ket. Tidak Mampu)',
+        'surat-pernyataan'   => 'Surat Pernyataan',
+        'lainnya'            => 'Lainnya',
+        default              => $jenis,
     };
 }
 
@@ -555,14 +557,33 @@ function berkasWajib(): array {
 }
 
 /**
- * Berkas tambahan per jalur pendaftaran (Juknis PSB).
+ * Jalur yang disembunyikan dari pilihan calon santri di portal.
+ * Jalur ini hanya bisa ditetapkan oleh panitia/admin.
+ *
+ * @return list<string>
+ */
+function jalurTersembunyi(): array {
+    return ['alumni-sdmua', 'dhuafa'];
+}
+
+/**
+ * Berkas tambahan per jalur pendaftaran.
  * Slot ini muncul kondisional di portal santri sesuai jalur pendaftar.
  * Kembalikan [] untuk jalur tanpa syarat berkas khusus.
+ *
+ * - reguler   : tidak ada berkas tambahan
+ * - prestasi  : sertifikat / piagam tingkat tertinggi
+ * - tahfidz   : sertifikat tahfidz (akan diuji tes hafalan)
+ * - kaderisasi: MOU kaderisasi (download template, tanda tangan, upload ulang)
+ * - alumni-sdmua & dhuafa: dikelola panitia (jalur tersembunyi)
  *
  * @return array<string, list<string>>
  */
 function jalurBerkasSyarat(): array {
     return [
+        'prestasi'    => ['sertifikat-tka'],
+        'tahfidz'     => ['sertifikat-tahfidz'],
+        'kaderisasi'  => ['mou-kaderisasi'],
         'alumni-sdmua' => ['surat-rekomendasi'],
         'dhuafa'       => ['sktm', 'surat-rekomendasi', 'surat-pernyataan'],
     ];

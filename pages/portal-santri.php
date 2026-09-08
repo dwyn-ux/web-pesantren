@@ -353,6 +353,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
 
         <div class="jalur-grid">
           <?php foreach ($labelJalur as $val => $lbl): ?>
+            <?php if (in_array($val, jalurTersembunyi(), true)) continue; ?>
             <label class="jalur-radio-item">
               <input type="radio" name="jalur" value="<?= e($val) ?>"
                      <?= ($pendaftaran['jalur'] ?? 'reguler') === $val ? 'checked' : '' ?>
@@ -365,6 +366,13 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
             </label>
           <?php endforeach; ?>
         </div>
+
+        <?php if (in_array($pendaftaran['jalur'] ?? '', jalurTersembunyi(), true)): ?>
+        <p class="portal-note">
+          Jalur Anda (<strong><?= e($labelJalur[$pendaftaran['jalur']] ?? $pendaftaran['jalur']) ?></strong>)
+          ditetapkan oleh panitia dan tidak dapat diubah lewat portal. Hubungi panitia untuk informasi lebih lanjut.
+        </p>
+        <?php endif; ?>
 
         <?php foreach ($optsJalur as $jalurKey => $details): ?>
           <div class="jalur-detail-wrap" id="detail-<?= e($jalurKey) ?>" style="display:none;">
@@ -536,6 +544,25 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         Jalur Anda saat ini: <strong><?= e($labelJalur[$pendaftaran['jalur']] ?? '—') ?></strong>
       </p>
 
+      <?php if ($pendaftaran['jalur'] === 'kaderisasi'): ?>
+      <div class="portal-info-box" style="margin-bottom:16px;">
+        <h2>Langkah Jalur Kaderisasi</h2>
+        <p>1. <a href="<?= BASE_URL ?>/download-template?slug=mou-kaderisasi" target="_blank" class="btn-link">Download template MOU Kaderisasi</a></p>
+        <p>2. Isi, tanda tangan, lalu upload ulang pada slot di bawah ini.</p>
+        <p>3. Wajib mengikuti <strong>Tes Pemetaan</strong> sesuai jadwal gelombang.</p>
+      </div>
+      <?php elseif ($pendaftaran['jalur'] === 'tahfidz'): ?>
+      <div class="portal-info-box" style="margin-bottom:16px;">
+        <h2>Jalur Tahfidz</h2>
+        <p>Upload sertifikat tahfidz Anda. Calon jalur tahfidz akan diuji melalui <strong>Tes Hafalan</strong> oleh penguji panitia.</p>
+      </div>
+      <?php elseif ($pendaftaran['jalur'] === 'prestasi'): ?>
+      <div class="portal-info-box" style="margin-bottom:16px;">
+        <h2>Jalur Prestasi</h2>
+        <p>Upload sertifikat / piagam prestasi <strong>tingkat tertinggi</strong> yang pernah diraih.</p>
+      </div>
+      <?php endif; ?>
+
       <?php if (empty($jalurBerkas)): ?>
         <p>Tidak ada berkas tambahan yang diperlukan untuk jalur ini. Silakan lanjut ke finalisasi.</p>
       <?php else: ?>
@@ -543,11 +570,12 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           <?php foreach ($jalurBerkas as $jenis): ?>
             <?php
               $labelMap = [
-                'sertifikat-tka'     => 'Sertifikat / Piagam',
-                'surat-rekomendasi'   => 'Surat Rekomendasi',
-                'sktm'                => 'SKTM (Surat Keterangan Tidak Mampu)',
-                'surat-pernyataan'    => 'Surat Pernyataan',
-                'mou-kaderisasi'      => 'MOU Kaderisasi (sudah ditandatangani)',
+                'sertifikat-tka'     => 'Sertifikat / Piagam Prestasi (tingkat tertinggi)',
+                'sertifikat-tahfidz' => 'Sertifikat Tahfidz (jumlah juz)',
+                'mou-kaderisasi'     => 'MOU Kaderisasi (sudah ditandatangani)',
+                'surat-rekomendasi'  => 'Surat Rekomendasi',
+                'sktm'               => 'SKTM (Surat Keterangan Tidak Mampu)',
+                'surat-pernyataan'   => 'Surat Pernyataan',
               ];
               $exists = $berkasByJenis[$jenis] ?? null;
             ?>
