@@ -177,7 +177,7 @@ include __DIR__ . '/includes/header.php';
     <div class="table-head">
         <h2>Daftar Voucher Akashi
             <span class="badge badge-muted" style="margin-left:6px;vertical-align:middle;"><?= $totalKode ?> kode</span>
-            <span class="badge badge-success" style="margin-left:4px;vertical-align:middle;"><?= $totalPakai ?> terpakai</span>
+            <span class="badge badge-success" style="margin-left:4px;vertical-align:middle;<?= $totalPakai ?> terpakai</span>
         </h2>
         <a href="?export=1" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Ekspor CSV</a>
     </div>
@@ -187,48 +187,47 @@ include __DIR__ . '/includes/header.php';
     <?php else: ?>
     <?php foreach (['juara-1', 'juara-2', 'juara-3'] as $jk): ?>
     <?php if (empty($groups[$jk])) continue; ?>
-    <details <?= $jk === 'juara-1' ? 'open' : '' ?>>
-        <summary>
-            <strong><?= e($labelJuara[$jk]) ?></strong>
-            <span class="badge badge-muted"><?= count($groups[$jk]) ?> kode</span>
-            <span class="muted">Potongan Rp <?= number_format($akashiDefault[$jk], 0, ',', '.') ?></span>
-        </summary>
-        <div style="overflow-x:auto;margin-top:12px;">
-        <table class="admin-table" style="min-width:680px;">
-            <thead>
-                <tr>
-                    <th>Kode</th>
-                    <th>Nama Pemenang</th>
-                    <th>Nominal (Rp)</th>
-                    <th>Berlaku s/d</th>
-                    <th>Status</th>
-                    <th style="width:170px;">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
+    <div style="padding:14px 20px;border-bottom:1px solid var(--cream-dark);">
+        <strong><?= e($labelJuara[$jk]) ?></strong>
+        <span class="badge badge-muted" style="margin-left:8px;vertical-align:middle;<?= count($groups[$jk]) ?> kode</span>
+        <span class="muted" style="margin-left:8px;vertical-align:middle;">Potongan Rp <?= number_format($akashiDefault[$jk], 0, ',', '.') ?></span>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="admin-table" style="min-width:680px;">
+        <thead>
+            <tr>
+                <th>Kode</th>
+                <thNama Pemenang</th>
+                <th>Nominal (Rp)</th>
+                <th>Berlaku s/d</th>
+                <th>Status</th>
+                <th style="width:170px;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
             <?php foreach ($groups[$jk] as $v): ?>
             <tr>
                 <td><code><?= e($v['kode']) ?></code></td>
                 <td><?= e($v['nama_pemenang'] ?? '—') ?></td>
                 <td>Rp <?= number_format((float) $v['nominal_potongan'], 0, ',', '.') ?></td>
-                <td style="font-size:12px;"><?= e($v['expire_at'] ?? '—') ?></td>
+                <td style="font-size:12px; <?= e($v['expire_at'] ?? '—') ?></td>
                 <td>
                     <?php if ($v['pendaftaran_id']): ?>
                         <span class="badge badge-success">Terpakai</span>
-                        <div class="muted"><?= e($v['nomor_daftar']) ?><br><?= e($v['pendaftar']) ?></div>
+                        <div class="muted" style="font-size:11px;margin-top:4px;line-height:1.5;<?= e($v['nomor_daftar']) ?><br><?= e($v['pendaftar']) ?></div>
                     <?php else: ?>
                         <span class="badge badge-muted">Belum</span>
                     <?php endif; ?>
                 </td>
                 <td>
-                    <details>
-                        <summary class="btn-sm btn-sm-warning" style="cursor:pointer;display:inline-block;">Edit</summary>
-                        <form method="post" class="admin-form" style="margin-top:8px;background:#faf9f6;padding:12px;border-radius:6px;">
+                    <button type="button" class="btn-sm btn-sm-warning" onclick="toggleEditForm('edit-<?= (int)$v['id'] ?>')">Edit</button>
+                    <div id="edit-<?= (int)$v['id'] ?>" style="display:none;margin-top:8px;">
+                        <form method="post" class="admin-form" style="background:#faf9f6;padding:12px;border-radius:6px;">
                             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                             <input type="hidden" name="act" value="edit">
                             <input type="hidden" name="id" value="<?= (int) $v['id'] ?>">
                             <div class="form-group" style="margin-bottom:8px;">
-                                <label>Nama pemenang</label>
+                                <labelNama pemenang</label>
                                 <input type="text" name="nama_pemenang" class="form-control" value="<?= e($v['nama_pemenang'] ?? '') ?>">
                             </div>
                             <div class="form-group" style="margin-bottom:8px;">
@@ -240,8 +239,9 @@ include __DIR__ . '/includes/header.php';
                                 <input type="date" name="expire_at" class="form-control" value="<?= e($v['expire_at'] ?? '') ?>">
                             </div>
                             <button type="submit" class="btn-sm btn-sm-primary">Simpan</button>
+                            <button type="button" class="btn-sm btn-sm-secondary" onclick="toggleEditForm('edit-<?= (int)$v['id'] ?>')">Batal</button>
                         </form>
-                    </details>
+                    </div>
                     <?php if (!$v['pendaftaran_id']): ?>
                     <form method="post" style="display:inline;" onsubmit="return confirm('Hapus kode <?= e($v['kode']) ?>?')">
                         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
@@ -256,9 +256,16 @@ include __DIR__ . '/includes/header.php';
             </tbody>
         </table>
         </div>
-    </details>
     <?php endforeach; ?>
     <?php endif; ?>
 </div>
+
+<script>
+function toggleEditForm(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+}
+</script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
