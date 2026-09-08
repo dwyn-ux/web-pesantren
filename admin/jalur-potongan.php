@@ -17,17 +17,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'dhuafa'       => $_POST['jalur_dhuafa'] ?? [],
     ];
 
+    // Kolom wakaf_khusus opsional (migration 020) — fallback kalau belum ada
+    $hasWakaf = (bool) $pdo->query(
+        "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+         AND TABLE_NAME='jalur_potongan_admin' AND COLUMN_NAME='wakaf_khusus'"
+    )->fetchColumn();
+    $wakafCol = $hasWakaf ? ', wakaf_khusus' : '';
+    $wakafPh  = $hasWakaf ? ',?' : '';
+    $wakafUpd = $hasWakaf ? 'wakaf_khusus = VALUES(wakaf_khusus),' : '';
     $upsert = $pdo->prepare(
         'INSERT INTO jalur_potongan_admin
-            (jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus, admin_dhuafa_bebas,
+            (jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus' . $wakafCol . ', admin_dhuafa_bebas,
              prestasi_kecamatan, prestasi_kabkota, prestasi_provinsi, prestasi_nasional,
              tahfidz_juz2, tahfidz_juz3, tahfidz_juz5)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+         VALUES (?,?,?,?,?,?' . $wakafPh . ',?,?,?,?,?,?,?,?)
          ON DUPLICATE KEY UPDATE
             potongan_persen   = VALUES(potongan_persen),
             adm_khusus       = VALUES(adm_khusus),
             spp_l_khusus     = VALUES(spp_l_khusus),
             spp_p_khusus     = VALUES(spp_p_khusus),
+            ' . $wakafUpd . '
             admin_dhuafa_bebas = VALUES(admin_dhuafa_bebas),
             prestasi_kecamatan = VALUES(prestasi_kecamatan),
             prestasi_kabkota   = VALUES(prestasi_kabkota),
@@ -43,13 +52,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ? (float) $v : null;
     };
 
-    $simpanJalur = function (string $jalur, array $val) use ($upsert, $floatOrNull): void {
+    $simpanJalur = function (string $jalur, array $val) use ($upsert, $floatOrNull, $hasWakaf): void {
         // Potongan global
-        $potongan  = $floatOrNull($val['potongan']);
-        // Kaderisasi
-        $adm       = $floatOrNull($val['adm']);
-        $spp_l     = $floatOrNull($val['spp_l']);
-        $spp_p     = $floatOrNull($val['spp_p']);
+        $potongan  = $floatOrNull($val['potongan'] ?? null);
+        // Kaderisasi / tarif khusus
+        $adm       = $floatOrNull($val['adm'] ?? null);
+        $spp_l     = $floatOrNull($val['spp_l'] ?? null);
+        $spp_p     = $floatOrNull($val['spp_p'] ?? null);
+        $wakaf     = $floatOrNull($val['wakaf'] ?? null);
         $bebas     = (int) ($val['bebas'] ?? 0) === 1;
         // Prestasi (per detail)
         $prst      = $val['prestasi'] ?? [];
@@ -59,15 +69,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pra_nas   = $floatOrNull($prst['nasional'] ?? null);
         // Tahfidz (per detail)
         $thzf      = $val['tahfidz'] ?? [];
-        $thz_j2    = $floatOrNull($thzf['juz2'] ?? null);
-        $thz_j3    = $floatOrNull($thzf['juz3'] ?? null);
-        $thz_j5    = $floatOrNull($thzf['juz5'] ?? null);
+        $thz_j2    = $floatOrNull($thzf['juz-2'] ?? $thzf['juz2'] ?? null);
+        $thz_j3    = $floatOrNull($thzf['juz-3'] ?? $thzf['juz3'] ?? null);
+        $thz_j5    = $floatOrNull($thzf['juz-5'] ?? $thzf['juz5'] ?? null);
 
-        $upsert->execute([
-            $jalur, $potongan, $adm, $spp_l, $spp_p, $bebas ? 1 : 0,
+        $params = [$jalur, $potongan, $adm, $spp_l, $spp_p];
+        if ($hasWakaf) $params[] = $wakaf;
+        $params = array_merge($params, [
+            $bebas ? 1 : 0,
             $pra_kec, $pra_kab, $pra_prov, $pra_nas,
             $thz_j2, $thz_j3, $thz_j5,
         ]);
+        $upsert->execute($params);
     };
 
     foreach ($raw as $jalur => $v) {
@@ -228,6 +241,13 @@ require_once __DIR__ . '/includes/header.php';
                            class="form-control">
                     <p class="muted">Default juknis: Rp 750.000</p>
                 </div>
+                <div class="form-group">
+                    <label>Wakaf khusus (Rp)</label>
+                    <input type="number" min="0" name="jalur_kaderisasi[wakaf]"
+                           value="<?= e($formatPersen($adminJalur['kaderisasi']['wakaf'] ?? null)) ?>"
+                           class="form-control">
+                    <p class="muted">Kosongkan = ikut tarif gelombang normal.</p>
+                </div>
             </div>
         </fieldset>
 
@@ -244,6 +264,16 @@ require_once __DIR__ . '/includes/header.php';
                     <p class="muted">
                         Juknis: keringanan 25–50%. Kosongkan jika ingin menetapkan persen per-santri saat verifikasi.
                         Nilai ini dipakai sebagai estimasi awal di form PSB dan sebagai default di halaman verifikasi admin.
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label>Wakaf khusus (Rp)</label>
+                    <input type="number" min="0"
+                           name="jalur_alumni_sdmua[wakaf]"
+                           value="<?= e($formatPersen($adminJalur['alumni-sdmua']['wakaf'] ?? null)) ?>"
+                           class="form-control">
+                    <p class="muted">
+                        Kosongkan = ikut tarif gelombang normal.
                     </p>
                 </div>
             </div>

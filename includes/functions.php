@@ -459,6 +459,7 @@ function jalurDetailOptions(): array {
  *   adm                => tarif ADM khusus (null jika tidak ada)
  *   spp_l              => tarif SPP putra khusus (null jika tidak ada)
  *   spp_p              => tarif SPP putri khusus (null jika tidak ada)
+ *   wakaf              => tarif wakaf khusus per jalur (null jika tidak ada)
  *   dhuafa_bebas       => bool, apakah ADM awal dhuafa dibebaskan 100%
  *   prestasi           => array berisi potongan per detail (kecamatan, kabkota, provinsi, nasional)
  *                        masing-masing null jika admin belum mengatur.
@@ -469,8 +470,15 @@ function jalurDetailOptions(): array {
  * di tabel pendaftaran (jalur_status, jalur_potongan) — terpisah.
  */
 function getJalurPotonganAdmin(PDO $pdo): array {
+    // Kolom wakaf_khusus opsional (migration 020) — fallback kalau belum ada
+    $hasWakaf = (bool) $pdo->query(
+        "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+         AND TABLE_NAME='jalur_potongan_admin' AND COLUMN_NAME='wakaf_khusus'"
+    )->fetchColumn();
     $rows = $pdo->query(
-        "SELECT jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus, admin_dhuafa_bebas,
+        "SELECT jalur, potongan_persen, adm_khusus, spp_l_khusus, spp_p_khusus,"
+        . ($hasWakaf ? " wakaf_khusus," : " NULL AS wakaf_khusus,")
+        . " admin_dhuafa_bebas,
                 prestasi_kecamatan, prestasi_kabkota, prestasi_provinsi, prestasi_nasional,
                 tahfidz_juz2, tahfidz_juz3, tahfidz_juz5
          FROM jalur_potongan_admin"
@@ -486,6 +494,8 @@ function getJalurPotonganAdmin(PDO $pdo): array {
                 ? (float) $r['spp_l_khusus'] : null,
             'spp_p'      => isset($r['spp_p_khusus']) && $r['spp_p_khusus'] !== null
                 ? (float) $r['spp_p_khusus'] : null,
+            'wakaf'      => isset($r['wakaf_khusus']) && $r['wakaf_khusus'] !== null
+                ? (float) $r['wakaf_khusus'] : null,
             'dhuafa_bebas' => (int) ($r['admin_dhuafa_bebas'] ?? 0) === 1,
             'prestasi'   => [
                 'kecamatan' => isset($r['prestasi_kecamatan']) && $r['prestasi_kecamatan'] !== null
@@ -518,31 +528,39 @@ function getJalurPotonganAdmin(PDO $pdo): array {
  *   3. Nilai juknis dari jalurDetailOptions() (fallback)
  *
  * Khusus kaderisasi: potongan berupa tarif tetap, ditangani terpisah
- * di snapshotPembiayaan(). Alumni & dhuafa ditetapkan admin (bukan di sini).
+ * di getSimulasiBiaya(). Alumni: potongan global otomatis (default 40%).
  */
 function jalurPotonganOtomatis(string $jalur, ?string $detail, ?array $adminJalur = null): float {
-    if ($detail === null) return 0.0;
+    // Jalur global tanpa detail (alumni-sdmua / dhuafa): potongan dari admin, fallback juknis
+    $fallbackGlobal = ['alumni-sdmua' => 40.0, 'dhuafa' => 0.0];
+    if ($detail === null) {
+        if ($adminJalur && isset($adminJalur[$jalur]['potongan'])
+            && $adminJalur[$jalur]['potongan'] !== null) {
+            return (float) $adminJalur[$jalur]['potongan'];
+        }
+        return $fallbackGlobal[$jalur] ?? 0.0;
+    }
     if ($adminJalur && isset($adminJalur[$jalur])) {
         // 1. Potongan per detail (admin)
         $detailAdmin = $adminJalur[$jalur];
         if ($jalur === 'prestasi' && isset($detailAdmin['prestasi'])) {
             $map = ['kecamatan' => 'kecamatan', 'kabkota' => 'kabkota',
                     'provinsi' => 'provinsi', 'nasional' => 'nasional'];
-            $key = $map[$detail];
-            if ($key && isset($detailAdmin['prestasi'][$key])) {
-                return $detailAdmin['prestasi'][$key];
+            $key = $map[$detail] ?? null;
+            if ($key && isset($detailAdmin['prestasi'][$key]) && $detailAdmin['prestasi'][$key] !== null) {
+                return (float) $detailAdmin['prestasi'][$key];
             }
         }
         if ($jalur === 'tahfidz' && isset($detailAdmin['tahfidz'])) {
             $map = ['juz-2' => 'juz2', 'juz-3' => 'juz3', 'juz-5' => 'juz5'];
-            $key = $map[$detail];
-            if ($key && isset($detailAdmin['tahfidz'][$key])) {
-                return $detailAdmin['tahfidz'][$key];
+            $key = $map[$detail] ?? null;
+            if ($key && isset($detailAdmin['tahfidz'][$key]) && $detailAdmin['tahfidz'][$key] !== null) {
+                return (float) $detailAdmin['tahfidz'][$key];
             }
         }
         // 2. Potongan global (admin)
-        if (isset($detailAdmin['potongan'])) {
-            return $detailAdmin['potongan'];
+        if (isset($detailAdmin['potongan']) && $detailAdmin['potongan'] !== null) {
+            return (float) $detailAdmin['potongan'];
         }
     }
 
@@ -1059,6 +1077,11 @@ function getSimulasiBiaya(PDO $pdo, string $jalur, ?string $jalurDetail,
         if ($jalur === 'kaderisasi') {
             $harga_setelah = (float) ($kader['adm'] ?? 5000000);
             $result['potongan_label'] = 'Tarif khusus kaderisasi';
+        } elseif ($jalur === 'alumni-sdmua') {
+            // Potongan alumni otomatis 40% (atau sesuai setelan admin)
+            $potonganPct = jalurPotonganOtomatis($jalur, null, $adminJalur);
+            $harga_setelah = $harga_asli * (1 - $potonganPct / 100);
+            $result['potongan_label'] = "Potongan Alumni SD Ashidiq ({$potonganPct}%)";
         } elseif (in_array($jalur, ['prestasi', 'tahfidz'], true) && $jalurDetail) {
             $potonganPct = jalurPotonganOtomatis($jalur, $jalurDetail, $adminJalur);
             $harga_setelah = $harga_asli * (1 - $potonganPct / 100);
@@ -1088,7 +1111,14 @@ function getSimulasiBiaya(PDO $pdo, string $jalur, ?string $jalurDetail,
 
     foreach ($tarif as $t) {
         if ($t['jenis'] !== 'wakaf') continue;
-        $result['wakaf'] = (float) $t['harga_asli'];
+        $wakaf = (float) $t['harga_asli'];
+        // Tarif wakaf khusus per jalur (kaderisasi / alumni-sdmua), jika diatur admin
+        $wakafKhusus = $adminJalur[$jalur]['wakaf'] ?? null;
+        if ($wakafKhusus !== null) {
+            $wakaf = (float) $wakafKhusus;
+            $result['potongan_label'] = trim($result['potongan_label'] . ' + Wakaf khusus');
+        }
+        $result['wakaf'] = $wakaf;
         $result['detail'][] = ['label' => $t['nama'], 'nominal' => $result['wakaf']];
         break;
     }
