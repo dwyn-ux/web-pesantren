@@ -645,10 +645,10 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         wrap.style.display = 'block';
         wrap.querySelectorAll('input[name="jalur_detail"]').forEach(r => { r.disabled = false; });
       }
-      // Reset unrelated
+      // Disable radio di wrap yang bukan active (jangan uncheck — browser handle otomatis)
       document.querySelectorAll('.jalur-detail-wrap').forEach(el => {
         if (el.id !== 'detail-' + jalur) {
-          el.querySelectorAll('input[name="jalur_detail"]').forEach(r => { r.checked = false; r.disabled = true; });
+          el.querySelectorAll('input[name="jalur_detail"]').forEach(r => { r.disabled = true; });
         }
       });
       // Tampilkan kotak klaim Akashi kalau "Tingkat Internal (Lomba Akashi)" dipilih
