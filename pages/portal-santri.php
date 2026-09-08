@@ -496,7 +496,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
             <?php if (in_array($val, jalurTersembunyi(), true)) continue; ?>
             <label class="jalur-radio-item">
               <input type="radio" name="jalur" value="<?= e($val) ?>"
-                     <?= (($pendaftaran['jalur'] ?? 'reguler') === $val || ($val === 'prestasi' && $akashiTerbuka)) ? 'checked' : '' ?>
+                     <?= ($akashiTerbuka ? $val === 'prestasi' : (($pendaftaran['jalur'] ?? 'reguler') === $val)) ? 'checked' : '' ?>
                      onchange="psbSyncJalur()">
               <span class="jalur-radio-label"><?= e($lbl) ?>
                 <?php if (in_array($val, jalurPerluVerifikasi(), true)): ?>
