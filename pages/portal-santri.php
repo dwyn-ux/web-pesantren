@@ -394,9 +394,20 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
               </span>
             </label>
           <?php endforeach; ?>
+          <?php if (($pendaftaran['jalur'] ?? '') === 'alumni-sdmua'): ?>
+          <label class="jalur-radio-item">
+            <input type="radio" name="jalur" value="alumni-sdmua" checked onchange="psbSyncJalur()">
+            <span class="jalur-radio-label">Alumni SD Ashidiq</span>
+          </label>
+          <?php else: ?>
+          <button type="button" id="jalurMystery" class="jalur-radio-item" aria-expanded="<?= !empty($errors['alumni_klaim']) ? 'true' : 'false' ?>" aria-controls="klaimWrap"
+                  style="justify-content:center;cursor:pointer;background:#fff;" title="Punya kode khusus?">
+            <span class="jalur-radio-label" style="font-size:28px;font-weight:700;line-height:1;">+</span>
+          </button>
+          <?php endif; ?>
         </div>
 
-        <?php if (in_array($pendaftaran['jalur'] ?? '', jalurTersembunyi(), true)): ?>
+        <?php if (($pendaftaran['jalur'] ?? '') === 'dhuafa'): ?>
         <p class="portal-note">
           Jalur Anda (<strong><?= e($labelJalur[$pendaftaran['jalur']] ?? $pendaftaran['jalur']) ?></strong>)
           ditetapkan oleh panitia dan tidak dapat diubah lewat portal. Hubungi panitia untuk informasi lebih lanjut.
@@ -426,47 +437,46 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         </div>
       </form>
 
-      <?php if ($pendaftaran['jalur'] === 'alumni-sdmua'): ?>
-      <div class="portal-info-box" style="margin-top:20px;">
-        <h2>Jalur Alumni SD Ashidiq — Aktif</h2>
-        <p>Jalur Alumni Anda sudah diklaim. Lanjutkan ke <a href="?step=berkas-jalur" class="btn-link">Upload Berkas Jalur</a> untuk melengkapi surat rekomendasi.</p>
-      </div>
-      <?php else: ?>
-      <div class="portal-info-box" style="margin-top:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-          <div>
-            <h2 style="margin:0;">Punya Kode Undangan Alumni?</h2>
-            <p style="margin:4px 0 0;">Khusus siswa SD Muhammadiyah Unggulan Ashidiq.</p>
-          </div>
-          <button type="button" id="btnAlumniToggle" aria-expanded="<?= !empty($errors['alumni_klaim']) ? 'true' : 'false' ?>" aria-controls="alumniKlaimWrap"
-                  style="flex:none;width:40px;height:40px;border-radius:50%;border:2px solid var(--green-deep,#0d7a4a);background:#fff;color:var(--green-deep,#0d7a4a);font-size:22px;font-weight:700;line-height:1;cursor:pointer;">+</button>
-        </div>
-        <div id="alumniKlaimWrap" <?= !empty($errors['alumni_klaim']) ? '' : 'hidden' ?>>
-          <form method="post" style="margin-top:14px;max-width:420px;">
+      <?php if (($pendaftaran['jalur'] ?? '') !== 'alumni-sdmua'): ?>
+      <div id="klaimWrap" <?= !empty($errors['alumni_klaim']) ? '' : 'hidden' ?> style="margin-top:20px;">
+        <div class="portal-info-box">
+          <form method="post" style="max-width:420px;">
             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
             <input type="hidden" name="step" value="alumni-klaim">
             <div class="form-group">
-              <label>Kode Undangan</label>
+              <label>Voucher</label>
               <input type="text" name="kode_voucher" class="form-control" placeholder="ASQ-XXXXXXXXXX"
                      required autocomplete="off" style="text-transform:uppercase;">
             </div>
             <div class="form-group">
               <label>NISN</label>
-              <input type="text" name="nisn" class="form-control" placeholder="NISN dari SD Ashidiq"
-                     required autocomplete="off">
+              <input type="text" name="nisn" class="form-control" placeholder="NISN"
+                     required autocomplete="off" inputmode="numeric">
             </div>
             <?php if (!empty($errors['alumni_klaim'])): ?><p class="field-error"><?= e($errors['alumni_klaim']) ?></p><?php endif; ?>
-            <button type="submit" class="btn-primary">Klaim Jalur Alumni</button>
+            <button type="submit" class="btn-primary">Gunakan Kode</button>
           </form>
         </div>
       </div>
       <script>
-      document.getElementById('btnAlumniToggle').addEventListener('click', function () {
-        const wrap = document.getElementById('alumniKlaimWrap');
-        const open = wrap.hasAttribute('hidden');
-        if (open) { wrap.removeAttribute('hidden'); this.textContent = '\u2212'; this.setAttribute('aria-expanded', 'true'); }
-        else { wrap.setAttribute('hidden', ''); this.textContent = '+'; this.setAttribute('aria-expanded', 'false'); }
-      });
+      (function () {
+        const btn = document.getElementById('jalurMystery');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+          const wrap = document.getElementById('klaimWrap');
+          const open = wrap.hasAttribute('hidden');
+          if (open) {
+            wrap.removeAttribute('hidden');
+            this.setAttribute('aria-expanded', 'true');
+            wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            const inp = wrap.querySelector('input[name="kode_voucher"]');
+            if (inp) inp.focus();
+          } else {
+            wrap.setAttribute('hidden', '');
+            this.setAttribute('aria-expanded', 'false');
+          }
+        });
+      })();
       </script>
       <?php endif; ?>
     </section>
