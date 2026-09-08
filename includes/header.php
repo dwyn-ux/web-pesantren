@@ -145,11 +145,6 @@ $navLinks = [
         <?php else: ?>
         <li><a href="<?= BASE_URL ?>/login-santri" class="nav-login">Login</a></li>
         <?php endif; ?>
-        <?php if (isLoggedIn()): ?>
-        <li>
-            <a href="<?= BASE_URL ?>/admin" style="font-size:11px;opacity:0.55;letter-spacing:1px;" title="Panel Admin">⚙ Admin</a>
-        </li>
-        <?php endif; ?>
     </ul>
 
     <!-- Hamburger (mobile) -->
@@ -178,9 +173,6 @@ $navLinks = [
     <a href="<?= BASE_URL ?>/login-santri" class="btn-outline" style="text-align:center;">Login Santri</a>
     <?php endif; ?>
 
-    <?php if (isLoggedIn()): ?>
-    <a href="<?= BASE_URL ?>/admin" style="font-size:12px;opacity:0.6;margin-top:8px;">⚙ Panel Admin</a>
-    <?php endif; ?>
 </div>
 
 <!-- ══ FLASH MESSAGE ════════════════════════════════════════ -->
