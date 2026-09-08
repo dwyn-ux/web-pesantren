@@ -38,6 +38,12 @@
         <?php
         $adminNav = [
             'admin'           => ['icon' => '⊞', 'label' => 'Dashboard'],
+            'admin/verifikasi-berkas' => ['icon' => '✓', 'label' => 'Verifikasi PSB'],
+            'admin/input-tes' => ['icon' => '✎', 'label' => 'Input Nilai Tes'],
+            'admin/cicilan-verifikasi' => ['icon' => '💰', 'label' => 'Cicilan'],
+            'admin/daftar-ulang' => ['icon' => '🎓', 'label' => 'Daftar Ulang'],
+            'admin/kelola-gelombang' => ['icon' => '⏱', 'label' => 'Gelombang'],
+            'admin/kelola-template' => ['icon' => '📄', 'label' => 'Template'],
             'admin/artikel'   => ['icon' => '✎', 'label' => 'Artikel'],
             'admin/foto'      => ['icon' => '▧', 'label' => 'Galeri Foto'],
             'admin/dokumentasi' => ['icon' => '▣', 'label' => 'Dokumentasi'],

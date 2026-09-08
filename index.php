@@ -30,7 +30,7 @@ if (preg_match('#^artikel/([a-z0-9\-]+)$#', $rawPage, $m)) {
 $publicPages = [
     'home', 'profil', 'sekapur-sirih',
     'artikel', 'artikel-detail',
-    'psb', 'login', 'login-santri', 'portal-santri', 'profil-santri', 'surat-kesanggupan', 'dokumentasi', 'alumni', 'pendataan-alumni', 'dokumen-lihat', '404', 'galeri',
+    'psb', 'login', 'login-santri', 'portal-santri', 'profil-santri', 'surat-kesanggupan', 'dokumentasi', 'alumni', 'pendataan-alumni', 'dokumen-lihat', 'berkas-santri', 'download-template', '404', 'galeri',
 ];
 
 // Halaman yang butuh login (admin)
@@ -40,7 +40,7 @@ $authPages = [];
 $adminPages = [
     'admin', 'admin/dashboard',
     'admin/artikel', 'admin/artikel-tambah', 'admin/artikel-edit',
-    'admin/foto', 'admin/users', 'admin/psb', 'admin/dokumentasi', 'admin/alumni', 'admin/alumni-edit',    'admin/pengaturan', 'admin/berkas-lihat', 'admin/testimoni', 'admin/jalur-potongan',
+    'admin/foto', 'admin/users', 'admin/psb', 'admin/dokumentasi', 'admin/alumni', 'admin/alumni-edit',    'admin/pengaturan',     'admin/berkas-lihat', 'admin/testimoni', 'admin/jalur-potongan', 'admin/kelola-template', 'admin/kelola-gelombang', 'admin/verifikasi-berkas', 'admin/input-tes', 'admin/cicilan-verifikasi', 'admin/daftar-ulang',
 ];
 
 // ── Access Control ────────────────────────────────────────────
@@ -63,6 +63,7 @@ $pageMap = [
     'dokumentasi'     => ROOT_PATH . '/pages/dokumentasi.php',
     'galeri'          => ROOT_PATH . '/pages/galeri.php',
     'dokumen-lihat'   => ROOT_PATH . '/pages/dokumen-lihat.php',
+    'berkas-santri'   => ROOT_PATH . '/pages/berkas-santri.php',
     'alumni'          => ROOT_PATH . '/pages/alumni.php',
     'pendataan-alumni' => ROOT_PATH . '/pages/pendataan-alumni.php',
     'login'           => ROOT_PATH . '/pages/login.php',
@@ -86,6 +87,8 @@ $pageMap = [
     'admin/berkas-lihat' => ROOT_PATH . '/admin/berkas-lihat.php',
     'admin/testimoni' => ROOT_PATH . '/admin/testimoni.php',
     'admin/jalur-potongan' => ROOT_PATH . '/admin/jalur-potongan.php',
+    'admin/kelola-template' => ROOT_PATH . '/admin/kelola-template.php',
+    'download-template' => ROOT_PATH . '/pages/download-template.php',
 ];
 
 // Tangani logout langsung

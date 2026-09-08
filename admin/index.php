@@ -42,7 +42,25 @@ $labelKategori = [
     'kajian'   => 'Kajian',  'kegiatan' => 'Kegiatan',
     'psb-info' => 'PSB',     'alumni' => 'Alumni',
 ];
-$labelJenjang  = ['mts' => 'SMP', 'ma' => 'SMA', 'tahfidz-intensif' => 'Tahfidz'];
+$labelJenjang  = ['smp' => 'SMP', 'sma' => 'SMA', 'tahfidz-intensif' => 'Tahfidz'];
+
+// ── Counter per status & gelombang (untuk dashboard) ─────
+$statusCounts = $pdo->query(
+    "SELECT status, COUNT(*) AS n FROM pendaftaran GROUP BY status"
+)->fetchAll(PDO::FETCH_KEY_PAIR);
+
+$gelombangCounts = $pdo->query(
+    "SELECT pg.label, COUNT(p.id) AS n
+     FROM pendaftaran_gelombang pg
+     LEFT JOIN pendaftaran p ON p.gelombang_id = pg.id
+     WHERE pg.is_active = 1
+     GROUP BY pg.id, pg.label, pg.urutan
+     ORDER BY pg.urutan"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+$cicilanPending = (int) $pdo->query(
+    "SELECT COUNT(*) FROM pembiayaan_cicilan WHERE status='pending'"
+)->fetchColumn();
 
 require_once __DIR__ . '/includes/header.php';
 ?>
@@ -77,6 +95,55 @@ require_once __DIR__ . '/includes/header.php';
             <div class="stat-label">Total Pendaftar</div>
         </div>
     </div>
+</div>
+
+<!-- ── RINGKASAN PSB ────────────────────────────────────────── -->
+<div class="admin-table-wrap">
+    <div class="table-head">
+        <h2>Ringkasan Pendaftaran (5 Fase)</h2>
+        <a href="<?= e(BASE_URL . '/admin/verifikasi-berkas') ?>" class="btn-sm btn-sm-primary">Verifikasi</a>
+    </div>
+    <div class="stat-grid" style="margin-bottom:20px;">
+        <?php
+        $faseList = [
+            'pending' => ['label' => 'Baru Daftar', 'color' => 'blue'],
+            'menunggu-verifikasi' => ['label' => 'Menunggu Verifikasi', 'color' => 'orange'],
+            'tes-selesai' => ['label' => 'Tes Selesai', 'color' => 'gold'],
+            'diterima' => ['label' => 'Diterima', 'color' => 'green'],
+            'ditolak' => ['label' => 'Ditolak', 'color' => 'red'],
+            'daftar-ulang' => ['label' => 'Daftar Ulang', 'color' => 'green'],
+        ];
+        foreach ($faseList as $k => $f):
+        ?>
+        <div class="stat-card stat-mini">
+            <div class="stat-num"><?= $statusCounts[$k] ?? 0 ?></div>
+            <div class="stat-label"><?= e($f['label']) ?></div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <table class="admin-table">
+        <thead><tr><th>Gelombang</th><th>Jumlah Pendaftar</th><th>Sisa Kuota</th></tr></thead>
+        <tbody>
+            <?php foreach ($gelombangCounts as $g):
+                $stmtK = $pdo->prepare("SELECT target_kuota FROM pendaftaran_gelombang WHERE label=?");
+                $stmtK->execute([$g['label']]);
+                $kuota = (int) $stmtK->fetchColumn();
+                $sisa = max(0, $kuota - (int) $g['n']);
+            ?>
+            <tr>
+                <td><?= e($g['label']) ?></td>
+                <td><strong><?= (int)$g['n'] ?></strong></td>
+                <td><?= $kuota > 0 ? $sisa . ' / ' . $kuota : '—' ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    <?php if ($cicilanPending > 0): ?>
+        <p style="margin-top:12px;padding:10px 14px;background:#fff8e8;border-left:3px solid #c9a227;border-radius:3px;font-size:13px;">
+            ⏳ Ada <strong><?= $cicilanPending ?></strong> cicilan menunggu verifikasi.
+            <a href="<?= e(BASE_URL . '/admin/cicilan-verifikasi') ?>">Verifikasi sekarang →</a>
+        </p>
+    <?php endif; ?>
 </div>
 
 <!-- ── PENDAFTARAN TERBARU ──────────────────────────────────── -->

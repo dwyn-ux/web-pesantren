@@ -129,18 +129,16 @@ $navLinks = [
         <li>
             <a href="<?= BASE_URL ?>/psb" class="nav-cta">Daftar Sekarang</a>
         </li>
-        <?php if (!empty($_SESSION['santri_id'])): ?>
+        <?php if (isCalonSantri()): ?>
         <li class="nav-profile">
             <button class="nav-profile-btn" id="santriMenuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Menu santri">
-                <?php if ($santriNavFoto): ?>
-                <img class="nav-profile-avatar" src="<?= BASE_URL ?>/api/foto-santri.php" alt="Foto santri">
-                <?php else: ?>
+                <?php
+                $santriNavName = $_SESSION['user_name'] ?? '';
+                ?>
                 <span class="nav-profile-avatar"><?= e(function_exists('mb_substr') ? mb_strtoupper(mb_substr($santriNavName, 0, 1)) : strtoupper(substr($santriNavName, 0, 1))) ?></span>
-                <?php endif; ?>
             </button>
             <div class="nav-profile-menu" id="santriMenu">
-                <a href="<?= BASE_URL ?>/profil-santri">Profil</a>
-                <a href="<?= BASE_URL ?>/portal-santri">Pendaftaran</a>
+                <a href="<?= BASE_URL ?>/portal-santri">Portal Santri</a>
                 <a href="<?= BASE_URL ?>/login-santri?logout=1">Logout</a>
             </div>
         </li>
@@ -173,9 +171,8 @@ $navLinks = [
     <a href="<?= BASE_URL ?>/psb" class="btn-primary" style="margin-top:8px;text-align:center;">
         Daftar Sekarang
     </a>
-    <?php if (!empty($_SESSION['santri_id'])): ?>
-    <a href="<?= BASE_URL ?>/profil-santri" class="btn-outline" style="text-align:center;">Profil</a>
-    <a href="<?= BASE_URL ?>/portal-santri" class="btn-outline" style="text-align:center;">Pendaftaran</a>
+    <?php if (isCalonSantri()): ?>
+    <a href="<?= BASE_URL ?>/portal-santri" class="btn-outline" style="text-align:center;">Portal Santri</a>
     <a href="<?= BASE_URL ?>/login-santri?logout=1" class="btn-outline" style="text-align:center;">Logout</a>
     <?php else: ?>
     <a href="<?= BASE_URL ?>/login-santri" class="btn-outline" style="text-align:center;">Login Santri</a>

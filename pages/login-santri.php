@@ -1,47 +1,110 @@
 <?php
-if(isset($_GET['logout'])){unset($_SESSION['santri_id'],$_SESSION['santri_nip'],$_SESSION['santri_name']);redirect('/login-santri');}
-$error='';
-if($_SERVER['REQUEST_METHOD']==='POST'){
-    validateCsrf();$login=strtoupper(sanitizeString($_POST['nomor_induk']??''));$pass=$_POST['password']??'';
-    $s=getDB()->prepare("SELECT id,nomor_daftar,nomor_induk,nama_lengkap,portal_password,status FROM pendaftaran WHERE nomor_daftar=? OR nomor_induk=? LIMIT 1");$s->execute([$login,$login]);$p=$s->fetch();
-    if($p&&$p['portal_password']&&password_verify($pass,$p['portal_password'])&&$p['status']!=='ditolak'){
-        session_regenerate_id(true);$_SESSION['santri_id']=$p['id'];$_SESSION['santri_nip']=$p['nomor_induk']?:$p['nomor_daftar'];$_SESSION['santri_name']=$p['nama_lengkap'];redirect('/portal-santri');
-    }$error='Nomor pendaftaran/induk atau password salah.';
+// ── Logout handler ─────────────────────────────────────────
+if (isset($_GET['logout'])) {
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $p = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+    }
+    session_destroy();
+    redirect('/login-santri');
 }
-$activePage='psb';$pageTitle='Login Portal Santri | '.APP_NAME;$pageDescription='Portal calon santri Pondok Pesantren Ash-Shiddiq.';$pageCanonical=BASE_URL.'/login-santri';
-$bodyClass='login-santri-page';
-$extraHead = <<<'CSS'
-<style>
-.login-santri-page {
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='92' viewBox='0 0 80 92'%3E%3Cpolygon points='40,5 75,22 75,70 40,87 5,70 5,22' fill='none' stroke='%23c9a227' stroke-width='1' stroke-opacity='0.35'/%3E%3C/svg%3E"),
-    radial-gradient(ellipse at 18% -10%, rgba(201,162,39,0.12), transparent 55%),
-    linear-gradient(160deg, #0b3a28 0%, #0a2b3e 55%, #0a1f2e 100%);
-  min-height:100vh;
+
+// Kalau sudah login sebagai calon-santri, langsung ke portal
+if (isCalonSantri() && getCurrentPendaftaran()) {
+    redirect('/portal-santri');
 }
-.login-santri-page::before, .login-santri-page::after {
-  content:''; position:fixed; z-index:0; pointer-events:none;
-  width:320px; height:420px; border:2px solid rgba(201,162,39,0.35);
-  border-radius:50% 50% 0 0;
+
+// ── Login handler ──────────────────────────────────────────
+$error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    validateCsrf();
+    $email = strtolower(trim($_POST['email'] ?? ''));
+    $pass  = $_POST['password'] ?? '';
+
+    if (empty($email) || empty($pass)) {
+        $error = 'Email dan password tidak boleh kosong.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Format email tidak valid.';
+    } else {
+        try {
+            $pdo = getDB();
+            $stmt = $pdo->prepare(
+                "SELECT id, name, email, password, role, is_active
+                 FROM users WHERE email = ? AND role = 'calon-santri' LIMIT 1"
+            );
+            $stmt->execute([$email]);
+            $user = $stmt->fetch();
+
+            if ($user && password_verify($pass, $user['password']) && $user['is_active']) {
+                $cekPendaftaran = $pdo->prepare("SELECT id FROM pendaftaran WHERE user_id = ? LIMIT 1");
+                $cekPendaftaran->execute([$user['id']]);
+                if (!$cekPendaftaran->fetch()) {
+                    $error = 'Akun Anda tidak terhubung ke pendaftaran. Hubungi panitia.';
+                } else {
+                    session_regenerate_id(true);
+                    $_SESSION['user_id']    = $user['id'];
+                    $_SESSION['user_name']  = $user['name'];
+                    $_SESSION['user_email'] = $user['email'];
+                    $_SESSION['user_role']  = $user['role'];
+                    $_SESSION['login_at']   = time();
+                    redirect('/portal-santri');
+                }
+            } else {
+                usleep(300000);
+                $error = 'Email atau password salah.';
+            }
+        } catch (PDOException $e) {
+            error_log('Login-santri error: ' . $e->getMessage());
+            $error = 'Terjadi kesalahan sistem. Silakan coba lagi.';
+        }
+    }
 }
-.login-santri-page::before { left:4%; bottom:-180px; }
-.login-santri-page::after  { right:4%; top:-180px; transform:rotate(180deg); box-shadow:inset 0 0 60px rgba(201,162,39,0.08); }
-.login-santri-page .page-section { padding-top: calc(var(--nav-height) + 48px); padding-bottom: 64px; position:relative; z-index:1; }
-.login-santri-page .public-form.portal-login { border-radius:8px; box-shadow:0 24px 70px rgba(0,0,0,0.35); border-top:4px solid var(--gold); }
-.login-santri-page .section-title { color: var(--green-deep); }
-.login-register-prompt { margin-top:20px; font-size:13px; color:var(--text-light); }
-.login-register-prompt a { color:var(--green-mid); font-weight:600; text-decoration:none; }
-</style>
-CSS;
+
+$activePage      = 'psb';
+$pageTitle       = 'Login Portal Santri | ' . APP_NAME;
+$pageDescription = 'Login ke Portal Santri Pondok Pesantren Ash-Shiddiq untuk melengkapi data dan mengunggah berkas.';
+$pageCanonical   = BASE_URL . '/login-santri';
+$bodyClass       = 'login-santri-page';
 ?>
-<main class="page-section"><div class="container narrow-container"><form method="post" class="public-form portal-login"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><h1 class="section-title">Portal Santri</h1><p>Gunakan nomor pendaftaran atau nomor induk dan password yang dibuat saat mendaftar.</p><?php if($error):?><div class="flash-message flash-error"><?=e($error)?></div><?php endif;?><div class="form-group"><label>Nomor pendaftaran / nomor induk</label><input class="form-control" name="nomor_induk" required autocomplete="username"></div><div class="form-group"><label>Password</label><input class="form-control" type="password" name="password" id="portal_password" required autocomplete="current-password"></div><label class="form-note" style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="lihatPassword" style="width:auto;"> Lihat password</label><button class="btn-primary">Masuk ke Portal</button><div class="login-register-prompt"><span>Belum memiliki akun?</span><a href="<?=BASE_URL?>/psb">Daftar sebagai calon santri</a></div></form></div></main>
+<main class="page-section">
+  <div class="container narrow-container">
+    <form method="post" class="public-form portal-login">
+      <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+      <h1 class="section-title">Portal Santri</h1>
+      <p>Masuk dengan email dan password yang Anda buat saat pendaftaran.</p>
+      <?php if ($error): ?>
+        <div class="flash-message flash-error"><?= e($error) ?></div>
+      <?php endif; ?>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input class="form-control" type="email" name="email" id="email"
+               required autocomplete="username" autofocus
+               value="<?= e($_POST['email'] ?? '') ?>">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input class="form-control" type="password" name="password" id="password"
+               required autocomplete="current-password">
+      </div>
+      <label class="form-note" style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:16px;">
+        <input type="checkbox" id="lihatPassword" style="width:auto;"> Lihat password
+      </label>
+      <button class="btn-primary">Masuk ke Portal</button>
+      <div class="login-register-prompt">
+        <span>Belum memiliki akun?</span>
+        <a href="<?= BASE_URL ?>/psb">Daftar sebagai calon santri</a>
+      </div>
+    </form>
+  </div>
+</main>
 <script>
 (function () {
-    var lihatPassword = document.getElementById('lihatPassword');
-    if (lihatPassword) {
-        lihatPassword.addEventListener('change', function () {
-            document.getElementById('portal_password').type = this.checked ? 'text' : 'password';
-        });
-    }
+  var lihatPassword = document.getElementById('lihatPassword');
+  if (lihatPassword) {
+    lihatPassword.addEventListener('change', function () {
+      document.getElementById('password').type = this.checked ? 'text' : 'password';
+    });
+  }
 }());
 </script>

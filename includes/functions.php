@@ -849,3 +849,244 @@ function jalurStatusLabel(string $status): string {
         default     => $status,
     };
 }
+
+// ── JUKNIS PSB TA 2027/2028 — Gelombang & Tarif ─────────────
+
+/** Generate password awal 6 digit angka. */
+function generatePasswordAwal(): string {
+    return (string) random_int(100000, 999999);
+}
+
+/** Generate nomor pendaftaran ASQ-YYYY-XXXX (per tahun). */
+function generateNomorDaftar(PDO $pdo): string {
+    $tahun = date('Y');
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pendaftaran WHERE nomor_daftar LIKE ?");
+    $stmt->execute(["ASQ-$tahun-%"]);
+    $urutan = (int) $stmt->fetchColumn() + 1;
+    return "ASQ-$tahun-" . str_pad((string) $urutan, 4, '0', STR_PAD_LEFT);
+}
+
+/** Gelombang aktif auto-detect dari tanggal hari ini. NULL jika di luar semua tahap. */
+function autoDetectGelombang(PDO $pdo): ?array {
+    $today = date('Y-m-d');
+    $stmt = $pdo->prepare(
+        "SELECT * FROM pendaftaran_gelombang
+         WHERE is_active=1 AND ? BETWEEN tanggal_buka AND tanggal_tutup
+         ORDER BY urutan LIMIT 1"
+    );
+    $stmt->execute([$today]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+/** Ambil semua gelombang (untuk pilihan admin). */
+function getAllGelombang(PDO $pdo, bool $onlyActive = true): array {
+    $sql = "SELECT * FROM pendaftaran_gelombang";
+    if ($onlyActive) $sql .= " WHERE is_active=1";
+    $sql .= " ORDER BY urutan";
+    return $pdo->query($sql)->fetchAll();
+}
+
+/** Ambil tarif aktif untuk snapshot, filter per gelombang + jenis + gender. */
+function getTarifByGelombang(PDO $pdo, int $gelombangId, ?string $gender = null): array {
+    $sql = "SELECT * FROM pembiayaan_tarif
+            WHERE is_active=1 AND (gelombang_id = :g OR gelombang_id IS NULL)";
+    $params = [':g' => $gelombangId];
+    if ($gender) {
+        $sql .= " AND (gender = 'all' OR gender = :gd)";
+        $params[':gd'] = $gender;
+    }
+    $sql .= " ORDER BY jenis, urutan";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll();
+}
+
+/** Hitung simulasi biaya (untuk AJAX + JS live). */
+function getSimulasiBiaya(PDO $pdo, string $jalur, ?string $jalurDetail,
+                          int $gelombangId, string $gender): array {
+    $tarif = getTarifByGelombang($pdo, $gelombangId, $gender);
+    $adminJalur = getJalurPotonganAdmin($pdo);
+    $kader = $adminJalur['kaderisasi'] ?? [];
+
+    $result = [
+        'pendaftaran' => 0, 'administrasi_asli' => 0, 'administrasi' => 0,
+        'wakaf' => 0, 'syahriyah' => 0,
+        'potongan' => 0, 'potongan_label' => '',
+        'total' => 0, 'detail' => [],
+    ];
+
+    foreach ($tarif as $t) {
+        if ($t['jenis'] !== 'pendaftaran') continue;
+        $result['pendaftaran'] = (float) ((int) $t['gratis'] ? 0 : $t['harga_asli']);
+        $result['detail'][] = ['label' => $t['nama'], 'nominal' => $result['pendaftaran']];
+        break;
+    }
+
+    foreach ($tarif as $t) {
+        if ($t['jenis'] !== 'administrasi') continue;
+        $harga_asli = (float) $t['harga_asli'];
+        $harga_setelah = $harga_asli;
+
+        if ($jalur === 'kaderisasi') {
+            $harga_setelah = (float) ($kader['adm'] ?? 5000000);
+            $result['potongan_label'] = 'Tarif khusus kaderisasi';
+        } elseif (in_array($jalur, ['prestasi', 'tahfidz'], true) && $jalurDetail) {
+            $potonganPct = jalurPotonganOtomatis($jalur, $jalurDetail, $adminJalur);
+            $harga_setelah = $harga_asli * (1 - $potonganPct / 100);
+            $result['potongan_label'] = "Potongan otomatis ({$potonganPct}%)";
+        } elseif ($jalur === 'dhuafa') {
+            $bebas = !empty($adminJalur['dhuafa']['dhuafa_bebas']);
+            $harga_setelah = $bebas ? 0.0 : $harga_asli;
+            $result['potongan_label'] = $bebas ? 'ADM Awal dibebaskan (Dhuafa)' : '';
+        }
+
+        if ($t['harga_diskon'] !== null && (float) $t['harga_diskon'] < $harga_setelah) {
+            $harga_setelah = (float) $t['harga_diskon'];
+            if (!$result['potongan_label']) {
+                $result['potongan_label'] = 'Potongan tahap Indent';
+            }
+        }
+
+        $result['administrasi_asli'] = $harga_asli;
+        $result['administrasi'] = $harga_setelah;
+        $result['potongan'] = $harga_asli - $harga_setelah;
+        $result['detail'][] = [
+            'label' => $t['nama'], 'nominal' => $harga_asli,
+            'setelah_potongan' => $harga_setelah,
+        ];
+        break;
+    }
+
+    foreach ($tarif as $t) {
+        if ($t['jenis'] !== 'wakaf') continue;
+        $result['wakaf'] = (float) $t['harga_asli'];
+        $result['detail'][] = ['label' => $t['nama'], 'nominal' => $result['wakaf']];
+        break;
+    }
+
+    if ($jalur === 'kaderisasi') {
+        $result['syahriyah'] = $gender === 'P'
+            ? (float) ($kader['spp_p'] ?? 750000)
+            : (float) ($kader['spp_l'] ?? 650000);
+        $result['detail'][] = [
+            'label' => 'SPP Kaderisasi (termasuk laundry + infak)',
+            'nominal' => $result['syahriyah'], 'per_bulan' => true,
+        ];
+    } else {
+        foreach ($tarif as $t) {
+            if ($t['jenis'] !== 'syahriyah') continue;
+            $result['syahriyah'] = (float) $t['harga_asli'];
+            $result['detail'][] = [
+                'label' => $t['nama'] ?? 'SPP Bulanan',
+                'nominal' => $result['syahriyah'], 'per_bulan' => true,
+            ];
+            break;
+        }
+    }
+
+    $result['total'] = $result['pendaftaran'] + $result['administrasi'] + $result['wakaf'];
+    return $result;
+}
+
+/** Cek apakah pendaftaran sudah punya snapshot final. */
+function isSnapshotFinal(int $pendaftaranId, PDO $pdo): bool {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pembiayaan WHERE pendaftaran_id = ?");
+    $stmt->execute([$pendaftaranId]);
+    return (int) $stmt->fetchColumn() > 0;
+}
+
+/** Apply snapshot final ke pembiayaan saat status='diterima'. Idempotent. */
+function applyTarifToSnapshot(PDO $pdo, int $pendaftaranId): bool {
+    if (isSnapshotFinal($pendaftaranId, $pdo)) return false;
+
+    $s = $pdo->prepare(
+        'SELECT jalur, jalur_detail, jalur_status, jalur_potongan,
+                jenis_kelamin, gelombang_id
+         FROM pendaftaran WHERE id = ?'
+    );
+    $s->execute([$pendaftaranId]);
+    $row = $s->fetch();
+    if (!$row || !$row['gelombang_id']) return false;
+
+    if (in_array($row['jalur'], ['alumni-sdmua', 'dhuafa'], true)
+        && $row['jalur_status'] !== 'disetujui') {
+        return false;
+    }
+
+    $simulasi = getSimulasiBiaya(
+        $pdo, $row['jalur'], $row['jalur_detail'],
+        (int) $row['gelombang_id'], $row['jenis_kelamin']
+    );
+
+    // Override dengan potongan admin (jika diset utk alumni/dhuafa)
+    if (in_array($row['jalur'], ['alumni-sdmua', 'dhuafa'], true)
+        && $row['jalur_potongan'] !== null) {
+        $tarifRaw = getTarifByGelombang($pdo, (int) $row['gelombang_id'], $row['jenis_kelamin']);
+        foreach ($tarifRaw as $t) {
+            if ($t['jenis'] === 'administrasi') {
+                $harga_asli = (float) $t['harga_asli'];
+                $simulasi['administrasi_asli'] = $harga_asli;
+                $simulasi['administrasi'] = $harga_asli * (1 - (float) $row['jalur_potongan'] / 100);
+                $simulasi['potongan'] = $harga_asli - $simulasi['administrasi'];
+                $simulasi['potongan_label'] = "Potongan admin ({$row['jalur_potongan']}%)";
+            }
+        }
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $ins = $pdo->prepare(
+            'INSERT INTO pembiayaan
+                (pendaftaran_id, jenis, nama, harga_asli, harga_diskon, gratis,
+                 nominal, status, urutan)
+             VALUES (?,?,?,?,?,?,?,?,?)'
+        );
+        $ins->execute([
+            $pendaftaranId, 'pendaftaran', 'Biaya Pendaftaran',
+            $simulasi['pendaftaran'], null,
+            $simulasi['pendaftaran'] === 0.0 ? 1 : 0,
+            $simulasi['pendaftaran'], 'belum', 1,
+        ]);
+        $ins->execute([
+            $pendaftaranId, 'administrasi', 'ADM Awal',
+            $simulasi['administrasi_asli'],
+            $simulasi['potongan'] > 0 ? $simulasi['potongan'] : null,
+            0, $simulasi['administrasi'], 'belum', 2,
+        ]);
+        $ins->execute([
+            $pendaftaranId, 'wakaf', 'Wakaf Pembangunan',
+            $simulasi['wakaf'], null, 0, $simulasi['wakaf'], 'belum', 3,
+        ]);
+        if ($row['jalur'] === 'kaderisasi' && $simulasi['syahriyah'] > 0) {
+            $ins->execute([
+                $pendaftaranId, 'syahriyah', 'SPP Kaderisasi',
+                $simulasi['syahriyah'], null, 0, $simulasi['syahriyah'], 'belum', 4,
+            ]);
+        }
+        $pdo->commit();
+        return true;
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('Snapshot gagal: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/** Label status pendaftaran (untuk badge UI). */
+function statusLabel(string $status): string {
+    return match ($status) {
+        'pending'             => 'Baru Daftar',
+        'menunggu-verifikasi' => 'Menunggu Verifikasi',
+        'tes-selesai'         => 'Tes Selesai',
+        'diterima'            => 'Diterima',
+        'ditolak'             => 'Ditolak',
+        'daftar-ulang'        => 'Daftar Ulang',
+        default               => $status,
+    };
+}
+
+/** Cek apakah status mengizinkan upload berkas. */
+function isBerkasEditable(string $status): bool {
+    return in_array($status, ['pending', 'menunggu-verifikasi'], true);
+}

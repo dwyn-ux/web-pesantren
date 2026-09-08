@@ -5,10 +5,11 @@
  */
 
 // ── Akses ────────────────────────────────────────────────────
-if (!empty($_SESSION['santri_id'])) {
-    $id = (int) $_SESSION['santri_id'];
-} elseif (isLoggedIn()) {
-    requireAdmin();
+if (isCalonSantri()) {
+    $pendaftaran = getCurrentPendaftaran();
+    if (!$pendaftaran) { http_response_code(403); exit('Akses ditolak.'); }
+    $id = (int) $pendaftaran['id'];
+} elseif (isAdmin()) {
     $id = sanitizeInt($_GET['id'] ?? 0);
 } else {
     http_response_code(403);
@@ -48,7 +49,7 @@ if (!empty($p['kesanggupan_sign'])) {
     }
 }
 
-$labelJenjang = ['mts' => 'SMP', 'ma' => 'SMA', 'tahfidz-intensif' => 'Tahfidz Intensif'];
+$labelJenjang = ['smp' => 'SMP', 'sma' => 'SMA', 'tahfidz-intensif' => 'Tahfidz Intensif'];
 $labelQuran = [
     'belum-bisa' => 'Belum Bisa Membaca', 'bisa-membaca' => 'Bisa Membaca',
     'tartil' => 'Tartil', 'hafal-juz-30' => 'Hafal Juz 30', 'hafal-lebih' => 'Hafal Lebih dari Juz 30',

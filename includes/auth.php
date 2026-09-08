@@ -125,6 +125,57 @@ function requireAdmin(): void {
 }
 
 /**
+ * Cek apakah user login adalah calon-santri.
+ */
+function isCalonSantri(): bool {
+    return isLoggedIn() && ($_SESSION['user_role'] ?? '') === 'calon-santri';
+}
+
+/**
+ * Ambil data pendaftaran milik calon-santri yang sedang login.
+ * @return array<string, mixed>|null
+ */
+function getCurrentPendaftaran(): ?array {
+    if (!isCalonSantri()) return null;
+    static $cache = null;
+    if ($cache !== null) return $cache ?: null;
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->prepare(
+            "SELECT p.*, pg.label AS gelombang_label, pg.slug AS gelombang_slug
+             FROM pendaftaran p
+             LEFT JOIN pendaftaran_gelombang pg ON pg.id = p.gelombang_id
+             WHERE p.user_id = ? LIMIT 1"
+        );
+        $stmt->execute([$_SESSION['user_id']]);
+        $row = $stmt->fetch();
+        $cache = $row ?: false;
+        return $row ?: null;
+    } catch (PDOException $e) {
+        error_log('getCurrentPendaftaran: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Paksa halaman ini hanya bisa diakses calon-santri yang sudah punya pendaftaran.
+ */
+function requireCalonSantri(): void {
+    if (!isCalonSantri()) {
+        if (isLoggedIn()) {
+            setFlash('error', 'Halaman ini khusus untuk calon peserta PSB.');
+            redirect('/');
+        }
+        redirect('/login-santri');
+    }
+    $pendaftaran = getCurrentPendaftaran();
+    if (!$pendaftaran) {
+        setFlash('error', 'Data pendaftaran tidak ditemukan. Silakan daftar terlebih dahulu.');
+        redirect('/psb');
+    }
+}
+
+/**
  * Redirect ke URL (relatif dari BASE_URL atau absolut)
  */
 function redirect(string $path): never {
