@@ -403,34 +403,6 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         </p>
         <?php endif; ?>
 
-        <?php if ($pendaftaran['jalur'] === 'alumni-sdmua'): ?>
-        <div class="portal-info-box" style="margin-top:20px;">
-          <h2>Jalur Alumni SD Ashidiq — Aktif</h2>
-          <p>Jalur Alumni Anda sudah diklaim. Lanjutkan ke <a href="?step=berkas-jalur" class="btn-link">Upload Berkas Jalur</a> untuk melengkapi surat rekomendasi.</p>
-        </div>
-        <?php else: ?>
-        <div class="portal-info-box" style="margin-top:20px;">
-          <h2>Jalur Alumni SD Ashidiq</h2>
-          <p>Khusus siswa SD Muhammadiyah Unggulan Ashidiq (satu yayasan). Masukkan <strong>kode undangan</strong> dan <strong>NISN</strong> yang dibagikan sekolah untuk membuka jalur ini.</p>
-          <form method="post" style="margin-top:14px;max-width:420px;">
-            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-            <input type="hidden" name="step" value="alumni-klaim">
-            <div class="form-group">
-              <label>Kode Undangan</label>
-              <input type="text" name="kode_voucher" class="form-control" placeholder="ASQ-XXXXXXXXXX"
-                     required autocomplete="off" style="text-transform:uppercase;">
-            </div>
-            <div class="form-group">
-              <label>NISN</label>
-              <input type="text" name="nisn" class="form-control" placeholder="NISN dari SD Ashidiq"
-                     required autocomplete="off">
-            </div>
-            <?php if (!empty($errors['alumni_klaim'])): ?><p class="field-error"><?= e($errors['alumni_klaim']) ?></p><?php endif; ?>
-            <button type="submit" class="btn-primary">Klaim Jalur Alumni</button>
-          </form>
-        </div>
-        <?php endif; ?>
-
         <?php foreach ($optsJalur as $jalurKey => $details): ?>
           <div class="jalur-detail-wrap" id="detail-<?= e($jalurKey) ?>" style="display:none;">
             <h4>Pilih <?= $jalurKey === 'prestasi' ? 'Tingkat Prestasi' : 'Kategori Hafalan' ?>:</h4>
@@ -453,6 +425,50 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           <button type="submit" class="btn-primary">Simpan Jalur &amp; Lanjut</button>
         </div>
       </form>
+
+      <?php if ($pendaftaran['jalur'] === 'alumni-sdmua'): ?>
+      <div class="portal-info-box" style="margin-top:20px;">
+        <h2>Jalur Alumni SD Ashidiq — Aktif</h2>
+        <p>Jalur Alumni Anda sudah diklaim. Lanjutkan ke <a href="?step=berkas-jalur" class="btn-link">Upload Berkas Jalur</a> untuk melengkapi surat rekomendasi.</p>
+      </div>
+      <?php else: ?>
+      <div class="portal-info-box" style="margin-top:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div>
+            <h2 style="margin:0;">Punya Kode Undangan Alumni?</h2>
+            <p style="margin:4px 0 0;">Khusus siswa SD Muhammadiyah Unggulan Ashidiq.</p>
+          </div>
+          <button type="button" id="btnAlumniToggle" aria-expanded="<?= !empty($errors['alumni_klaim']) ? 'true' : 'false' ?>" aria-controls="alumniKlaimWrap"
+                  style="flex:none;width:40px;height:40px;border-radius:50%;border:2px solid var(--green-deep,#0d7a4a);background:#fff;color:var(--green-deep,#0d7a4a);font-size:22px;font-weight:700;line-height:1;cursor:pointer;">+</button>
+        </div>
+        <div id="alumniKlaimWrap" <?= !empty($errors['alumni_klaim']) ? '' : 'hidden' ?>>
+          <form method="post" style="margin-top:14px;max-width:420px;">
+            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+            <input type="hidden" name="step" value="alumni-klaim">
+            <div class="form-group">
+              <label>Kode Undangan</label>
+              <input type="text" name="kode_voucher" class="form-control" placeholder="ASQ-XXXXXXXXXX"
+                     required autocomplete="off" style="text-transform:uppercase;">
+            </div>
+            <div class="form-group">
+              <label>NISN</label>
+              <input type="text" name="nisn" class="form-control" placeholder="NISN dari SD Ashidiq"
+                     required autocomplete="off">
+            </div>
+            <?php if (!empty($errors['alumni_klaim'])): ?><p class="field-error"><?= e($errors['alumni_klaim']) ?></p><?php endif; ?>
+            <button type="submit" class="btn-primary">Klaim Jalur Alumni</button>
+          </form>
+        </div>
+      </div>
+      <script>
+      document.getElementById('btnAlumniToggle').addEventListener('click', function () {
+        const wrap = document.getElementById('alumniKlaimWrap');
+        const open = wrap.hasAttribute('hidden');
+        if (open) { wrap.removeAttribute('hidden'); this.textContent = '\u2212'; this.setAttribute('aria-expanded', 'true'); }
+        else { wrap.setAttribute('hidden', ''); this.textContent = '+'; this.setAttribute('aria-expanded', 'false'); }
+      });
+      </script>
+      <?php endif; ?>
     </section>
 
     <script>
