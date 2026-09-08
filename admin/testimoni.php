@@ -69,31 +69,31 @@ $adminTitle = 'Testimoni'; $adminPage = 'admin/testimoni';
 require __DIR__.'/includes/header.php';
 ?>
 <div class="admin-form-card">
-  <h2 class="admin-form-title"><?= $edit ? 'Edit Testimoni' : 'Tambah Testimoni' ?></h2>
+  <div class="admin-form-title"><?= $edit ? 'Edit Testimoni' : 'Tambah Testimoni' ?></div>
   <?php if ($errors): ?><div class="flash-message flash-error"><?= e(implode(' ', $errors)) ?></div><?php endif; ?>
   <form method="post" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
     <input type="hidden" name="id" value="<?= (int)($edit['id'] ?? 0) ?>">
-    <div class="form-grid">
+    <div class="form-row">
       <div class="form-group"><label>Nama *</label><input class="form-control" name="nama" value="<?= e($edit['nama'] ?? '') ?>" required></div>
       <div class="form-group"><label>Peran *</label><input class="form-control" name="role" value="<?= e($edit['role'] ?? '') ?>" placeholder="Wali Santri — Angkatan 2023" required></div>
     </div>
     <div class="form-group"><label>Isi Testimoni *</label><textarea class="form-control" name="isi" rows="3" required><?= e($edit['isi'] ?? '') ?></textarea></div>
-    <div class="form-grid">
+    <div class="form-row">
       <div class="form-group">
         <label>Foto (opsional)</label>
         <input class="form-control" type="file" name="foto" accept=".jpg,.jpeg,.png,.webp">
-        <small>Maksimal 5 MB, otomatis diperkecil. Kosongkan jika tidak diganti.</small>
-        <?php if (!empty($edit['foto'])): ?><div class="home-photo-preview" style="margin-top:8px"><img src="<?= e(BASE_URL.'/uploads/testimoni/'.$edit['foto']) ?>" alt=""></div><?php endif; ?>
+        <span class="muted">Maksimal 5 MB, otomatis diperkecil. Kosongkan jika tidak diganti.</span>
+        <?php if (!empty($edit['foto'])): ?><div class="home-photo-preview"><img src="<?= e(BASE_URL.'/uploads/testimoni/'.$edit['foto']) ?>" alt=""></div><?php endif; ?>
       </div>
-      <div class="form-group"><label>Urutan</label><input class="form-control" type="number" name="urutan" value="<?= (int)($edit['urutan'] ?? 0) ?>"><small>Semakin kecil, semakin depan.</small></div>
+      <div class="form-group"><label>Urutan</label><input class="form-control" type="number" name="urutan" value="<?= (int)($edit['urutan'] ?? 0) ?>"><span class="muted">Semakin kecil, semakin depan.</span></div>
     </div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" name="is_aktif" <?= ($edit && !$edit['is_aktif']) ? '' : 'checked' ?>> Tampilkan di halaman depan</label>
+    <div class="form-group"><label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" name="is_aktif" <?= ($edit && !$edit['is_aktif']) ? '' : 'checked' ?>> Tampilkan di halaman depan</label></div>
     <div class="form-actions"><button class="btn-sm btn-sm-primary"><?= $edit ? 'Simpan Perubahan' : 'Tambah Testimoni' ?></button></div>
   </form>
 </div>
 
-<div class="admin-table-card">
+<div class="admin-table-wrap">
   <div class="table-head"><h2>Daftar Testimoni</h2></div>
   <table class="admin-table"><thead><tr><th>Nama</th><th>Peran</th><th>Isi</th><th>Status</th><th></th></tr></thead><tbody>
   <?php if (empty($items)): ?>
@@ -103,11 +103,11 @@ require __DIR__.'/includes/header.php';
   <tr>
     <td><strong><?= e($t['nama']) ?></strong></td>
     <td><?= e($t['role']) ?></td>
-    <td style="max-width:320px"><?= e(truncate($t['isi'], 80)) ?></td>
+    <td><?= e(truncate($t['isi'], 80)) ?></td>
     <td><?= $t['is_aktif'] ? '<span class="badge badge-published">Aktif</span>' : '<span class="badge badge-draft">Nonaktif</span>' ?></td>
-    <td style="white-space:nowrap">
-      <a class="btn-sm btn-sm-warning" href="<?= e(BASE_URL.'/admin/testimoni?id='.$t['id']) ?>">Edit</a>
-      <form method="post" onsubmit="return confirm('Hapus testimoni ini?')" style="display:inline">
+    <td>
+      <a class="btn-sm btn-sm-warning" style="text-decoration:none;" href="<?= e(BASE_URL.'/admin/testimoni?id='.$t['id']) ?>">Edit</a>
+      <form method="post" onsubmit="return confirm('Hapus testimoni ini?')">
         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
         <input type="hidden" name="action" value="delete">
         <input type="hidden" name="id" value="<?= (int)$t['id'] ?>">

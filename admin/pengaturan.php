@@ -161,13 +161,13 @@ require __DIR__ . '/includes/header.php';
 <div class="admin-form-card">
     <h2 class="admin-form-title">Logo Website &amp; Favicon</h2>
     <?php $logoPreview = getLogoFile(); if ($logoPreview !== ''): ?>
-    <p style="font-size:13px;color:var(--text-mid);margin-bottom:10px;">Logo saat ini:</p>
+    <p class="muted">Logo saat ini:</p>
     <img src="<?= BASE_URL ?>/assets/img/<?= $logoPreview ?>" alt="Logo" style="height:64px;width:auto;background:#fff;padding:8px;border:1px solid var(--cream-dark);border-radius:8px;margin-bottom:14px;">
     <?php endif; ?>
     <div class="form-group"><label>Upload logo baru (PNG/JPG/WEBP/SVG, maks 2 MB)</label>
         <input class="form-control" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp,.svg">
     </div>
-    <p style="font-size:12px;color:var(--text-light);">Logo otomatis dipakai sebagai favicon website. Disarankan rasio kotak (mis. 512x512).</p>
+    <p class="muted">Logo otomatis dipakai sebagai favicon website. Disarankan rasio kotak (mis. 512x512).</p>
 </div>
 
 <div class="admin-form-card">
@@ -175,61 +175,61 @@ require __DIR__ . '/includes/header.php';
     <div class="form-row">
         <div class="form-group"><label>Harga asli</label><input class="form-control" type="number" min="0" name="pendaftaran_harga_asli" value="<?= e($pendaftaran['harga_asli'] ?? '2500000') ?>"></div>
         <div class="form-group"><label>Harga diskon (opsional, tampil coret)</label><input class="form-control" type="number" min="0" name="pendaftaran_harga_diskon" value="<?= isset($pendaftaran['harga_diskon']) ? e($pendaftaran['harga_diskon']) : '' ?>" placeholder="Kosongkan jika tanpa diskon"></div>
-        <div class="form-group"><label><input type="checkbox" name="pendaftaran_gratis" value="1" style="width:auto;margin-right:6px;" <?= !empty($pendaftaran['gratis']) ? 'checked' : '' ?>>Gratiskan (tidak perlu bayar)</label></div>
+        <div class="form-group"><label><input type="checkbox" name="pendaftaran_gratis" value="1" <?= !empty($pendaftaran['gratis']) ? 'checked' : '' ?>>Gratiskan (tidak perlu bayar)</label></div>
     </div>
-    <p style="font-size:12px;color:var(--text-light);">Jika gratis dicentang, santri baru otomatis tercentang tanpa membayar.</p>
+    <p class="muted">Jika gratis dicentang, santri baru otomatis tercentang tanpa membayar.</p>
 </div>
 
 <div class="admin-form-card">
     <h2 class="admin-form-title">Pembiayaan — Administrasi Awal (Kesanggupan)</h2>
-    <p style="font-size:13px;color:var(--text-mid);margin-bottom:14px;">Hanya mencatat kesanggupan santri, bukan pembayaran. Santri memilih satu model administrasi dan satu pilihan wakaf.</p>
+    <p class="muted">Hanya mencatat kesanggupan santri, bukan pembayaran. Santri memilih satu model administrasi dan satu pilihan wakaf.</p>
 
-    <h3 style="font-size:14px;font-weight:600;margin:0 0 10px;">Administrasi (beberapa model)</h3>
+    <h3>Administrasi (beberapa model)</h3>
     <div id="administrasi-rows">
         <?php foreach ($administrasi as $t): ?>
             <div class="form-row">
                 <div class="form-group"><input class="form-control" name="administrasi_nama[]" placeholder="Nama model" value="<?= e($t['nama']) ?>" required></div>
                 <div class="form-group"><input class="form-control" type="number" min="0" name="administrasi_harga_asli[]" placeholder="Harga asli" value="<?= e($t['harga_asli']) ?>" required></div>
                 <div class="form-group"><input class="form-control" type="number" min="0" name="administrasi_harga_diskon[]" placeholder="Harga diskon (opsional)" value="<?= isset($t['harga_diskon']) ? e($t['harga_diskon']) : '' ?>"></div>
-                <button type="button" class="btn-sm btn-sm-secondary" onclick="this.parentElement.remove()">Hapus</button>
+                <button type="button" class="btn-sm btn-sm-danger" onclick="this.parentElement.remove()">Hapus</button>
             </div>
         <?php endforeach; ?>
     </div>
     <button type="button" class="btn-sm btn-sm-secondary" onclick="addRow('administrasi')">+ Tambah model</button>
 
-    <h3 style="font-size:14px;font-weight:600;margin:22px 0 10px;">Wakaf (beberapa pilihan)</h3>
+    <h3>Wakaf (beberapa pilihan)</h3>
     <div id="wakaf-rows">
         <?php foreach ($wakaf as $t): ?>
             <div class="form-row">
                 <div class="form-group"><input class="form-control" name="wakaf_nama[]" placeholder="Nama pilihan" value="<?= e($t['nama']) ?>" required></div>
                 <div class="form-group"><input class="form-control" type="number" min="0" name="wakaf_harga_asli[]" placeholder="Harga asli" value="<?= e($t['harga_asli']) ?>" required></div>
                 <div class="form-group"><input class="form-control" type="number" min="0" name="wakaf_harga_diskon[]" placeholder="Harga diskon (opsional)" value="<?= isset($t['harga_diskon']) ? e($t['harga_diskon']) : '' ?>"></div>
-                <button type="button" class="btn-sm btn-sm-secondary" onclick="this.parentElement.remove()">Hapus</button>
+                <button type="button" class="btn-sm btn-sm-danger" onclick="this.parentElement.remove()">Hapus</button>
             </div>
         <?php endforeach; ?>
     </div>
     <button type="button" class="btn-sm btn-sm-secondary" onclick="addRow('wakaf')">+ Tambah pilihan</button>
 
-    <h3 style="font-size:14px;font-weight:600;margin:22px 0 10px;">Biaya Syahriyah (Bulanan) — beberapa pilihan</h3>
+    <h3>Biaya Syahriyah (Bulanan) — beberapa pilihan</h3>
     <div id="syahriyah-rows">
         <?php foreach ($syahriyah as $t): ?>
             <div class="form-row">
                 <div class="form-group"><input class="form-control" name="syahriyah_nama[]" placeholder="Nama pilihan" value="<?= e($t['nama']) ?>" required></div>
                 <div class="form-group"><input class="form-control" type="number" min="0" name="syahriyah_harga_asli[]" placeholder="Harga asli" value="<?= e($t['harga_asli']) ?>" required></div>
                 <div class="form-group"><input class="form-control" type="number" min="0" name="syahriyah_harga_diskon[]" placeholder="Harga diskon (opsional)" value="<?= isset($t['harga_diskon']) ? e($t['harga_diskon']) : '' ?>"></div>
-                <button type="button" class="btn-sm btn-sm-secondary" onclick="this.parentElement.remove()">Hapus</button>
+                <button type="button" class="btn-sm btn-sm-danger" onclick="this.parentElement.remove()">Hapus</button>
             </div>
         <?php endforeach; ?>
     </div>
     <button type="button" class="btn-sm btn-sm-secondary" onclick="addRow('syahriyah')">+ Tambah pilihan</button>
 
-    <h3 style="font-size:14px;font-weight:600;margin:22px 0 10px;">Laundry (beda laki-laki/perempuan)</h3>
+    <h3>Laundry (beda laki-laki/perempuan)</h3>
     <div class="form-row">
         <div class="form-group"><label>Laki-laki</label><input class="form-control" type="number" min="0" name="laundry_harga_l" value="<?= e($laundry['L']['harga_asli'] ?? '') ?>"></div>
         <div class="form-group"><label>Perempuan</label><input class="form-control" type="number" min="0" name="laundry_harga_p" value="<?= e($laundry['P']['harga_asli'] ?? '') ?>"></div>
     </div>
 
-    <h3 style="font-size:14px;font-weight:600;margin:22px 0 10px;">Infak Wajib</h3>
+    <h3>Infak Wajib</h3>
     <div class="form-row">
         <div class="form-group"><label>Harga asli</label><input class="form-control" type="number" min="0" name="infak_harga_asli" value="<?= e($infak['harga_asli'] ?? '') ?>"></div>
         <div class="form-group"><label>Harga diskon (opsional)</label><input class="form-control" type="number" min="0" name="infak_harga_diskon" value="<?= isset($infak['harga_diskon']) ? e($infak['harga_diskon']) : '' ?>"></div>
@@ -241,7 +241,9 @@ require __DIR__ . '/includes/header.php';
     <div class="form-group"><label>Rekening tujuan transfer</label><textarea class="form-control" name="rekening_pembayaran"><?= e($data['rekening_pembayaran'] ?? '') ?></textarea></div>
 </div>
 
+<div class="form-actions">
 <button class="btn-sm btn-sm-primary">Simpan Pengaturan</button>
+</div>
 </form>
 
 <script>
@@ -253,7 +255,7 @@ function addRow(kind) {
         + '<div class="form-group"><input class="form-control" name="' + kind + '_nama[]" placeholder="Nama model" required></div>'
         + '<div class="form-group"><input class="form-control" type="number" min="0" name="' + kind + '_harga_asli[]" placeholder="Harga asli" required></div>'
         + '<div class="form-group"><input class="form-control" type="number" min="0" name="' + kind + '_harga_diskon[]" placeholder="Harga diskon (opsional)"></div>'
-        + '<button type="button" class="btn-sm btn-sm-secondary" onclick="this.parentElement.remove()">Hapus</button>';
+        + '<button type="button" class="btn-sm btn-sm-danger" onclick="this.parentElement.remove()">Hapus</button>';
     wrap.appendChild(div);
 }
 </script>

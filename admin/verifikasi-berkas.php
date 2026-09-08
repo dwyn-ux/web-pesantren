@@ -78,80 +78,74 @@ $labelStatus = [
 </div>
 <?php endif; ?>
 
-<div class="admin-content">
-    <div class="card">
+<div class="admin-table-wrap">
+    <div class="table-head">
         <h2>Verifikasi Pendaftaran</h2>
-
-        <form method="get" class="filter-form">
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Status</label>
-                    <select name="status" class="form-control">
-                        <option value="">— Semua —</option>
-                        <?php foreach ($labelStatus as $k => $v): ?>
-                            <option value="<?= $k ?>" <?= $filterStatus === $k ? 'selected' : '' ?>><?= e($v) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Jalur</label>
-                    <select name="jalur" class="form-control">
-                        <option value="">— Semua —</option>
-                        <?php foreach ($labelJalur as $k => $v): ?>
-                            <option value="<?= $k ?>" <?= $filterJalur === $k ? 'selected' : '' ?>><?= e($v) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <button type="submit" class="btn-primary">Filter</button>
-                </div>
-            </div>
-        </form>
-
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Nomor</th>
-                    <th>Nama</th>
-                    <th>Jenjang</th>
-                    <th>Jalur</th>
-                    <th>Status</th>
-                    <th>Gelombang</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($list as $r): ?>
-                <tr>
-                    <td><code><?= e($r['nomor_daftar']) ?></code></td>
-                    <td><?= e($r['nama_lengkap']) ?><br>
-                        <small style="color:#888;"><?= e($r['email'] ?? '-') ?></small>
-                    </td>
-                    <td><?= e($r['jenjang']) ?></td>
-                    <td>
-                        <?= e($labelJalur[$r['jalur']] ?? $r['jalur']) ?>
-                        <?php if ($r['jalur_detail']): ?>
-                            <br><small style="color:#888;"><?= e($r['jalur_detail']) ?></small>
-                        <?php endif; ?>
-                        <?php if (in_array($r['jalur'], ['alumni-sdmua','dhuafa'], true)): ?>
-                            <br><small style="color:#c33;">Status jalur: <?= e($r['jalur_status']) ?></small>
-                        <?php endif; ?>
-                    </td>
-                    <td><span class="badge"><?= e($labelStatus[$r['status']] ?? $r['status']) ?></span></td>
-                    <td><?= e($r['gelombang_label'] ?? '-') ?><br>
-                        <small style="color:#888;">Tes: <?= $r['tanggal_tes'] ? date('d M Y', strtotime($r['tanggal_tes'])) : '-' ?></small>
-                    </td>
-                    <td>
-                        <a href="?detail=<?= (int)$r['id'] ?>" class="btn-link">Detail</a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                <?php if (empty($list)): ?>
-                <tr><td colspan="7" style="text-align:center;padding:24px;color:#999;">Tidak ada data.</td></tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
     </div>
+
+    <form method="get" class="filter-toolbar" style="padding:12px 20px 0;">
+        <select name="status" aria-label="Filter status">
+            <option value="">— Semua Status —</option>
+            <?php foreach ($labelStatus as $k => $v): ?>
+                <option value="<?= $k ?>" <?= $filterStatus === $k ? 'selected' : '' ?>><?= e($v) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <select name="jalur" aria-label="Filter jalur">
+            <option value="">— Semua Jalur —</option>
+            <?php foreach ($labelJalur as $k => $v): ?>
+                <option value="<?= $k ?>" <?= $filterJalur === $k ? 'selected' : '' ?>><?= e($v) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <button type="submit" class="btn-sm btn-sm-primary">Filter</button>
+    </form>
+
+    <?php if (empty($list)): ?>
+    <div class="table-empty">Tidak ada data.</div>
+    <?php else: ?>
+    <div style="overflow-x:auto;">
+    <table class="admin-table" style="min-width:780px;">
+        <thead>
+            <tr>
+                <th>Nomor</th>
+                <th>Nama</th>
+                <th>Jenjang</th>
+                <th>Jalur</th>
+                <th>Status</th>
+                <th>Gelombang</th>
+                <th style="width:90px;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($list as $r): ?>
+            <tr>
+                <td><code><?= e($r['nomor_daftar']) ?></code></td>
+                <td><?= e($r['nama_lengkap']) ?><br>
+                    <small class="muted"><?= e($r['email'] ?? '-') ?></small>
+                </td>
+                <td><?= e($r['jenjang']) ?></td>
+                <td>
+                    <?= e($labelJalur[$r['jalur']] ?? $r['jalur']) ?>
+                    <?php if ($r['jalur_detail']): ?>
+                        <br><small class="muted"><?= e($r['jalur_detail']) ?></small>
+                    <?php endif; ?>
+                    <?php if (in_array($r['jalur'], ['alumni-sdmua','dhuafa'], true)): ?>
+                        <br><small style="color:#c33;">Status jalur: <?= e($r['jalur_status']) ?></small>
+                    <?php endif; ?>
+                </td>
+                <td><span class="badge badge-draft"><?= e($labelStatus[$r['status']] ?? $r['status']) ?></span></td>
+                <td><?= e($r['gelombang_label'] ?? '-') ?><br>
+                    <small class="muted">Tes: <?= $r['tanggal_tes'] ? date('d M Y', strtotime($r['tanggal_tes'])) : '-' ?></small>
+                </td>
+                <td>
+                    <a href="?detail=<?= (int)$r['id'] ?>" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Detail</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    </div>
+    <?php endif; ?>
+</div>
 
     <?php
     if (isset($_GET['detail'])) {
@@ -171,8 +165,8 @@ $labelStatus = [
             $wajibList = ['kartu-keluarga','akta-lahir','ijazah','foto','ktp-ortu'];
             $jalurBerkas = jalurBerkasUntuk($d['jalur']);
     ?>
-    <div class="card">
-        <h2>Detail: <?= e($d['nama_lengkap']) ?> (<?= e($d['nomor_daftar']) ?>)</h2>
+    <div class="admin-form-card">
+        <div class="admin-form-title">Detail: <?= e($d['nama_lengkap']) ?> (<?= e($d['nomor_daftar']) ?>)</div>
 
         <div class="detail-grid">
             <div>
@@ -218,7 +212,7 @@ $labelStatus = [
                     </td>
                     <td>
                         <?php if (isset($byJenis[$j])): ?>
-                            <a href="/admin/berkas-lihat?jenis=<?= e($j) ?>&pendaftaran_id=<?= (int)$did ?>" target="_blank" class="btn-link">Lihat</a>
+                            <a href="/admin/berkas-lihat?jenis=<?= e($j) ?>&pendaftaran_id=<?= (int)$did ?>" target="_blank" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Lihat</a>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -243,7 +237,7 @@ $labelStatus = [
                     </td>
                     <td>
                         <?php if (isset($byJenis[$j])): ?>
-                            <a href="/admin/berkas-lihat?jenis=<?= e($j) ?>&pendaftaran_id=<?= (int)$did ?>" target="_blank" class="btn-link">Lihat</a>
+                            <a href="/admin/berkas-lihat?jenis=<?= e($j) ?>&pendaftaran_id=<?= (int)$did ?>" target="_blank" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Lihat</a>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -253,20 +247,20 @@ $labelStatus = [
         <?php endif; ?>
 
         <h4>Aksi Verifikasi</h4>
-        <div class="form-actions" style="flex-wrap:wrap;gap:8px;">
+        <div class="form-actions">
             <?php if (in_array($d['jalur'], ['alumni-sdmua','dhuafa'], true) && $d['jalur_status'] === 'pending'): ?>
-                <form method="post" style="display:flex;gap:8px;align-items:center;">
+                <form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="act" value="setujui">
                     <input type="hidden" name="pendaftaran_id" value="<?= (int)$did ?>">
                     <input type="number" name="jalur_potongan" placeholder="Potongan %" min="0" max="100" step="0.01" class="form-control" style="width:120px;">
-                    <button type="submit" class="btn-primary">Setujui + Potongan</button>
+                    <button type="submit" class="btn-sm btn-sm-primary">Setujui + Potongan</button>
                 </form>
                 <form method="post">
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="act" value="tolak">
                     <input type="hidden" name="pendaftaran_id" value="<?= (int)$did ?>">
-                    <button type="submit" class="btn-outline">Tolak Jalur</button>
+                    <button type="submit" class="btn-sm btn-sm-secondary">Tolak Jalur</button>
                 </form>
             <?php endif; ?>
 
@@ -275,7 +269,7 @@ $labelStatus = [
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="act" value="snapshot">
                     <input type="hidden" name="pendaftaran_id" value="<?= (int)$did ?>">
-                    <button type="submit" class="btn-primary">Snapshot Tagihan &amp; Terima</button>
+                    <button type="submit" class="btn-sm btn-sm-primary">Snapshot Tagihan &amp; Terima</button>
                 </form>
             <?php endif; ?>
 
@@ -284,7 +278,7 @@ $labelStatus = [
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="act" value="tolak_pendaftaran">
                     <input type="hidden" name="pendaftaran_id" value="<?= (int)$did ?>">
-                    <button type="submit" class="btn-outline" style="color:#c33;border-color:#c33;">Tolak Pendaftaran</button>
+                    <button type="submit" class="btn-sm btn-sm-danger">Tolak Pendaftaran</button>
                 </form>
             <?php endif; ?>
 
@@ -294,6 +288,5 @@ $labelStatus = [
         </div>
     </div>
     <?php endif; } ?>
-</div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

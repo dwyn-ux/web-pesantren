@@ -76,7 +76,7 @@ require_once __DIR__ . '/includes/header.php';
 <div class="admin-table-wrap">
     <div class="table-head">
         <h2>Artikel (<?= $total ?>)</h2>
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div class="filter-toolbar">
             <form method="GET" action="<?= e(BASE_URL . '/admin/artikel') ?>" class="filter-toolbar">
                 <input type="search" name="cari" placeholder="Cari judul..." value="<?= e($cari) ?>" maxlength="200">
                 <select name="kategori" onchange="this.form.submit()">
@@ -92,10 +92,10 @@ require_once __DIR__ . '/includes/header.php';
                 </select>
                 <button type="submit" class="btn-sm btn-sm-primary">Cari</button>
                 <?php if ($cari || $filterKat || $filterStat): ?>
-                <a href="<?= e(BASE_URL . '/admin/artikel') ?>" class="btn-sm btn-sm-secondary">Reset</a>
+                <a href="<?= e(BASE_URL . '/admin/artikel') ?>" style="text-decoration:none;" class="btn-sm btn-sm-secondary">Reset</a>
                 <?php endif; ?>
             </form>
-            <a href="<?= e(BASE_URL . '/admin/artikel-tambah') ?>" class="btn-sm btn-sm-primary">+ Tulis Artikel</a>
+            <a href="<?= e(BASE_URL . '/admin/artikel-tambah') ?>" style="text-decoration:none;" class="btn-sm btn-sm-primary">+ Tulis Artikel</a>
         </div>
     </div>
 
@@ -117,34 +117,32 @@ require_once __DIR__ . '/includes/header.php';
             <?php else: ?>
             <?php foreach ($artikelList as $art): ?>
             <tr>
-                <td style="max-width:280px;">
+                <td>
                     <a href="<?= e(BASE_URL . '/artikel/' . $art['slug']) ?>"
-                       target="_blank" rel="noopener noreferrer"
-                       style="color:var(--green-deep);text-decoration:none;font-weight:500;">
+                       target="_blank" rel="noopener noreferrer">
                         <?= e(truncate($art['judul'], 55)) ?>
                     </a>
                 </td>
                 <td><?= e($labelKategori[$art['kategori']] ?? $art['kategori']) ?></td>
-                <td style="font-size:12px;"><?= e($art['penulis']) ?></td>
+                <td><?= e($art['penulis']) ?></td>
                 <td>
                     <span class="badge badge-<?= e($art['status']) ?>">
                         <?= $art['status'] === 'published' ? 'Published' : 'Draft' ?>
                     </span>
                 </td>
                 <td><?= number_format((int)$art['views']) ?></td>
-                <td style="white-space:nowrap;font-size:12px;">
+                <td>
                     <?= $art['published_at'] ? e(formatTanggal($art['published_at'])) : '-' ?>
                 </td>
-                <td style="white-space:nowrap;">
+                <td>
                     <a href="<?= e(BASE_URL . '/admin/artikel-edit?id=' . $art['id']) ?>"
-                       class="btn-sm btn-sm-warning">Edit</a>
+                       style="text-decoration:none;" class="btn-sm btn-sm-warning">Edit</a>
                     <form method="POST" action="<?= e(BASE_URL . '/admin/artikel') ?>"
-                          style="display:inline;"
                           onsubmit="return confirm('Hapus artikel ini? Tindakan tidak bisa dibatalkan.')">
                         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                         <input type="hidden" name="action" value="hapus">
                         <input type="hidden" name="id" value="<?= $art['id'] ?>">
-                        <button type="submit" class="btn-sm btn-sm-danger" style="margin-left:4px;">Hapus</button>
+                        <button type="submit" class="btn-sm btn-sm-danger">Hapus</button>
                     </form>
                 </td>
             </tr>

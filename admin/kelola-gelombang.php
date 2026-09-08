@@ -69,132 +69,138 @@ include __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<div class="admin-content">
-    <div class="card">
+<?php
+$editing = null;
+if (isset($_GET['edit'])) {
+    foreach ($rows as $r) if ((int)$r['id'] === (int)$_GET['edit']) $editing = $r;
+}
+?>
+
+<div class="admin-table-wrap">
+    <div class="table-head">
         <h2>Gelombang Pendaftaran PSB</h2>
-        <p class="muted">Sesuaikan jadwal, kuota, dan urutan gelombang. Data dipakai untuk auto-detect saat calon daftar dan untuk laporan admin.</p>
-
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Urutan</th>
-                    <th>Slug</th>
-                    <th>Label</th>
-                    <th>Tanggal Buka</th>
-                    <th>Tanggal Tutup</th>
-                    <th>Tes</th>
-                    <th>Kuota</th>
-                    <th>Pendaftar</th>
-                    <th>Aktif</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($rows as $r): ?>
-                <tr>
-                    <td><?= (int)$r['urutan'] ?></td>
-                    <td><code><?= e($r['slug']) ?></code></td>
-                    <td><?= e($r['label']) ?></td>
-                    <td><?= e($r['tanggal_buka']) ?></td>
-                    <td><?= e($r['tanggal_tutup']) ?></td>
-                    <td><?= e($r['tanggal_tes'] ?? '-') ?></td>
-                    <td><?= (int)$r['target_kuota'] ?></td>
-                    <td><strong><?= $counter[$r['id']] ?? 0 ?></strong></td>
-                    <td>
-                        <?php if ($r['is_active']): ?>
-                            <span class="badge badge-success">Ya</span>
-                        <?php else: ?>
-                            <span class="badge badge-muted">Tidak</span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <a href="?edit=<?= (int)$r['id'] ?>" class="btn-link">Edit</a>
-                        <form method="post" style="display:inline" onsubmit="return confirm('Hapus gelombang ini?')">
-                            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-                            <input type="hidden" name="act" value="hapus">
-                            <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-                            <button type="submit" class="btn-link" style="color:#c33;border:none;background:none;cursor:pointer;">Hapus</button>
-                        </form>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
     </div>
+    <p class="muted" style="padding:12px 20px 0;">Sesuaikan jadwal, kuota, dan urutan gelombang. Data dipakai untuk auto-detect saat calon daftar dan untuk laporan admin.</p>
 
-    <?php
-    $editing = null;
-    if (isset($_GET['edit'])) {
-        foreach ($rows as $r) if ((int)$r['id'] === (int)$_GET['edit']) $editing = $r;
-    }
-    ?>
-
-    <div class="card">
-        <h3><?= $editing ? 'Edit Gelombang' : 'Tambah Gelombang' ?></h3>
-        <form method="post">
-            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-            <input type="hidden" name="act" value="simpan">
-            <input type="hidden" name="id" value="<?= (int)($editing['id'] ?? 0) ?>">
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Slug *</label>
-                    <input type="text" name="slug" class="form-control" required
-                           placeholder="indent|gelombang-1|gelombang-2|gelombang-3"
-                           value="<?= e($editing['slug'] ?? '') ?>">
-                </div>
-                <div class="form-group">
-                    <label>Label *</label>
-                    <input type="text" name="label" class="form-control" required
-                           value="<?= e($editing['label'] ?? '') ?>">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Tanggal Buka *</label>
-                    <input type="date" name="tanggal_buka" class="form-control" required
-                           value="<?= e($editing['tanggal_buka'] ?? '') ?>">
-                </div>
-                <div class="form-group">
-                    <label>Tanggal Tutup *</label>
-                    <input type="date" name="tanggal_tutup" class="form-control" required
-                           value="<?= e($editing['tanggal_tutup'] ?? '') ?>">
-                </div>
-                <div class="form-group">
-                    <label>Tanggal Tes</label>
-                    <input type="date" name="tanggal_tes" class="form-control"
-                           value="<?= e($editing['tanggal_tes'] ?? '') ?>">
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Target Kuota (admin-only, tidak tampil publik)</label>
-                    <input type="number" name="target_kuota" class="form-control" min="0"
-                           value="<?= (int)($editing['target_kuota'] ?? 0) ?>">
-                </div>
-                <div class="form-group">
-                    <label>Urutan</label>
-                    <input type="number" name="urutan" class="form-control" min="0"
-                           value="<?= (int)($editing['urutan'] ?? 0) ?>">
-                </div>
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" name="is_active" <?= !$editing || $editing['is_active'] ? 'checked' : '' ?>>
-                        Aktif
-                    </label>
-                </div>
-            </div>
-
-            <div class="form-actions">
-                <?php if ($editing): ?>
-                    <a href="/admin/kelola-gelombang" class="btn-outline">Batal</a>
-                <?php endif; ?>
-                <button type="submit" class="btn-primary"><?= $editing ? 'Simpan' : 'Tambah' ?></button>
-            </div>
-        </form>
+    <?php if (empty($rows)): ?>
+    <div class="table-empty">Belum ada gelombang. Tambah lewat form di bawah.</div>
+    <?php else: ?>
+    <div style="overflow-x:auto;">
+    <table class="admin-table" style="min-width:760px;">
+        <thead>
+            <tr>
+                <th>Urutan</th>
+                <th>Slug</th>
+                <th>Label</th>
+                <th>Tanggal Buka</th>
+                <th>Tanggal Tutup</th>
+                <th>Tes</th>
+                <th>Kuota</th>
+                <th>Pendaftar</th>
+                <th>Aktif</th>
+                <th style="width:130px;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($rows as $r): ?>
+            <tr>
+                <td><?= (int)$r['urutan'] ?></td>
+                <td><code><?= e($r['slug']) ?></code></td>
+                <td><?= e($r['label']) ?></td>
+                <td style="font-size:12px;"><?= e($r['tanggal_buka']) ?></td>
+                <td style="font-size:12px;"><?= e($r['tanggal_tutup']) ?></td>
+                <td style="font-size:12px;"><?= e($r['tanggal_tes'] ?? '-') ?></td>
+                <td><?= (int)$r['target_kuota'] ?></td>
+                <td><strong><?= $counter[$r['id']] ?? 0 ?></strong></td>
+                <td>
+                    <?php if ($r['is_active']): ?>
+                        <span class="badge badge-success">Ya</span>
+                    <?php else: ?>
+                        <span class="badge badge-muted">Tidak</span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <a href="?edit=<?= (int)$r['id'] ?>" class="btn-sm btn-sm-warning" style="text-decoration:none;">Edit</a>
+                    <form method="post" style="display:inline;" onsubmit="return confirm('Hapus gelombang ini?')">
+                        <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                        <input type="hidden" name="act" value="hapus">
+                        <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                        <button type="submit" class="btn-sm btn-sm-danger">Hapus</button>
+                    </form>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
     </div>
+    <?php endif; ?>
+</div>
+
+<div class="admin-form-card">
+    <div class="admin-form-title"><?= $editing ? 'Edit Gelombang' : 'Tambah Gelombang' ?></div>
+    <form method="post" class="admin-form">
+        <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+        <input type="hidden" name="act" value="simpan">
+        <input type="hidden" name="id" value="<?= (int)($editing['id'] ?? 0) ?>">
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Slug *</label>
+                <input type="text" name="slug" class="form-control" required
+                       placeholder="indent|gelombang-1|gelombang-2|gelombang-3"
+                       value="<?= e($editing['slug'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label>Label *</label>
+                <input type="text" name="label" class="form-control" required
+                       value="<?= e($editing['label'] ?? '') ?>">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Tanggal Buka *</label>
+                <input type="date" name="tanggal_buka" class="form-control" required
+                       value="<?= e($editing['tanggal_buka'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label>Tanggal Tutup *</label>
+                <input type="date" name="tanggal_tutup" class="form-control" required
+                       value="<?= e($editing['tanggal_tutup'] ?? '') ?>">
+            </div>
+            <div class="form-group">
+                <label>Tanggal Tes</label>
+                <input type="date" name="tanggal_tes" class="form-control"
+                       value="<?= e($editing['tanggal_tes'] ?? '') ?>">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Target Kuota (admin-only, tidak tampil publik)</label>
+                <input type="number" name="target_kuota" class="form-control" min="0"
+                       value="<?= (int)($editing['target_kuota'] ?? 0) ?>">
+            </div>
+            <div class="form-group">
+                <label>Urutan</label>
+                <input type="number" name="urutan" class="form-control" min="0"
+                       value="<?= (int)($editing['urutan'] ?? 0) ?>">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_active" <?= !$editing || $editing['is_active'] ? 'checked' : '' ?>>
+                    Aktif
+                </label>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <?php if ($editing): ?>
+                <a href="/admin/kelola-gelombang" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Batal</a>
+            <?php endif; ?>
+            <button type="submit" class="btn-sm btn-sm-primary"><?= $editing ? 'Simpan' : 'Tambah' ?></button>
+        </div>
+    </form>
 </div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

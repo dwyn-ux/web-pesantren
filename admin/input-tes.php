@@ -75,53 +75,57 @@ include __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<div class="admin-content">
-    <div class="card">
+<div class="admin-table-wrap">
+    <div class="table-head">
         <h2>Input Nilai Tes</h2>
-        <p class="muted">Input nilai Tes Pemetaan (semua jalur) dan Tes Hafalan (khusus jalur tahfidz). Status pendaftar otomatis berubah ke <strong>tes-selesai</strong>.</p>
-
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Nomor</th>
-                    <th>Nama</th>
-                    <th>Jalur</th>
-                    <th>Tes Pemetaan</th>
-                    <th>Tes Hafalan</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($list as $r): ?>
-                <tr>
-                    <td><code><?= e($r['nomor_daftar']) ?></code></td>
-                    <td><?= e($r['nama_lengkap']) ?></td>
-                    <td><?= e($r['jalur']) ?></td>
-                    <td>
-                        <?php if ($r['nilai_status']): ?>
-                            <?= e($r['tanggal_tes']) ?> &mdash; <strong><?= e($r['nilai_total']) ?></strong> (<?= e($r['nilai_status']) ?>)
-                        <?php else: ?>
-                            <span style="color:#999;">Belum</span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <?php if ($r['jalur'] === 'tahfidz'): ?>
-                            <a href="?hafalan=<?= (int)$r['id'] ?>" class="btn-link">Input Hafalan</a>
-                        <?php else: ?>
-                            <span style="color:#999;">—</span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <a href="?pemetaan=<?= (int)$r['id'] ?>" class="btn-link">Input Pemetaan</a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                <?php if (empty($list)): ?>
-                <tr><td colspan="6" style="text-align:center;padding:24px;color:#999;">Tidak ada pendaftar yang perlu tes.</td></tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
     </div>
+    <p class="muted" style="padding:12px 20px 0;">Input nilai Tes Pemetaan (semua jalur) dan Tes Hafalan (khusus jalur tahfidz). Status pendaftar otomatis berubah ke <strong>tes-selesai</strong>.</p>
+
+    <?php if (empty($list)): ?>
+    <div class="table-empty">Tidak ada pendaftar yang perlu tes.</div>
+    <?php else: ?>
+    <div style="overflow-x:auto;">
+    <table class="admin-table" style="min-width:720px;">
+        <thead>
+            <tr>
+                <th>Nomor</th>
+                <th>Nama</th>
+                <th>Jalur</th>
+                <th>Tes Pemetaan</th>
+                <th>Tes Hafalan</th>
+                <th style="width:150px;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($list as $r): ?>
+            <tr>
+                <td><code><?= e($r['nomor_daftar']) ?></code></td>
+                <td><?= e($r['nama_lengkap']) ?></td>
+                <td><?= e($r['jalur']) ?></td>
+                <td>
+                    <?php if ($r['nilai_status']): ?>
+                        <?= e($r['tanggal_tes']) ?> &mdash; <strong><?= e($r['nilai_total']) ?></strong> (<?= e($r['nilai_status']) ?>)
+                    <?php else: ?>
+                        <span class="muted">Belum</span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?php if ($r['jalur'] === 'tahfidz'): ?>
+                        <a href="?hafalan=<?= (int)$r['id'] ?>" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Input Hafalan</a>
+                    <?php else: ?>
+                        <span class="muted">—</span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <a href="?pemetaan=<?= (int)$r['id'] ?>" class="btn-sm btn-sm-warning" style="text-decoration:none;">Input Pemetaan</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    </div>
+    <?php endif; ?>
+</div>
 
     <?php
     if (isset($_GET['pemetaan'])) {
@@ -133,9 +137,9 @@ include __DIR__ . '/includes/header.php';
         $r = $s->fetch();
         if ($r):
     ?>
-    <div class="card">
-        <h3>Input Tes Pemetaan: <?= e($r['nama_lengkap']) ?> (<?= e($r['nomor_daftar']) ?>)</h3>
-        <form method="post">
+    <div class="admin-form-card">
+        <div class="admin-form-title">Input Tes Pemetaan: <?= e($r['nama_lengkap']) ?> (<?= e($r['nomor_daftar']) ?>)</div>
+        <form method="post" class="admin-form">
             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
             <input type="hidden" name="act" value="simpan_pemetaan">
             <input type="hidden" name="pendaftaran_id" value="<?= (int)$id ?>">
@@ -165,8 +169,8 @@ include __DIR__ . '/includes/header.php';
                 <textarea name="catatan_panitia" class="form-control" rows="3"><?= e($r['catatan_panitia'] ?? '') ?></textarea>
             </div>
             <div class="form-actions">
-                <a href="/admin/input-tes" class="btn-outline">Batal</a>
-                <button type="submit" class="btn-primary">Simpan</button>
+                <a href="/admin/input-tes" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Batal</a>
+                <button type="submit" class="btn-sm btn-sm-primary">Simpan</button>
             </div>
         </form>
     </div>
@@ -180,10 +184,10 @@ include __DIR__ . '/includes/header.php';
         $r = $s->fetch();
         if ($r):
     ?>
-    <div class="card">
-        <h3>Input Tes Hafalan: <?= e($r['nama_lengkap']) ?> (<?= e($r['nomor_daftar']) ?>)</h3>
-        <p class="muted">Hasil tes hafalan yang sahih adalah hasil dari tes Pondok, BUKAN sertifikat yang di-upload.</p>
-        <form method="post">
+    <div class="admin-form-card">
+        <div class="admin-form-title">Input Tes Hafalan: <?= e($r['nama_lengkap']) ?> (<?= e($r['nomor_daftar']) ?>)</div>
+        <p class="muted" style="margin-bottom:20px;">Hasil tes hafalan yang sahih adalah hasil dari tes Pondok, BUKAN sertifikat yang di-upload.</p>
+        <form method="post" class="admin-form">
             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
             <input type="hidden" name="act" value="simpan_hafalan">
             <input type="hidden" name="pendaftaran_id" value="<?= (int)$id ?>">
@@ -215,12 +219,11 @@ include __DIR__ . '/includes/header.php';
                 <textarea name="catatan" class="form-control" rows="3"></textarea>
             </div>
             <div class="form-actions">
-                <a href="/admin/input-tes" class="btn-outline">Batal</a>
-                <button type="submit" class="btn-primary">Simpan</button>
+                <a href="/admin/input-tes" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Batal</a>
+                <button type="submit" class="btn-sm btn-sm-primary">Simpan</button>
             </div>
         </form>
     </div>
     <?php endif; } ?>
-</div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

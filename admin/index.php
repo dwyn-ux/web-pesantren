@@ -101,21 +101,21 @@ require_once __DIR__ . '/includes/header.php';
 <div class="admin-table-wrap">
     <div class="table-head">
         <h2>Ringkasan Pendaftaran (5 Fase)</h2>
-        <a href="<?= e(BASE_URL . '/admin/verifikasi-berkas') ?>" class="btn-sm btn-sm-primary">Verifikasi</a>
+        <a href="<?= e(BASE_URL . '/admin/verifikasi-berkas') ?>" style="text-decoration:none;" class="btn-sm btn-sm-primary">Verifikasi</a>
     </div>
-    <div class="stat-grid" style="margin-bottom:20px;">
+    <div class="stat-grid">
         <?php
         $faseList = [
             'pending' => ['label' => 'Baru Daftar', 'color' => 'blue'],
             'menunggu-verifikasi' => ['label' => 'Menunggu Verifikasi', 'color' => 'orange'],
             'tes-selesai' => ['label' => 'Tes Selesai', 'color' => 'gold'],
             'diterima' => ['label' => 'Diterima', 'color' => 'green'],
-            'ditolak' => ['label' => 'Ditolak', 'color' => 'red'],
-            'daftar-ulang' => ['label' => 'Daftar Ulang', 'color' => 'green'],
+            'ditolak' => ['label' => 'Ditolak', 'color' => 'orange'],
+            'daftar-ulang' => ['label' => 'Daftar Ulang', 'color' => 'gold'],
         ];
         foreach ($faseList as $k => $f):
         ?>
-        <div class="stat-card stat-mini">
+        <div class="stat-card">
             <div class="stat-num"><?= $statusCounts[$k] ?? 0 ?></div>
             <div class="stat-label"><?= e($f['label']) ?></div>
         </div>
@@ -124,6 +124,9 @@ require_once __DIR__ . '/includes/header.php';
     <table class="admin-table">
         <thead><tr><th>Gelombang</th><th>Jumlah Pendaftar</th><th>Sisa Kuota</th></tr></thead>
         <tbody>
+            <?php if (empty($gelombangCounts)): ?>
+            <tr><td colspan="3" class="table-empty">Belum ada data gelombang.</td></tr>
+            <?php else: ?>
             <?php foreach ($gelombangCounts as $g):
                 $stmtK = $pdo->prepare("SELECT target_kuota FROM pendaftaran_gelombang WHERE label=?");
                 $stmtK->execute([$g['label']]);
@@ -136,13 +139,14 @@ require_once __DIR__ . '/includes/header.php';
                 <td><?= $kuota > 0 ? $sisa . ' / ' . $kuota : '—' ?></td>
             </tr>
             <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
     </table>
     <?php if ($cicilanPending > 0): ?>
-        <p style="margin-top:12px;padding:10px 14px;background:#fff8e8;border-left:3px solid #c9a227;border-radius:3px;font-size:13px;">
+        <div class="flash-message">
             ⏳ Ada <strong><?= $cicilanPending ?></strong> cicilan menunggu verifikasi.
             <a href="<?= e(BASE_URL . '/admin/cicilan-verifikasi') ?>">Verifikasi sekarang →</a>
-        </p>
+        </div>
     <?php endif; ?>
 </div>
 
@@ -150,7 +154,7 @@ require_once __DIR__ . '/includes/header.php';
 <div class="admin-table-wrap">
     <div class="table-head">
         <h2>Pendaftaran Terbaru</h2>
-        <a href="<?= e(BASE_URL . '/admin/psb') ?>" class="btn-sm btn-sm-secondary">Lihat Semua</a>
+        <a href="<?= e(BASE_URL . '/admin/psb') ?>" style="text-decoration:none;" class="btn-sm btn-sm-secondary">Lihat Semua</a>
     </div>
     <table class="admin-table">
         <thead>
@@ -172,7 +176,11 @@ require_once __DIR__ . '/includes/header.php';
                 <td><?= e($row['nama_lengkap']) ?></td>
                 <td><?= e($labelJenjang[$row['jenjang']] ?? $row['jenjang']) ?></td>
                 <td>
-                    <span class="badge badge-<?= e($row['status']) ?>">
+                    <?php
+                    $badgeMap = ['pending' => 'pending', 'menunggu-verifikasi' => 'pending', 'tes-selesai' => 'pending', 'diterima' => 'diterima', 'ditolak' => 'ditolak', 'daftar-ulang' => 'daftar-ulang'];
+                    $badgeCls = $badgeMap[$row['status']] ?? 'pending';
+                    ?>
+                    <span class="badge badge-<?= $badgeCls ?>">
                         <?= e(ucfirst(str_replace('-', ' ', $row['status']))) ?>
                     </span>
                 </td>
@@ -188,7 +196,7 @@ require_once __DIR__ . '/includes/header.php';
 <div class="admin-table-wrap">
     <div class="table-head">
         <h2>Artikel Terbaru</h2>
-        <a href="<?= e(BASE_URL . '/admin/artikel-tambah') ?>" class="btn-sm btn-sm-primary">+ Tulis Artikel</a>
+        <a href="<?= e(BASE_URL . '/admin/artikel-tambah') ?>" style="text-decoration:none;" class="btn-sm btn-sm-primary">+ Tulis Artikel</a>
     </div>
     <table class="admin-table">
         <thead>
@@ -206,13 +214,12 @@ require_once __DIR__ . '/includes/header.php';
             <?php else: ?>
             <?php foreach ($artikelTerbaru as $art): ?>
             <tr>
-                <td style="max-width:300px;">
-                    <a href="<?= e(BASE_URL . '/admin/artikel-edit?id=' . $art['id']) ?>"
-                       style="color:var(--green-deep);text-decoration:none;font-weight:500;">
+                <td>
+                    <a href="<?= e(BASE_URL . '/admin/artikel-edit?id=' . $art['id']) ?>">
                         <?= e(truncate($art['judul'], 60)) ?>
                     </a>
                     <br>
-                    <span style="font-size:11px;color:var(--text-light);"><?= e($art['penulis']) ?></span>
+                    <span class="muted"><?= e($art['penulis']) ?></span>
                 </td>
                 <td><?= e($labelKategori[$art['kategori']] ?? $art['kategori']) ?></td>
                 <td>
@@ -223,7 +230,7 @@ require_once __DIR__ . '/includes/header.php';
                 <td><?= number_format($art['views']) ?></td>
                 <td>
                     <a href="<?= e(BASE_URL . '/admin/artikel-edit?id=' . $art['id']) ?>"
-                       class="btn-sm btn-sm-warning">Edit</a>
+                       style="text-decoration:none;" class="btn-sm btn-sm-warning">Edit</a>
                 </td>
             </tr>
             <?php endforeach; ?>

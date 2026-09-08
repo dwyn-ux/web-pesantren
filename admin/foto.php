@@ -121,7 +121,7 @@ require __DIR__ . '/includes/header.php';
 
 <div class="admin-form-card">
   <h2 class="admin-form-title">Foto Halaman Depan</h2>
-  <p style="font-size:13px;color:var(--text-mid);margin-bottom:14px;">Klik <strong>Simpan</strong> untuk mengganti. File lama otomatis ditimpa.</p>
+  <p class="muted">Klik <strong>Simpan</strong> untuk mengganti. File lama otomatis ditimpa.</p>
   <form method="post" enctype="multipart/form-data" class="admin-form" id="homePhotoForm">
     <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
     <input type="hidden" name="action" value="home">
@@ -134,12 +134,12 @@ require __DIR__ . '/includes/header.php';
     <?php endforeach; ?>
     <div class="form-actions"><button class="btn-sm btn-sm-primary">Simpan Foto</button></div>
   </form>
-  <p style="font-size:12px;color:var(--text-light);margin-top:14px;">Foto & isi testimoni halaman depan dikelola lewat menu <a href="<?= e(BASE_URL.'/admin/testimoni') ?>">Testimoni</a>.</p>
+  <p class="muted">Foto & isi testimoni halaman depan dikelola lewat menu <a href="<?= e(BASE_URL.'/admin/testimoni') ?>">Testimoni</a>.</p>
 </div>
 
 <div class="admin-form-card">
   <h2 class="admin-form-title">Foto Halaman Profil</h2>
-  <p style="font-size:13px;color:var(--text-mid);margin-bottom:14px;">Gedung, masjid, asrama, tim pengajar, dan fasilitas. Klik <strong>Simpan</strong> untuk mengganti.</p>
+  <p class="muted">Gedung, masjid, asrama, tim pengajar, dan fasilitas. Klik <strong>Simpan</strong> untuk mengganti.</p>
   <form method="post" enctype="multipart/form-data" class="admin-form" id="profilPhotoForm">
     <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
     <input type="hidden" name="action" value="profil">
@@ -161,15 +161,15 @@ require __DIR__ . '/includes/header.php';
   <?php if ($errors): ?><div class="flash-message flash-error"><?=e(implode(' ', $errors))?></div><?php endif; ?>
   <form method="post" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
-    <div class="form-grid">
+    <div class="form-row">
       <div class="form-group"><label>Nama Album *</label><input class="form-control" name="judul" placeholder="contoh: Rihlah" required><small>Foto dengan nama album yang sama akan tampil sebagai 1 kartu di halaman Galeri. Contoh: Rihlah, Wisuda, Halaqah.</small></div>
       <div class="form-group"><label>Foto *</label><input class="form-control" type="file" name="foto[]" accept=".jpg,.jpeg,.png,.webp" multiple required><small>Bisa pilih banyak foto sekaligus. Maksimal 10 MB per foto.</small></div>
     </div>
     <div class="form-actions"><button class="btn-sm btn-sm-primary">Simpan Album</button></div>
   </form>
 </div>
-<div class="admin-table-card"><table class="admin-table"><thead><tr><th>Album</th><th>Jumlah Foto</th><th></th></tr></thead><tbody>
-<?php if (!$albums): ?><tr><td colspan="3" class="table-empty">Belum ada foto galeri.</td></tr>
+<div class="admin-table-wrap"><div class="table-head"><h2>Daftar Album Galeri</h2></div><table class="admin-table"><thead><tr><th>Album</th><th>Jumlah Foto</th><th></th></tr></thead><tbody>
+<?php if (!$albums): ?><tr><td colspan="3"><div class="table-empty">Belum ada foto galeri.</div></td></tr>
 <?php else: foreach ($albums as $a): ?>
 <tr>
   <td><div style="display:flex;align-items:center;gap:12px"><img src="<?=e(BASE_URL.'/uploads/galeri/'.$a['cover'])?>" alt="" style="width:90px;height:58px;object-fit:cover;border-radius:4px"><strong><?=e($a['judul'])?></strong></div></td>

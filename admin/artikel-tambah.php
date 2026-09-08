@@ -101,7 +101,7 @@ require_once __DIR__ . '/includes/header.php';
 <div class="admin-form-card ai-writer-card">
   <h2 class="admin-form-title">Tulis dengan AI</h2>
   <p class="ai-note">Hasil AI masuk ke editor sebagai draft. Tetap cek fakta dan edit sebelum dipublikasikan.</p>
-  <div class="ai-writer-row"><select id="aiProvider" class="form-control"><option value="gemini">Gemini</option><option value="deepseek">DeepSeek</option><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option><option value="custom">Custom Endpoint</option></select><input id="aiTopic" class="form-control" placeholder="Topik artikel, misalnya: manfaat murajaah harian"><select id="aiTone" class="form-control"><option value="informatif dan hangat">Informatif</option><option value="inspiratif dan menyentuh">Inspiratif</option><option value="formal dan edukatif">Formal</option></select><button type="button" id="aiGenerate" class="btn-sm btn-sm-primary">Generate</button></div><div id="aiCustomFields" style="display:none;margin-top:10px;"><div class="ai-writer-row" style="flex-wrap:wrap;gap:8px;"><input id="aiCustomUrl" class="form-control" placeholder="API URL (contoh: https://api.groq.com/openai/v1/chat/completions)" style="flex:1 1 100%;"><input id="aiCustomKey" class="form-control" placeholder="API Key" type="password" style="flex:1 1 48%;"><input id="aiCustomModel" class="form-control" placeholder="Model (contoh: llama-3.1-70b-versatile)" style="flex:1 1 48%;"></div></div><p id="aiStatus" class="ai-status" role="status"></p>
+  <div class="form-row"><div class="form-group"><label for="aiProvider">Provider</label><select id="aiProvider" class="form-control"><option value="gemini">Gemini</option><option value="deepseek">DeepSeek</option><option value="openai">OpenAI</option><option value="openrouter">OpenRouter</option><option value="custom">Custom Endpoint</option></select></div><div class="form-group"><label for="aiTopic">Topik</label><input id="aiTopic" class="form-control" placeholder="Topik artikel, misalnya: manfaat murajaah harian"></div><div class="form-group"><label for="aiTone">Gaya</label><select id="aiTone" class="form-control"><option value="informatif dan hangat">Informatif</option><option value="inspiratif dan menyentuh">Inspiratif</option><option value="formal dan edukatif">Formal</option></select></div><div class="form-group"><label>&nbsp;</label><button type="button" id="aiGenerate" class="btn-sm btn-sm-primary">Generate</button></div></div><div id="aiCustomFields" style="display:none;"><div class="form-row"><div class="form-group"><label for="aiCustomUrl">API URL</label><input id="aiCustomUrl" class="form-control" placeholder="API URL (contoh: https://api.groq.com/openai/v1/chat/completions)"></div><div class="form-group"><label for="aiCustomKey">API Key</label><input id="aiCustomKey" class="form-control" placeholder="API Key" type="password"></div><div class="form-group"><label for="aiCustomModel">Model</label><input id="aiCustomModel" class="form-control" placeholder="Model (contoh: llama-3.1-70b-versatile)"></div></div></div><p id="aiStatus" class="ai-status" role="status"></p>
 </div>
 
 <?php if (!empty($errors)): ?>
@@ -110,17 +110,16 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
+<div class="admin-form-card">
+<div class="admin-form-title">Tulis Artikel</div>
 <form method="POST" action="<?= e(BASE_URL . '/admin/artikel-tambah') ?>"
       enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
 
-    <div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start;">
+    <div class="form-row">
 
         <!-- Konten utama -->
         <div>
-            <div class="admin-form-card">
-                <h2 class="admin-form-title">Konten Artikel</h2>
-
                 <div class="form-group">
                     <label for="judul">Judul <span class="req">*</span></label>
                     <input type="text" id="judul" name="judul"
@@ -137,7 +136,7 @@ require_once __DIR__ . '/includes/header.php';
                               class="form-control"
                               placeholder="Deskripsi singkat artikel (tampil di list dan SEO meta description)"
                               maxlength="500"><?= e($data['ringkasan'] ?? '') ?></textarea>
-                    <p style="font-size:11px;color:var(--text-light);margin-top:4px;">Maks. 500 karakter. Jika kosong, otomatis diambil dari isi artikel.</p>
+                    <p class="muted">Maks. 500 karakter. Jika kosong, otomatis diambil dari isi artikel.</p>
                 </div>
 
                 <div class="form-group">
@@ -146,21 +145,17 @@ require_once __DIR__ . '/includes/header.php';
                     <textarea id="isi" name="isi" rows="20"
                               placeholder="Tulis konten artikel di sini..."
                               class="form-control article-source<?= isset($errors['isi']) ? ' is-error' : '' ?>"><?= e($data['isi'] ?? '') ?></textarea>
-                    <p style="font-size:11px;color:var(--text-light);margin-top:4px;">
+                    <p class="muted">
                         Gunakan toolbar untuk mengatur format tulisan. Konten tetap dapat ditinjau sebelum dipublikasikan.
                     </p>
                     <?php if (isset($errors['isi'])): ?>
                     <p class="field-error"><?= e($errors['isi']) ?></p>
                     <?php endif; ?>
                 </div>
-            </div>
         </div>
 
         <!-- Sidebar kanan -->
         <div>
-            <div class="admin-form-card">
-                <h2 class="admin-form-title">Publikasi</h2>
-
                 <div class="form-group">
                     <label for="status">Status</label>
                     <select id="status" name="status" class="form-control">
@@ -190,30 +185,27 @@ require_once __DIR__ . '/includes/header.php';
                     <label for="foto">Foto Sampul</label>
                     <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp"
                            class="form-control<?= isset($errors['foto']) ? ' is-error' : '' ?>">
-                    <p style="font-size:11px;color:var(--text-light);margin-top:4px;">JPG/PNG/WebP, maks. 2MB. Akan di-resize otomatis ke 1200px.</p>
+                    <p class="muted">JPG/PNG/WebP, maks. 2MB. Akan di-resize otomatis ke 1200px.</p>
                     <?php if (isset($errors['foto'])): ?>
                     <p class="field-error"><?= e($errors['foto']) ?></p>
                     <?php endif; ?>
                 </div>
 
-                <div class="form-actions" style="border-top:none;padding-top:0;flex-direction:column;">
-                    <button type="submit" name="status" value="published" class="btn-sm btn-sm-primary"
-                            style="padding:12px;font-size:14px;width:100%;">
+                <div class="form-actions">
+                    <button type="submit" name="status" value="published" class="btn-sm btn-sm-primary">
                         Publish Sekarang
                     </button>
-                    <button type="submit" name="status" value="draft" class="btn-sm btn-sm-secondary"
-                            style="padding:12px;font-size:14px;width:100%;margin-top:8px;">
+                    <button type="submit" name="status" value="draft" class="btn-sm btn-sm-secondary">
                         Simpan sebagai Draft
                     </button>
-                    <a href="<?= e(BASE_URL . '/admin/artikel') ?>" class="btn-sm btn-sm-secondary"
-                       style="padding:12px;font-size:14px;width:100%;margin-top:8px;text-align:center;">
+                    <a href="<?= e(BASE_URL . '/admin/artikel') ?>" class="btn-sm btn-sm-secondary" style="text-decoration:none;">
                         Batal
                     </a>
                 </div>
-            </div>
         </div>
     </div>
 </form>
+</div>
 
 <script>
 (function(){var b=document.getElementById('aiGenerate'),sel=document.getElementById('aiProvider'),fields=document.getElementById('aiCustomFields');if(!b||!sel)return;

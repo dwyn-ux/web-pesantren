@@ -48,14 +48,12 @@ if (isset($_GET['edit'])) {
 </div>
 <?php endif; ?>
 
-<div class="admin-content">
-
 <?php if ($editing): ?>
-    <div class="card">
-        <h2>Edit Template: <?= e($editing['judul']) ?></h2>
-        <p class="muted">Slug: <code><?= e($editing['slug']) ?></code></p>
+    <div class="admin-form-card">
+        <div class="admin-form-title">Edit Template: <?= e($editing['judul']) ?></div>
+        <p class="muted" style="margin-bottom:20px;">Slug: <code><?= e($editing['slug']) ?></code></p>
 
-        <form method="post">
+        <form method="post" class="admin-form">
             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
             <input type="hidden" name="id" value="<?= (int)$editing['id'] ?>">
 
@@ -68,7 +66,7 @@ if (isset($_GET['edit'])) {
             <div class="form-group">
                 <label>Isi Template (HTML)</label>
                 <textarea name="isi_html" id="templateEditor" rows="20" class="form-control" required><?= e($editing['isi_html']) ?></textarea>
-                <p class="form-note">
+                <p class="muted" style="margin-top:8px;">
                     Gunakan tag <code>&lt;div&gt;</code>, <code>&lt;table&gt;</code>, <code>&lt;h2&gt;</code> dll.
                     Variabel placeholder: <code>__NAMA__</code>, <code>__NOMOR_DAFTAR__</code> (akan diganti saat generate).
                 </p>
@@ -82,9 +80,9 @@ if (isset($_GET['edit'])) {
             </div>
 
             <div class="form-actions">
-                <a href="/admin/kelola-template" class="btn-outline">Batal</a>
-                <button type="submit" class="btn-primary">Simpan Template</button>
-                <a href="/download-template?slug=<?= e($editing['slug']) ?>&preview=1" target="_blank" class="btn-link">Preview &rarr;</a>
+                <a href="/admin/kelola-template" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Batal</a>
+                <button type="submit" class="btn-sm btn-sm-primary">Simpan Template</button>
+                <a href="/download-template?slug=<?= e($editing['slug']) ?>&preview=1" target="_blank" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Preview &rarr;</a>
             </div>
         </form>
     </div>
@@ -103,17 +101,23 @@ if (isset($_GET['edit'])) {
     </script>
 
 <?php else: ?>
-    <div class="card">
-        <h2>Template Dokumen PSB</h2>
-        <p class="muted">Template ini digunakan untuk dokumen yang harus di-download calon peserta (kaderisasi, alumni, dhuafa).</p>
+    <div class="admin-table-wrap">
+        <div class="table-head">
+            <h2>Template Dokumen PSB</h2>
+        </div>
+        <p class="muted" style="padding:12px 20px 0;">Template ini digunakan untuk dokumen yang harus di-download calon peserta (kaderisasi, alumni, dhuafa).</p>
 
-        <table class="admin-table">
+        <?php if (empty($rows)): ?>
+        <div class="table-empty">Belum ada template.</div>
+        <?php else: ?>
+        <div style="overflow-x:auto;">
+        <table class="admin-table" style="min-width:520px;">
             <thead>
                 <tr>
                     <th>Slug</th>
                     <th>Judul</th>
                     <th>Status</th>
-                    <th>Aksi</th>
+                    <th style="width:150px;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -129,17 +133,16 @@ if (isset($_GET['edit'])) {
                         <?php endif; ?>
                     </td>
                     <td>
-                        <a href="?edit=<?= (int)$r['id'] ?>" class="btn-link">Edit</a>
-                        &middot;
-                        <a href="/download-template?slug=<?= e($r['slug']) ?>&preview=1" target="_blank" class="btn-link">Preview</a>
+                        <a href="?edit=<?= (int)$r['id'] ?>" class="btn-sm btn-sm-warning" style="text-decoration:none;">Edit</a>
+                        <a href="/download-template?slug=<?= e($r['slug']) ?>&preview=1" target="_blank" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Preview</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
+        <?php endif; ?>
     </div>
 <?php endif; ?>
-
-</div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

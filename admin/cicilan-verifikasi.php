@@ -60,79 +60,82 @@ include __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<div class="admin-content">
-    <div class="card">
+<div class="admin-table-wrap">
+    <div class="table-head">
         <h2>Verifikasi Cicilan / Angsuran</h2>
-
-        <div class="filter-tabs">
-            <a href="?status=pending" class="filter-tab <?= $filter === 'pending' ? 'active' : '' ?>">Menunggu</a>
-            <a href="?status=verified" class="filter-tab <?= $filter === 'verified' ? 'active' : '' ?>">Diverifikasi</a>
-            <a href="?status=rejected" class="filter-tab <?= $filter === 'rejected' ? 'active' : '' ?>">Ditolak</a>
-            <a href="?status=" class="filter-tab <?= $filter === '' ? 'active' : '' ?>">Semua</a>
-        </div>
-
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Pendaftar</th>
-                    <th>Item</th>
-                    <th>Nominal Cicilan</th>
-                    <th>Metode</th>
-                    <th>Tanggal</th>
-                    <th>Status</th>
-                    <th>Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($list as $r): ?>
-                <tr>
-                    <td>
-                        <strong><?= e($r['nama_lengkap']) ?></strong><br>
-                        <code><?= e($r['nomor_daftar']) ?></code>
-                    </td>
-                    <td>
-                        <?= e($r['item_nama']) ?>
-                        <br><small style="color:#888;">Tagihan: Rp <?= number_format((float)$r['item_nominal'], 0, ',', '.') ?></small>
-                    </td>
-                    <td><strong>Rp <?= number_format((float)$r['nominal'], 0, ',', '.') ?></strong></td>
-                    <td><?= e($r['metode']) ?></td>
-                    <td><?= e($r['tanggal_bayar']) ?></td>
-                    <td>
-                        <?php if ($r['status'] === 'verified'): ?>
-                            <span class="badge badge-success">Diverifikasi</span>
-                        <?php elseif ($r['status'] === 'rejected'): ?>
-                            <span class="badge badge-error">Ditolak</span>
-                        <?php else: ?>
-                            <span class="badge badge-warning">Menunggu</span>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <?php if ($r['status'] === 'pending'): ?>
-                            <form method="post" style="display:inline">
-                                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-                                <input type="hidden" name="act" value="verifikasi">
-                                <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-                                <button type="submit" class="btn-link" style="color:#0a0;">✓ Verifikasi</button>
-                            </form>
-                            <form method="post" style="display:inline" onsubmit="return confirm('Tolak cicilan ini?')">
-                                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-                                <input type="hidden" name="act" value="tolak">
-                                <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-                                <input type="hidden" name="catatan" value="Bukti tidak valid">
-                                <button type="submit" class="btn-link" style="color:#c33;">✕ Tolak</button>
-                            </form>
-                        <?php else: ?>
-                            <small style="color:#999;">Selesai</small>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                <?php if (empty($list)): ?>
-                <tr><td colspan="7" style="text-align:center;padding:24px;color:#999;">Tidak ada data.</td></tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
     </div>
+
+    <div class="filter-tabs" style="padding:12px 20px 0;">
+        <a href="?status=pending" class="filter-tab <?= $filter === 'pending' ? 'active' : '' ?>">Menunggu</a>
+        <a href="?status=verified" class="filter-tab <?= $filter === 'verified' ? 'active' : '' ?>">Diverifikasi</a>
+        <a href="?status=rejected" class="filter-tab <?= $filter === 'rejected' ? 'active' : '' ?>">Ditolak</a>
+        <a href="?status=" class="filter-tab <?= $filter === '' ? 'active' : '' ?>">Semua</a>
+    </div>
+
+    <?php if (empty($list)): ?>
+    <div class="table-empty">Tidak ada data.</div>
+    <?php else: ?>
+    <div style="overflow-x:auto;">
+    <table class="admin-table" style="min-width:760px;">
+        <thead>
+            <tr>
+                <th>Pendaftar</th>
+                <th>Item</th>
+                <th>Nominal Cicilan</th>
+                <th>Metode</th>
+                <th>Tanggal</th>
+                <th>Status</th>
+                <th style="width:170px;">Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($list as $r): ?>
+            <tr>
+                <td>
+                    <strong><?= e($r['nama_lengkap']) ?></strong><br>
+                    <code><?= e($r['nomor_daftar']) ?></code>
+                </td>
+                <td>
+                    <?= e($r['item_nama']) ?>
+                    <br><small class="muted">Tagihan: Rp <?= number_format((float)$r['item_nominal'], 0, ',', '.') ?></small>
+                </td>
+                <td><strong>Rp <?= number_format((float)$r['nominal'], 0, ',', '.') ?></strong></td>
+                <td><?= e($r['metode']) ?></td>
+                <td style="font-size:12px;"><?= e($r['tanggal_bayar']) ?></td>
+                <td>
+                    <?php if ($r['status'] === 'verified'): ?>
+                        <span class="badge badge-diterima">Diverifikasi</span>
+                    <?php elseif ($r['status'] === 'rejected'): ?>
+                        <span class="badge badge-ditolak">Ditolak</span>
+                    <?php else: ?>
+                        <span class="badge badge-pending">Menunggu</span>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?php if ($r['status'] === 'pending'): ?>
+                        <form method="post" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                            <input type="hidden" name="act" value="verifikasi">
+                            <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                            <button type="submit" class="btn-sm btn-sm-primary">✓ Verifikasi</button>
+                        </form>
+                        <form method="post" style="display:inline;" onsubmit="return confirm('Tolak cicilan ini?')">
+                            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                            <input type="hidden" name="act" value="tolak">
+                            <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                            <input type="hidden" name="catatan" value="Bukti tidak valid">
+                            <button type="submit" class="btn-sm btn-sm-danger">✕ Tolak</button>
+                        </form>
+                    <?php else: ?>
+                        <small class="muted">Selesai</small>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>

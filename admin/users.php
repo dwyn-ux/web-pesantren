@@ -27,6 +27,9 @@ require_once __DIR__ . '/includes/header.php';
             </tr>
         </thead>
         <tbody>
+            <?php if (empty($users)): ?>
+            <tr><td colspan="5" class="table-empty">Belum ada data pengguna.</td></tr>
+            <?php else: ?>
             <?php foreach ($users as $u): ?>
             <tr>
                 <td><strong><?= e($u['name']) ?></strong></td>
@@ -41,9 +44,10 @@ require_once __DIR__ . '/includes/header.php';
                         <?= $u['is_active'] ? 'Aktif' : 'Nonaktif' ?>
                     </span>
                 </td>
-                <td style="font-size:12px;"><?= e(formatTanggal($u['created_at'])) ?></td>
+                <td><?= e(formatTanggal($u['created_at'])) ?></td>
             </tr>
             <?php endforeach; ?>
+            <?php endif; ?>
         </tbody>
     </table>
 </div>

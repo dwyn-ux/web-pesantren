@@ -123,17 +123,16 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
+<div class="admin-form-card">
+<div class="admin-form-title">Edit Artikel</div>
 <form method="POST" action="<?= e(BASE_URL . '/admin/artikel-edit?id=' . $id) ?>"
       enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
 
-    <div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start;">
+    <div class="form-row">
 
         <!-- Konten utama -->
         <div>
-            <div class="admin-form-card">
-                <h2 class="admin-form-title">Edit Konten Artikel</h2>
-
                 <div class="form-group">
                     <label for="judul">Judul <span class="req">*</span></label>
                     <input type="text" id="judul" name="judul"
@@ -142,11 +141,11 @@ require_once __DIR__ . '/includes/header.php';
                     <?php if (isset($errors['judul'])): ?>
                     <p class="field-error"><?= e($errors['judul']) ?></p>
                     <?php endif; ?>
-                    <p style="font-size:11px;color:var(--text-light);margin-top:4px;">
+                    <p class="muted">
                         Slug: <code><?= e($artikel['slug']) ?></code>
                         <a href="<?= e(BASE_URL . '/artikel/' . $artikel['slug']) ?>"
                            target="_blank" rel="noopener noreferrer"
-                           style="color:var(--green-mid);margin-left:8px;">↗ Lihat</a>
+                           style="color:var(--green-mid);margin-left:8px;text-decoration:none;">↗ Lihat</a>
                     </p>
                 </div>
 
@@ -166,14 +165,10 @@ require_once __DIR__ . '/includes/header.php';
                     <p class="field-error"><?= e($errors['isi']) ?></p>
                     <?php endif; ?>
                 </div>
-            </div>
         </div>
 
         <!-- Sidebar kanan -->
         <div>
-            <div class="admin-form-card">
-                <h2 class="admin-form-title">Publikasi</h2>
-
                 <div class="form-group">
                     <label for="status">Status</label>
                     <select id="status" name="status" class="form-control">
@@ -213,25 +208,23 @@ require_once __DIR__ . '/includes/header.php';
                     <?php endif; ?>
                     <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp"
                            class="form-control<?= isset($errors['foto']) ? ' is-error' : '' ?>">
-                    <p style="font-size:11px;color:var(--text-light);margin-top:4px;">Upload foto baru untuk mengganti.</p>
+                    <p class="muted">Upload foto baru untuk mengganti.</p>
                     <?php if (isset($errors['foto'])): ?>
                     <p class="field-error"><?= e($errors['foto']) ?></p>
                     <?php endif; ?>
                 </div>
 
-                <div class="form-actions" style="border-top:none;padding-top:0;flex-direction:column;">
-                    <button type="submit" class="btn-sm btn-sm-primary"
-                            style="padding:12px;font-size:14px;width:100%;">
+                <div class="form-actions">
+                    <button type="submit" class="btn-sm btn-sm-primary">
                         Simpan Perubahan
                     </button>
-                    <a href="<?= e(BASE_URL . '/admin/artikel') ?>" class="btn-sm btn-sm-secondary"
-                       style="padding:12px;font-size:14px;width:100%;margin-top:8px;text-align:center;">
+                    <a href="<?= e(BASE_URL . '/admin/artikel') ?>" class="btn-sm btn-sm-secondary" style="text-decoration:none;">
                         Batal
                     </a>
                 </div>
-            </div>
         </div>
     </div>
 </form>
+</div>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

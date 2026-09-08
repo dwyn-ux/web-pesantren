@@ -106,7 +106,7 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 
 <!-- Filter & search -->
-<div class="admin-table-wrap" style="margin-bottom:20px;">
+<div class="admin-table-wrap">
     <div class="table-head">
         <h2>Data Pendaftar (<?= $total ?>)</h2>
         <form method="GET" action="<?= e(BASE_URL . '/admin/psb') ?>" class="filter-toolbar">
@@ -122,7 +122,7 @@ require_once __DIR__ . '/includes/header.php';
             </select>
             <button type="submit" class="btn-sm btn-sm-primary">Cari</button>
             <?php if ($cari || $filterStat): ?>
-            <a href="<?= e(BASE_URL . '/admin/psb') ?>" class="btn-sm btn-sm-secondary">Reset</a>
+            <a href="<?= e(BASE_URL . '/admin/psb') ?>" style="text-decoration:none;" class="btn-sm btn-sm-secondary">Reset</a>
             <?php endif; ?>
         </form>
     </div>
@@ -146,36 +146,35 @@ require_once __DIR__ . '/includes/header.php';
             <?php else: ?>
             <?php foreach ($pendaftaran as $p): ?>
             <tr>
-                <td><strong style="font-size:12px;"><?= e($p['nomor_daftar']) ?></strong></td>
+                <td><strong><?= e($p['nomor_daftar']) ?></strong></td>
                 <td>
                     <strong><?= e($p['nama_lengkap']) ?></strong><br>
-                    <span style="font-size:11px;color:var(--text-light);">
+                    <span class="muted">
                         <?= e($p['tempat_lahir']) ?>, <?= $p['tanggal_lahir'] ? e(formatTanggal($p['tanggal_lahir'])) : '-' ?>
                     </span>
                 </td>
                 <td><?= e($labelJenjang[$p['jenjang']] ?? $p['jenjang']) ?></td>
                 <td>
                     <?php if (($p['jalur'] ?? 'reguler') !== 'reguler'): ?>
-                    <span class="badge badge-pending" style="font-size:10px;">
+                    <span class="badge badge-pending">
                         <?= e(jalurPendaftaran()[$p['jalur']] ?? $p['jalur']) ?>
                     </span>
                     <?php if (in_array($p['jalur'], jalurPerluVerifikasi(), true) && $p['jalur_status'] !== 'none'): ?><br>
-                    <small style="font-size:10px;color:var(--text-light);">
+                    <span class="muted">
                         <?= e(jalurStatusLabel($p['jalur_status'])) ?><?= $p['jalur_status'] === 'disetujui' && $p['jalur_potongan'] !== null ? ' (' . e($formatPersen($p['jalur_potongan'])) . '%)' : '' ?>)
-                    </small>
+                    </span>
                     <?php endif; ?>
                     <?php else: ?>
-                    <span style="font-size:11px;color:var(--text-light);">—</span>
+                    <span class="muted">—</span>
                     <?php endif; ?>
                 </td>
                 <td>
                     <a href="https://wa.me/<?= e(preg_replace('/^0/', '62', preg_replace('/\D/', '', $p['whatsapp']))) ?>"
-                       target="_blank" rel="noopener noreferrer"
-                       style="color:var(--green-mid);text-decoration:none;font-size:13px;">
+                       target="_blank" rel="noopener noreferrer">
                         <?= e($p['whatsapp']) ?>
                     </a>
                 </td>
-                <td style="white-space:nowrap;"><?= e(formatTanggal($p['created_at'])) ?></td>
+                <td><?= e(formatTanggal($p['created_at'])) ?></td>
                 <td>
                     <span class="badge badge-<?= e($p['status']) ?>">
                         <?= e($labelStatus[$p['status']] ?? $p['status']) ?>
@@ -187,15 +186,15 @@ require_once __DIR__ . '/includes/header.php';
                         Update
                     </button>
                     <button type="button" class="btn-sm btn-sm-secondary"
-                            onclick="openPsbDetail(<?= $p['id'] ?>)" style="margin-left:4px;">
+                            onclick="openPsbDetail(<?= $p['id'] ?>)">
                         Detail
                     </button>
                 </td>
             </tr>
             <!-- Detail row (hidden) -->
-            <tr id="detail-<?= $p['id'] ?>" style="display:none;">
-                <td colspan="8" style="background:#f8faf9;padding:20px;">
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;font-size:13px;">
+            <tr id="detail-<?= $p['id'] ?>" hidden>
+                <td colspan="8">
+                    <div class="detail-grid">
                         <div>
                             <strong>Orang Tua</strong><br>
                             Ayah: <?= e($p['nama_ayah']) ?><br>
@@ -214,7 +213,7 @@ require_once __DIR__ . '/includes/header.php';
                             <?php endif; ?>
                             <br><br><strong>Jalur:</strong> <?= e(jalurPendaftaran()[$p['jalur']] ?? $p['jalur']) ?><?= $p['jalur_detail'] ? ' — ' . e($optsJalur[$p['jalur']][$p['jalur_detail']]['label'] ?? $p['jalur_detail']) : '' ?>
                             <?php if (in_array($p['jalur'], jalurPerluVerifikasi(), true) && $p['jalur_status'] === 'pending'): ?>
-                            <form method="post" style="margin:8px 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                            <form method="post" class="filter-toolbar">
                                 <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
                                 <input type="hidden" name="action" value="verifikasi_jalur">
                                 <input type="hidden" name="id" value="<?=$p['id']?>">
@@ -223,35 +222,35 @@ require_once __DIR__ . '/includes/header.php';
                                 $maxP = $p['jalur'] === 'alumni-sdmua' ? 50 : 60;
                                 $defP = ($adminJalur[$p['jalur']]['potongan'] ?? null);
                                 ?>
-                                <input type="number" name="potongan" min="<?= $minP ?>" max="<?= $maxP ?>" step="0.5"
+                                <input type="number" class="form-control" name="potongan" min="<?= $minP ?>" max="<?= $maxP ?>" step="0.5"
                                        placeholder="<?= $defP !== null ? e($formatPersen($defP)) : 'Potongan %' ?>"
-                                       style="width:90px;padding:4px;font-size:12px;"
                                        <?= $defP !== null ? ' value="' . e($formatPersen($defP)) . '"' : '' ?>
                                        required>
                                 <button name="keputusan" value="disetujui" class="btn-sm btn-sm-primary">Setujui</button>
                                 <button name="keputusan" value="ditolak" class="btn-sm btn-sm-secondary">Tolak</button>
                             </form>
-                            <small style="font-size:11px;color:var(--text-light);">
+                            <span class="muted">
                                 <?= $p['jalur'] === 'alumni-sdmua' ? 'Alumni' : 'Dhuafa' ?> <?= $p['jalur'] === 'alumni-sdmua' ? '25–50%' : '20–60%' ?>.
                                 <?php if ($defP !== null): ?>Default global: <?= e($formatPersen($defP)) ?>% (bisa diganti).<?php endif; ?>
                                 Berkas syarat: <?= e(implode(', ', array_map(fn($j) => berkasLabel($j), jalurBerkasUntuk($p['jalur'])))) ?>.
-                            </small>
+                            </span>
                             <?php elseif (in_array($p['jalur'], jalurPerluVerifikasi(), true) && $p['jalur_status'] === 'disetujui'): ?>
-                            <form method="post" style="margin:8px 0;">
+                            <form method="post">
                                 <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
                                 <input type="hidden" name="action" value="verifikasi_jalur">
                                 <input type="hidden" name="id" value="<?=$p['id']?>">
                                 <input type="hidden" name="keputusan" value="ditolak">
-                                <button class="btn-sm btn-sm-secondary" style="font-size:11px;">Batalkan persetujuan (kembali reguler)</button>
+                                <button class="btn-sm btn-sm-secondary">Batalkan persetujuan (kembali reguler)</button>
                             </form>
                             <?php elseif (($p['jalur'] ?? 'reguler') !== 'reguler'): ?>
-                            <em style="font-size:11px;color:var(--text-light);">Tidak perlu verifikasi — potongan diterapkan otomatis.</em>
+                            <span class="muted">Tidak perlu verifikasi — potongan diterapkan otomatis.</span>
                             <?php endif; ?>
                             <br><br><strong>Pembiayaan:</strong><br>
                             <?php syncPembiayaan($pdo,(int)$p['id'],$p['jenis_kelamin']);
                             $bi=$pdo->prepare('SELECT * FROM pembiayaan WHERE pendaftaran_id=? ORDER BY urutan,id');$bi->execute([$p['id']]);$biayaP=$bi->fetchAll(); ?>
-                            <table class="admin-table" style="font-size:12px;margin-top:6px;">
-                                <tr><th>Item</th><th>Nominal</th><th>Status</th><th></th></tr>
+                            <table class="admin-table">
+                                <thead><tr><th>Item</th><th>Nominal</th><th>Status</th><th></th></tr></thead>
+                                <tbody>
                                 <?php foreach($biayaP as $biaya): ?>
                                 <tr>
                                     <td><?=e(pembiayaanLabel($biaya['jenis']))?><?=$biaya['nama']?'<br><em>'.e($biaya['nama']).'</em>':''?><?=$biaya['dipilih']?'<br><span class="badge badge-diterima">dipilih</span>':''?></td>
@@ -262,17 +261,17 @@ require_once __DIR__ . '/includes/header.php';
                                     </td>
                                     <td>
                                         <span class="badge badge-<?=$biaya['status']==='lunas'||$biaya['status']==='gratis'?'diterima':($biaya['status']==='menunggu'?'pending':'ditolak')?>"><?=e(pembiayaanStatusLabel($biaya['status']))?></span>
-                                        <?=$biaya['kesanggupan']?'<br><small>disanggupi</small>':''?>
+                                        <?=$biaya['kesanggupan']?'<br><span class="muted">disanggupi</span>':''?>
                                     </td>
                                     <td>
                                         <?php if($biaya['gratis']):?>
-                                        <em style="font-size:11px;">otomatis</em>
+                                        <span class="muted">otomatis</span>
                                         <?php else:?>
-                                        <form method="post" style="display:flex;gap:4px;margin:0">
+                                        <form method="post" class="filter-toolbar">
                                             <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
                                             <input type="hidden" name="action" value="update_payment">
                                             <input type="hidden" name="item_id" value="<?=$biaya['id']?>">
-                                            <select name="status_pembayaran" style="padding:4px;font-size:12px;">
+                                            <select name="status_pembayaran">
                                                 <option value="belum" <?=($biaya['status']??'belum')==='belum'?'selected':''?>>Belum</option>
                                                 <option value="menunggu" <?=($biaya['status']??'')==='menunggu'?'selected':''?>>Menunggu</option>
                                                 <option value="lunas" <?=($biaya['status']??'')==='lunas'?'selected':''?>>Lunas</option>
@@ -284,11 +283,12 @@ require_once __DIR__ . '/includes/header.php';
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
+                                </tbody>
                             </table>
                             <?php if(!empty($p['kesanggupan_at'])): ?>
                             <br><strong>Kesanggupan:</strong> tanda tangan <a href="<?=BASE_URL?>/api/signature.php?id=<?=$p['id']?>" target="_blank" rel="noopener">lihat</a> · <?=e($p['kesanggupan_at'])?>
                             <?php endif; ?>
-                            <br><a href="<?=BASE_URL?>/surat-kesanggupan?id=<?=$p['id']?>" target="_blank" rel="noopener" class="btn-sm btn-sm-primary" style="margin-top:8px;">Download Ringkasan</a>
+                            <br><a href="<?=BASE_URL?>/surat-kesanggupan?id=<?=$p['id']?>" target="_blank" rel="noopener" style="text-decoration:none;" class="btn-sm btn-sm-primary">Download Ringkasan</a>
                             <?php $bf=$pdo->prepare('SELECT id,jenis,nama_asli,status FROM berkas_santri WHERE pendaftaran_id=? ORDER BY created_at DESC');$bf->execute([$p['id']]);$berkasP=$bf->fetchAll(); ?>
                             <br><br><strong>Berkas Masuk (<?=count($berkasP)?>):</strong><br>
                             <?php foreach($berkasP as $file): ?><a target="_blank" href="<?=BASE_URL?>/admin/berkas-lihat?id=<?=$file['id']?>"><?=e(ucwords(str_replace('-',' ',$file['jenis'])))?> — <?=e($file['nama_asli'])?></a> (<?=e($file['status'])?>)<br><?php endforeach; ?>
@@ -298,7 +298,7 @@ require_once __DIR__ . '/includes/header.php';
                             <?= e($p['alamat']) ?><br>
                             <?php if ($p['motivasi']): ?>
                             <br><strong>Motivasi:</strong><br>
-                            <em style="color:var(--text-light);"><?= e($p['motivasi']) ?></em>
+                            <span class="muted"><?= e($p['motivasi']) ?></span>
                             <?php endif; ?>
                             <?php if ($p['catatan_admin']): ?>
                             <br><strong>Catatan Admin:</strong><br>
@@ -306,7 +306,7 @@ require_once __DIR__ . '/includes/header.php';
                             <?php endif; ?>
                             <br><br><strong>Portal Santri</strong><br>
                             <?php if(!empty($p['nomor_induk'])):?><span class="badge badge-diterima">Aktif: <?=e($p['nomor_induk'])?></span><?php endif;?>
-                            <form method="post" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><input type="hidden" name="action" value="issue_portal"><input type="hidden" name="id" value="<?=$p['id']?>"><input name="nomor_induk" placeholder="Nomor induk" value="<?=e($p['nomor_induk']??'')?>" required><input type="password" name="portal_password" placeholder="Reset password (opsional)"><button class="btn-sm btn-sm-primary">Simpan Nomor Induk</button></form>
+                            <form method="post" class="admin-form"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><input type="hidden" name="action" value="issue_portal"><input type="hidden" name="id" value="<?=$p['id']?>"><input class="form-control" name="nomor_induk" placeholder="Nomor induk" value="<?=e($p['nomor_induk']??'')?>" required><input class="form-control" type="password" name="portal_password" placeholder="Reset password (opsional)"><button class="btn-sm btn-sm-primary">Simpan Nomor Induk</button></form>
                         </div>
                     </div>
                 </td>
@@ -343,32 +343,31 @@ require_once __DIR__ . '/includes/header.php';
 
 <!-- ── MODAL UPDATE STATUS ──────────────────────────────────── -->
 <div id="psbModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:20px;" hidden>
-    <div style="background:white;border-radius:8px;padding:28px;width:100%;max-width:440px;">
-        <h3 style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;margin-bottom:20px;">
+    <div class="admin-form-card" style="width:100%;max-width:440px;margin-bottom:0;">
+        <h3 class="admin-form-title">
             Update Status — <span id="modalNama"></span>
         </h3>
-        <form method="POST" action="<?= e(BASE_URL . '/admin/psb') ?>">
+        <form method="POST" action="<?= e(BASE_URL . '/admin/psb') ?>" class="admin-form">
             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
             <input type="hidden" name="action" value="update_status">
             <input type="hidden" name="id" id="modalId">
 
-            <div style="margin-bottom:16px;">
-                <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Status</label>
-                <select name="status" id="modalStatus" style="width:100%;padding:10px;border:1.5px solid var(--cream-dark);border-radius:4px;font-size:14px;">
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status" id="modalStatus" class="form-control">
                     <option value="pending">Menunggu</option>
                     <option value="diterima">Diterima</option>
                     <option value="ditolak">Ditolak</option>
                     <option value="daftar-ulang">Daftar Ulang</option>
                 </select>
             </div>
-            <div style="margin-bottom:20px;">
-                <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">Catatan (opsional)</label>
-                <textarea name="catatan" id="modalCatatan" rows="3"
-                    style="width:100%;padding:10px;border:1.5px solid var(--cream-dark);border-radius:4px;font-size:14px;resize:vertical;"></textarea>
+            <div class="form-group">
+                <label>Catatan (opsional)</label>
+                <textarea name="catatan" id="modalCatatan" rows="3" class="form-control"></textarea>
             </div>
-            <div style="display:flex;gap:12px;">
-                <button type="submit" class="btn-sm btn-sm-primary" style="padding:10px 24px;font-size:14px;">Simpan</button>
-                <button type="button" class="btn-sm btn-sm-secondary" onclick="closePsbModal()" style="padding:10px 20px;font-size:14px;">Batal</button>
+            <div class="form-actions">
+                <button type="submit" class="btn-sm btn-sm-primary">Simpan</button>
+                <button type="button" class="btn-sm btn-sm-secondary" onclick="closePsbModal()">Batal</button>
             </div>
         </form>
     </div>
@@ -391,7 +390,7 @@ function closePsbModal() {
 }
 function openPsbDetail(id) {
     var row = document.getElementById('detail-' + id);
-    if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+    if (row) { row.hidden = !row.hidden; }
 }
 document.getElementById('psbModal').addEventListener('click', function(e) {
     if (e.target === this) closePsbModal();
