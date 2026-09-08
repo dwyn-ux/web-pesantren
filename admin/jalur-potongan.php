@@ -105,7 +105,7 @@ require_once __DIR__ . '/includes/header.php';
         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
 
         <!-- REGULER -->
-        <fieldset>
+        <fieldset class="jalur-fieldset">
             <legend>Reguler</legend>
             <div class="form-row">
                 <div class="form-group">
@@ -121,7 +121,7 @@ require_once __DIR__ . '/includes/header.php';
         </fieldset>
 
         <!-- PRESTASI -->
-        <fieldset>
+        <fieldset class="jalur-fieldset">
             <legend>
                 Prestasi (Akademik/Non-Akademik)
                 <?php if (empty($optsJalur['prestasi'])): ?>
@@ -142,24 +142,24 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
             </div>
 
-            <?php foreach ($optsJalur['prestasi'] as $val => $opt): ?>
             <div class="form-row">
+            <?php foreach ($optsJalur['prestasi'] as $val => $opt): ?>
                 <div class="form-group">
                     <label><?= e($opt['label']) ?></label>
                     <input type="number" min="0" max="100" step="0.5"
                            name="jalur_prestasi[prestasi][<?= e($val) ?>]"
-                           value="<?= e($formatPersen($adminJalur['prestasi'][$val] ?? null)) ?>"
+                           value="<?= e($formatPersen($adminJalur['prestasi']['prestasi'][$val] ?? null)) ?>"
                            class="form-control">
                     <p class="muted">
                         Kosongkan jika ingin memakai nilai juknis (<?= (int) $opt['potongan'] ?>%).
                     </p>
                 </div>
-            </div>
             <?php endforeach; ?>
+            </div>
         </fieldset>
 
         <!-- TAHFIDZ -->
-        <fieldset>
+        <fieldset class="jalur-fieldset">
             <legend>
                 Tahfidz Al-Qur'an
                 <?php if (empty($optsJalur['tahfidz'])): ?>
@@ -184,24 +184,27 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
             </div>
 
-            <?php foreach ($optsJalur['tahfidz'] as $val => $opt): ?>
+            <?php
+            $tahfidzKey = ['juz-2' => 'juz2', 'juz-3' => 'juz3', 'juz-5' => 'juz5'];
+            ?>
             <div class="form-row">
+            <?php foreach ($optsJalur['tahfidz'] as $val => $opt): ?>
                 <div class="form-group">
                     <label><?= e($opt['label']) ?></label>
                     <input type="number" min="0" max="100" step="0.5"
                            name="jalur_tahfidz[tahfidz][<?= e($val) ?>]"
-                           value="<?= e($formatPersen($adminJalur['tahfidz'][$val] ?? null)) ?>"
+                           value="<?= e($formatPersen($adminJalur['tahfidz']['tahfidz'][$tahfidzKey[$val] ?? $val] ?? null)) ?>"
                            class="form-control">
                     <p class="muted">
                         Kosongkan jika ingin memakai nilai juknis (<?= (int) $opt['potongan'] ?>%).
                     </p>
                 </div>
-            </div>
             <?php endforeach; ?>
+            </div>
         </fieldset>
 
         <!-- KADERISASI -->
-        <fieldset>
+        <fieldset class="jalur-fieldset">
             <legend>Kaderisasi (Jalur Khusus)</legend>
             <div class="form-row">
                 <div class="form-group">
@@ -229,7 +232,7 @@ require_once __DIR__ . '/includes/header.php';
         </fieldset>
 
         <!-- ALUMNI SDMUa -->
-        <fieldset>
+        <fieldset class="jalur-fieldset">
             <legend>Alumni SD Muhammadiyah Unggulan Ashidiq</legend>
             <div class="form-row">
                 <div class="form-group">
@@ -247,7 +250,7 @@ require_once __DIR__ . '/includes/header.php';
         </fieldset>
 
         <!-- DHUAFA -->
-        <fieldset>
+        <fieldset class="jalur-fieldset">
             <legend>Dhuafa / Beasiswa Empowerment</legend>
             <div class="form-row">
                 <div class="form-group">

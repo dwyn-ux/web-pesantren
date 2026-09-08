@@ -414,3 +414,14 @@ body.admin-body {
 @media (max-width: 800px) {
     .detail-grid { grid-template-columns: 1fr; }
 }
+
+/* ── FORM GROUP: POTONGAN JALUR ─────────────────────────────── */
+.jalur-fieldset { border:1px solid var(--cream-dark); border-radius:8px; padding:18px 20px; margin:0 0 18px; background:#fff; }
+.jalur-fieldset > legend { font-family:'Plus Jakarta Sans',sans-serif; font-size:14px; font-weight:700; color:var(--green-deep); padding:0 10px; }
+.jalur-fieldset .form-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-top:12px; }
+.jalur-fieldset .form-group { margin-bottom:14px; }
+.jalur-fieldset .form-group:last-child { margin-bottom:0; }
+.jalur-fieldset label { display:block; font-size:12px; font-weight:600; color:var(--text-dark); margin-bottom:6px; letter-spacing:.3px; }
+.jalur-fieldset .form-control { width:100%; padding:9px 12px; box-sizing:border-box; border:1.5px solid var(--cream-dark); border-radius:4px; font-size:14px; color:var(--text-dark); background:#fff; outline:none; }
+.jalur-fieldset .form-control:focus { border-color:var(--green-mid); }
+.jalur-fieldset .muted { font-size:12px; color:var(--text-light); margin-top:6px; line-height:1.5; }
