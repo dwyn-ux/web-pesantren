@@ -615,7 +615,8 @@ function generateVoucherKode(int $len = 10): string {
 
 /**
  * Klaim jalur alumni lewat kode undangan + NISN (sistem voucher hibrida).
- * Voucher dibuat admin per NISN siswa SD Ashidiq; satu voucher satu pemakaian.
+ * Satu kode boleh dipakai banyak NISN; tiap pasangan kode+NISN hanya 1x pakai.
+ * NISN yang boleh klaim adalah yang terdaftar di baris voucher kode tersebut.
  *
  * @return array{ok: bool, pesan: string}
  */
@@ -633,23 +634,31 @@ function klaimJalurAlumni(PDO $pdo, int $pendaftaranId, string $kode, string $ni
         return ['ok' => false, 'pesan' => 'Pendaftaran sudah tidak bisa mengubah jalur.'];
     }
 
+    // Cari baris voucher yang pasangannya cocok (kode + NISN, case-insensitive)
     $stmt = $pdo->prepare(
-        "SELECT * FROM voucher_alumni WHERE kode = ? AND jalur = 'alumni-sdmua' LIMIT 1"
+        "SELECT * FROM voucher_alumni
+          WHERE kode = ? AND UPPER(TRIM(nisn)) = UPPER(TRIM(?))
+            AND jalur = 'alumni-sdmua' LIMIT 1"
     );
-    $stmt->execute([$kode]);
+    $stmt->execute([$kode, $nisn]);
     $v = $stmt->fetch();
 
     if (!$v) {
-        return ['ok' => false, 'pesan' => 'Kode undangan tidak ditemukan.'];
+        // Bedakan pesan: kode tidak ada vs NISN tidak terdaftar di kode itu
+        $cekKode = $pdo->prepare(
+            "SELECT id FROM voucher_alumni WHERE kode = ? AND jalur = 'alumni-sdmua' LIMIT 1"
+        );
+        $cekKode->execute([$kode]);
+        if (!$cekKode->fetch()) {
+            return ['ok' => false, 'pesan' => 'Kode undangan tidak ditemukan.'];
+        }
+        return ['ok' => false, 'pesan' => 'NISN tidak terdaftar pada kode undangan ini.'];
     }
     if ($v['pendaftaran_id'] !== null) {
-        return ['ok' => false, 'pesan' => 'Kode undangan sudah terpakai.'];
+        return ['ok' => false, 'pesan' => 'Kode undangan untuk NISN ini sudah terpakai.'];
     }
     if ($v['expire_at'] && $v['expire_at'] < date('Y-m-d')) {
         return ['ok' => false, 'pesan' => 'Kode undangan sudah kedaluwarsa.'];
-    }
-    if (strcasecmp((string) $v['nisn'], $nisn) !== 0) {
-        return ['ok' => false, 'pesan' => 'NISN tidak cocok dengan kode undangan.'];
     }
 
     try {
