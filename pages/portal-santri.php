@@ -542,13 +542,16 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           <div class="jalur-detail-wrap" id="detail-<?= e($jalurKey) ?>" style="display:none;">
             <h4>Pilih <?= $jalurKey === 'prestasi' ? 'Tingkat Prestasi' : 'Kategori Hafalan' ?>:</h4>
             <?php foreach ($details as $val => $opt): ?>
-              <?php if ($jalurKey === 'prestasi' && $val === 'internal' && !$akashiTerbuka) continue; ?>
               <label class="radio-inline">
                 <input type="radio" name="jalur_detail" value="<?= e($val) ?>"
                        <?= ($pendaftaran['jalur_detail'] ?? '') === $val ? 'checked' : '' ?>>
-                <?= e($opt['label']) ?>
-                <?php if (!($jalurKey === 'prestasi' && $val === 'internal')): ?>
-                  &mdash; potongan <?= (int)$opt['potongan'] ?>%
+                <?php if ($jalurKey === 'prestasi' && $val === 'internal'): ?>
+                  <?= e($opt['label']) ?>
+                  <?php if (!$akashiTerbuka): ?>
+                    <small style="color:var(--text-light);">*perlu kode voucher</small>
+                  <?php endif; ?>
+                <?php else: ?>
+                  <?= e($opt['label']) ?> &mdash; potongan <?= (int)$opt['potongan'] ?>%
                 <?php endif; ?>
               </label>
             <?php endforeach; ?>
@@ -558,16 +561,35 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
                 — potongan ADM awal <strong>Rp <?= number_format((float) $akVoucher['nominal_potongan'], 0, ',', '.') ?></strong>.
               </p>
             <?php endif; ?>
+            <?php if ($jalurKey === 'prestasi' && !$akashiTerbuka): ?>
+              <div id="akashiClaimBox" <?= !empty($errors['akashi_klaim']) ? '' : 'hidden' ?> style="margin-top:12px;padding:14px;background:#faf9f6;border:1px dashed #d9d2c5;border-radius:8px;">
+                <div id="akashiLevelSection">
+                  <p class="portal-note" style="margin-bottom:8px;">Khusus juara lomba Akashi. Pilih tingkat lomba terlebih dahulu:</p>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <label style="margin:0;font-weight:500;white-space:nowrap;">Bergabung dengan:</label>
+                    <select id="akashiLevelSelect" class="form-control" style="flex:1;min-width:180px;">
+                      <option value="">— Pilih Tingkat —</option>
+                      <option value="kecamatan">Tingkat Kecamatan</option>
+                      <option value="kabupaten">Tingkat Kabupaten/Kota</option>
+                      <option value="provinsi">Tingkat Provinsi</option>
+                    </select>
+                    <button type="button" id="akashiLanjutBtn" class="btn-primary">Lanjutkan</button>
+                  </div>
+                  <p class="field-error" id="akashiLevelError" hidden>Silakan pilih tingkat lomba terlebih dahulu.</p>
+                </div>
+                <div id="akashiVoucherSection" <?= !empty($errors['akashi_klaim']) ? '' : 'hidden' ?> style="margin-top:10px;">
+                  <p class="portal-note" style="margin-bottom:8px;">Masukkan kode voucher hadiah (tanpa NISN):</p>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <input type="text" id="akashiKodeInput" class="form-control" placeholder="AKS-XXXXXXXXXX"
+                           style="flex:1;min-width:200px;text-transform:uppercase;" autocomplete="off">
+                    <button type="button" id="akashiGunakanBtn" class="btn-primary">Gunakan Kode</button>
+                  </div>
+                  <p class="field-error" id="akashiClaimError" <?= !empty($errors['akashi_klaim']) ? '' : 'hidden' ?>><?= e($errors['akashi_klaim'] ?? '') ?></p>
+                </div>
+              </div>
+            <?php endif; ?>
           </div>
         <?php endforeach; ?>
-
-        <?php if (!$akashiTerbuka): ?>
-        <div class="jalur-detail-wrap" id="detail-akashi" style="display:none;">
-          <h4>Tingkat Internal (Akashi)</h4>
-          <p class="portal-note">Khusus juara lomba Akashi. Masukkan kode voucher hadiah (tanpa NISN):</p>
-          <?php if (!empty($errors['akashi_klaim'])): ?><p class="field-error"><?= e($errors['akashi_klaim']) ?></p><?php endif; ?>
-        </div>
-        <?php endif; ?>
 
         <div id="simulasiBox" style="display:none;">
           <h4>Simulasi Biaya</h4>
@@ -623,24 +645,6 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       <?php endif; ?>
     </section>
 
-    <?php if (!$akashiTerbuka && !$faseSelesai): ?>
-    <section class="portal-card" id="akashiCard" style="margin-top:20px;">
-      <h2>Voucher Prestasi Internal (Akashi)</h2>
-      <p class="portal-note">Khusus juara lomba Akashi (SD umum). Masukkan kode voucher hadiah (tanpa NISN). Setelah valid, radio "Tingkat Internal (Akashi)" terbuka di kartu Prestasi.</p>
-      <form method="post" style="max-width:420px;" novalidate>
-        <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-        <input type="hidden" name="step" value="akashi-klaim">
-        <div class="form-group">
-          <label>Kode Voucher</label>
-          <input type="text" name="voucher_akashi" class="form-control" placeholder="AKS-XXXXXXXXXX"
-                 required autocomplete="off" style="text-transform:uppercase;">
-        </div>
-        <?php if (!empty($errors['akashi_klaim'])): ?><p class="field-error"><?= e($errors['akashi_klaim']) ?></p><?php endif; ?>
-        <button type="submit" class="btn-primary">Gunakan Kode</button>
-      </form>
-    </section>
-    <?php endif; ?>
-
     <script>
     const JALUR_OPTS = <?= json_encode($optsJalur, JSON_UNESCAPED_UNICODE) ?>;
     const SIMULASI_DATA = <?= json_encode($simulasi, JSON_UNESCAPED_UNICODE) ?>;
@@ -663,6 +667,8 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           el.querySelectorAll('input[name="jalur_detail"]').forEach(r => { r.checked = false; r.disabled = true; });
         }
       });
+      // Tampilkan kotak klaim Akashi kalau "Tingkat Internal (Lomba Akashi)" dipilih
+      toggleAkashiClaim();
       // Show simulasi
       hitungSimulasi(jalur);
     }
@@ -698,15 +704,106 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         })
         .catch(() => { document.getElementById('simulasiBox').style.display = 'none'; });
     }
+    function toggleAkashiClaim() {
+      const internal = document.querySelector('input[name="jalur_detail"][value="internal"]');
+      const box = document.getElementById('akashiClaimBox');
+      if (!internal || !box) return;
+      box.hidden = !internal.checked;
+      // Kalau ada error klaim, langsung tampilkan voucher section (lewati level step)
+      const errEl = document.getElementById('akashiClaimError');
+      if (errEl && !errEl.hidden) {
+        const levelSec = document.getElementById('akashiLevelSection');
+        const voucherSec = document.getElementById('akashiVoucherSection');
+        if (levelSec) levelSec.style.display = 'none';
+        if (voucherSec) voucherSec.hidden = false;
+      }
+    }
+
     // Init on load
     document.addEventListener('DOMContentLoaded', function () {
       psbSyncJalur();
       document.querySelectorAll('input[name="jalur_detail"]').forEach(r => {
         r.addEventListener('change', function () {
+          toggleAkashiClaim();
           const checked = document.querySelector('input[name="jalur"]:checked');
           if (checked) hitungSimulasi(checked.value);
         });
       });
+      // Kalau klaim Akashi sebelumnya gagal, buka lagi kartu Prestasi + Tingkat Internal
+      const akErr = document.getElementById('akashiClaimError');
+      if (akErr && !akErr.hidden) {
+        const prestasi = document.querySelector('input[name="jalur"][value="prestasi"]');
+        const internal = document.querySelector('input[name="jalur_detail"][value="internal"]');
+        if (prestasi && internal) {
+          prestasi.checked = true;
+          internal.checked = true;
+          psbSyncJalur();
+        }
+      }
+      // Tombol "Lanjutkan" pada Akashi — tampilkan input kode voucher
+      const akLanjutBtn = document.getElementById('akashiLanjutBtn');
+      if (akLanjutBtn) {
+        akLanjutBtn.addEventListener('click', function () {
+          const levelSel = document.getElementById('akashiLevelSelect');
+          const levelErr = document.getElementById('akashiLevelError');
+          const levelSec = document.getElementById('akashiLevelSection');
+          const voucherSec = document.getElementById('akashiVoucherSection');
+          if (!levelSel.value) {
+            if (levelErr) levelErr.hidden = false;
+            levelSel.focus();
+            return;
+          }
+          if (levelErr) levelErr.hidden = true;
+          if (levelSec) levelSec.style.display = 'none';
+          if (voucherSec) voucherSec.hidden = false;
+          var kodeInp = document.getElementById('akashiKodeInput');
+          if (kodeInp) kodeInp.focus();
+        });
+      }
+      // Klaim voucher Akashi via AJAX (tanpa submit ulang form jalur)
+      const akBtn = document.getElementById('akashiGunakanBtn');
+      if (akBtn) {
+        akBtn.addEventListener('click', function () {
+          const inp = document.getElementById('akashiKodeInput');
+          const err = document.getElementById('akashiClaimError');
+          const kode = (inp.value || '').trim().toUpperCase();
+          inp.value = kode;
+          if (!kode) {
+            err.textContent = 'Kode voucher wajib diisi.';
+            err.hidden = false;
+            inp.focus();
+            return;
+          }
+          err.hidden = true;
+          const fd = new FormData();
+          fd.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+          fd.append('step', 'akashi-klaim');
+          fd.append('kode_voucher', kode);
+          akBtn.disabled = true;
+          akBtn.textContent = 'Memeriksa...';
+          fetch(location.pathname + location.search, { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function (resp) {
+              if (resp.redirected) { location.reload(); return null; }
+              return resp.text();
+            })
+            .then(function (html) {
+              if (html === null) return;
+              const doc = new DOMParser().parseFromString(html, 'text/html');
+              const el = doc.getElementById('akashiClaimError');
+              err.textContent = el && el.textContent.trim() ? el.textContent.trim() : 'Kode voucher tidak valid.';
+              err.hidden = false;
+              akBtn.disabled = false;
+              akBtn.textContent = 'Gunakan Kode';
+              inp.focus();
+            })
+            .catch(function () {
+              err.textContent = 'Terjadi kesalahan jaringan. Silakan coba lagi.';
+              err.hidden = false;
+              akBtn.disabled = false;
+              akBtn.textContent = 'Gunakan Kode';
+            });
+        });
+      }
     });
     </script>
 

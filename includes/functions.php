@@ -440,7 +440,7 @@ function jalurDetailOptions(): array {
             'kabkota'   => ['label' => 'Tingkat Kabupaten/Kota', 'potongan' => 30],
             'provinsi'  => ['label' => 'Tingkat Provinsi', 'potongan' => 40],
             'nasional'  => ['label' => 'Tingkat Nasional/Internasional', 'potongan' => 50],
-            'internal'  => ['label' => 'Tingkat Internal (Akashi)', 'potongan' => 0],
+            'internal'  => ['label' => 'Tingkat Internal (Lomba Akashi)', 'potongan' => 0],
         ],
         'tahfidz' => [
             'juz-2' => ['label' => 'Hafalan lebih dari 2 Juz', 'potongan' => 20],
@@ -668,7 +668,7 @@ function getPotonganAkashi(?array $adminJalur = null): array {
 /**
  * Validasi + klaim voucher Akashi (prestasi internal).
  * Voucher terikat hadiah fisik, BUKAN NISN: klaim dengan KODE saja.
- * Setelah valid, kartu "Tingkat Internal (Akashi)" terbuka di portal.
+ * Setelah valid, kartu "Tingkat Internal (Lomba Akashi)" terbuka di portal.
  *
  * @return array{ok: bool, pesan: string, voucher_id?: int, nominal?: float, juara?: string}
  */
@@ -717,7 +717,7 @@ function klaimVoucherAkashi(PDO $pdo, int $pendaftaranId, string $kode): array {
         $pdo->commit();
         return [
             'ok' => true,
-            'pesan' => 'Kode valid. Kartu "Tingkat Internal (Akashi)" terbuka — pilih lalu Simpan Jalur.',
+            'pesan' => 'Kode valid. Kartu "Tingkat Internal (Lomba Akashi)" terbuka — pilih lalu Simpan Jalur.',
             'voucher_id' => (int) $v['id'],
             'nominal' => (float) $v['nominal_potongan'],
             'juara' => $v['juara'],
