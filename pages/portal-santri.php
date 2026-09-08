@@ -112,11 +112,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
         }
 
         elseif ($step === 'finalisasi') {
-            $upd = $pdo->prepare(
-                "UPDATE pendaftaran SET status = 'menunggu-verifikasi' WHERE id = ?"
+            // Blokir kirim kalau berkas belum lengkap (4 wajib + berkas jalur)
+            $cekBerkas = $pdo->prepare(
+                'SELECT jenis FROM berkas_santri WHERE pendaftaran_id = ?'
             );
-            $upd->execute([$pendaftaranId]);
-            $successMsg = 'Berkas terkirim. Panitia akan memverifikasi.';
+            $cekBerkas->execute([$pendaftaranId]);
+            $adaJenis = array_column($cekBerkas->fetchAll(), 'jenis');
+            $wajibKurang = [];
+            foreach (['kartu-keluarga', 'akta-lahir', 'foto', 'ktp-ortu'] as $w) {
+                if (!in_array($w, $adaJenis, true)) $wajibKurang[] = $w;
+            }
+            // Ambil jalur terkini untuk syarat berkas jalur
+            $jalurNow = $pdo->prepare('SELECT jalur FROM pendaftaran WHERE id = ?');
+            $jalurNow->execute([$pendaftaranId]);
+            $jalurSaatIni = $jalurNow->fetchColumn() ?: 'reguler';
+            $jalurKurang = [];
+            foreach (jalurBerkasUntuk($jalurSaatIni) as $jb) {
+                if (!in_array($jb, $adaJenis, true)) $jalurKurang[] = $jb;
+            }
+            if (!empty($wajibKurang) || !empty($jalurKurang)) {
+                $errors['finalisasi'] = 'Berkas belum lengkap. Lengkapi dulu sebelum mengirim: '
+                    . implode(', ', array_merge($wajibKurang, $jalurKurang)) . '.';
+            } else {
+                $upd = $pdo->prepare(
+                    "UPDATE pendaftaran SET status = 'menunggu-verifikasi' WHERE id = ?"
+                );
+                $upd->execute([$pendaftaranId]);
+                $successMsg = 'Berkas terkirim. Panitia akan memverifikasi.';
+            }
         }
 
         $pdo->commit();
@@ -157,9 +180,13 @@ foreach ($berkasRows as $b) {
 $berkasWajibList = [
     'kartu-keluarga' => 'Kartu Keluarga (KK)',
     'akta-lahir'     => 'Akta Kelahiran',
-    'ijazah'         => 'Ijazah / SKL',
     'foto'           => 'Pas Foto 3x4',
     'ktp-ortu'       => 'KTP Orang Tua / KIA',
+];
+
+// Berkas pelengkap — dilengkapi setelah diterima (SKL/Ijazah menyusul kelulusan)
+$berkasPelengkapList = [
+    'ijazah' => 'Ijazah / SKL (menyusul setelah lulus)',
 ];
 
 $labelJenjang = [
@@ -179,7 +206,7 @@ $simulasi = ($pendaftaran['gelombang_id'] && !empty($pendaftaran['jalur']))
     : null;
 
 $stepSekarang = sanitizeString($_GET['step'] ?? 'akademik');
-$stepValid = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi', 'pembayaran'];
+$stepValid = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi', 'pembayaran', 'berkas-pelengkap'];
 if (!in_array($stepSekarang, $stepValid, true)) $stepSekarang = 'akademik';
 
 // ── Klaim jalur alumni (voucher + NISN) ────────────────────
@@ -337,6 +364,9 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
     <?php if (in_array($pendaftaran['status'], ['diterima','daftar-ulang'], true)): ?>
     <a href="?step=pembayaran" class="portal-step <?= $stepSekarang === 'pembayaran' ? 'active' : '' ?>">
       <span class="num">💰</span><span class="lbl">Pembayaran</span>
+    </a>
+    <a href="?step=berkas-pelengkap" class="portal-step <?= $stepSekarang === 'berkas-pelengkap' ? 'active' : '' ?>">
+      <span class="num">📄</span><span class="lbl">Berkas Pelengkap</span>
     </a>
     <?php endif; ?>
   </nav>
@@ -586,7 +616,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
   <?php elseif ($stepSekarang === 'berkas-wajib'): ?>
     <section class="portal-card">
       <h2>Upload Berkas Wajib</h2>
-      <p class="portal-note">Upload 5 berkas di bawah ini. Format: JPG/PNG/WEBP/PDF, maks 5MB (foto maks 2MB).</p>
+      <p class="portal-note">Upload 4 berkas di bawah ini. Format: JPG/PNG/WEBP/PDF, maks 5MB (foto maks 2MB). Ijazah/SKL dilengkapi setelah diterima.</p>
 
       <div class="berkas-list">
         <?php foreach ($berkasWajibList as $jenis => $label): ?>
@@ -768,6 +798,26 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         </ul>
       </div>
 
+      <?php
+      $wajibKurangView = array_diff(array_keys($berkasWajibList), array_keys($berkasByJenis));
+      $jalurKurangView = array_diff($jalurBerkas, array_keys($berkasByJenis));
+      ?>
+      <?php if (!empty($wajibKurangView) || !empty($jalurKurangView)): ?>
+      <div class="portal-info-box" style="border-left-color:#c33;">
+        <h2>Belum bisa dikirim</h2>
+        <p>Lengkapi dulu berkas berikut:</p>
+        <ul>
+          <?php foreach ($wajibKurangView as $k): ?>
+          <li><a href="?step=berkas-wajib" class="btn-link"><?= e($berkasWajibList[$k]) ?></a></li>
+          <?php endforeach; ?>
+          <?php foreach ($jalurKurangView as $k): ?>
+          <li><a href="?step=berkas-jalur" class="btn-link"><?= e($k) ?></a></li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
+      <?php endif; ?>
+      <?php if (!empty($errors['finalisasi'])): ?><p class="field-error"><?= e($errors['finalisasi']) ?></p><?php endif; ?>
+
       <form method="post">
         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
         <input type="hidden" name="step" value="finalisasi">
@@ -894,6 +944,61 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         <?php endforeach; ?>
       <?php endif; ?>
     </section>
+  <?php endif; ?>
+
+  <?php if ($stepSekarang === 'berkas-pelengkap' && in_array($pendaftaran['status'], ['diterima','daftar-ulang'], true)): ?>
+    <section class="portal-card">
+      <h2>Berkas Pelengkap</h2>
+      <p class="portal-note">Dilengkapi setelah diterima. Ijazah/SKL boleh menyusul setelah lulus. Format: JPG/PNG/WEBP/PDF, maks 5MB.</p>
+
+      <div class="berkas-list">
+        <?php foreach ($berkasPelengkapList as $jenis => $label): ?>
+          <?php $exists = $berkasByJenis[$jenis] ?? null; ?>
+          <div class="berkas-item" data-jenis="<?= e($jenis) ?>">
+            <div class="berkas-info">
+              <div class="berkas-label"><?= e($label) ?></div>
+              <?php if ($exists): ?>
+                <div class="berkas-status success">✓ Sudah diupload</div>
+              <?php else: ?>
+                <div class="berkas-status pending">Belum diupload</div>
+              <?php endif; ?>
+            </div>
+            <div class="berkas-action">
+              <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf"
+                     data-jenis="<?= e($jenis) ?>" class="berkas-input">
+              <button type="button" class="btn-outline btn-upload-pelengkap" data-jenis="<?= e($jenis) ?>">Upload</button>
+              <?php if ($exists): ?>
+                <a href="/berkas-santri?jenis=<?= e($jenis) ?>" target="_blank" class="btn-link">Lihat</a>
+              <?php endif; ?>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+
+      <div class="portal-actions">
+        <a href="?step=pembayaran" class="btn-outline">&larr; Pembayaran</a>
+      </div>
+    </section>
+
+    <script>
+    document.querySelectorAll('.btn-upload-pelengkap').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const jenis = this.dataset.jenis;
+        const input = document.querySelector('.berkas-input[data-jenis="' + jenis + '"]');
+        if (!input.files || !input.files[0]) { alert('Pilih file terlebih dahulu.'); return; }
+        const fd = new FormData();
+        fd.append('csrf_token', '<?= generateCsrfToken() ?>');
+        fd.append('jenis', jenis);
+        fd.append('file', input.files[0]);
+        this.disabled = true;
+        this.textContent = 'Uploading...';
+        fetch('/api/upload-berkas.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+          .then(r => r.json())
+          .then(data => { data.success ? location.reload() : (alert('Gagal: ' + (data.message || '')), this.disabled = false, this.textContent = 'Upload'); })
+          .catch(e => { alert('Error: ' + e.message); this.disabled = false; this.textContent = 'Upload'; });
+      });
+    });
+    </script>
   <?php endif; ?>
 </div>
 </main>

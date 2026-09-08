@@ -162,7 +162,7 @@ $labelStatus = [
             $berkasList = $bs->fetchAll();
             $byJenis = [];
             foreach ($berkasList as $b) $byJenis[$b['jenis']] = $b;
-            $wajibList = ['kartu-keluarga','akta-lahir','ijazah','foto','ktp-ortu'];
+            $wajibList = ['kartu-keluarga','akta-lahir','foto','ktp-ortu'];
             $jalurBerkas = jalurBerkasUntuk($d['jalur']);
     ?>
     <div class="admin-form-card">

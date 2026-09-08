@@ -59,8 +59,11 @@ if (!in_array($jenis, $jenisValid, true)) {
     exit;
 }
 
-// Cegah upload jika status bukan editable
-if (!isBerkasEditable($pendaftaran['status']) && $jenis !== 'bukti-bayar') {
+// Cegah upload jika status bukan editable.
+// Pengecualian: ijazah (berkas pelengkap) boleh diupload setelah diterima/daftar-ulang.
+$bolehPelengkap = $jenis === 'ijazah'
+    && in_array($pendaftaran['status'], ['diterima', 'daftar-ulang'], true);
+if (!isBerkasEditable($pendaftaran['status']) && $jenis !== 'bukti-bayar' && !$bolehPelengkap) {
     http_response_code(403);
     echo json_encode([
         'success' => false,
