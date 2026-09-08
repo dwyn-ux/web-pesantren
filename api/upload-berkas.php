@@ -182,12 +182,12 @@ if ($existing) {
     // Hapus file lama
     $oldPath = __DIR__ . '/../uploads/' . $existing['nama_file'];
     if (is_file($oldPath)) @unlink($oldPath);
-    $upd = $pdo->prepare('UPDATE berkas_santri SET nama_file = ?, mime_type = ?, uploaded_at = NOW() WHERE id = ?');
+    $upd = $pdo->prepare('UPDATE berkas_santri SET nama_file = ?, mime_type = ?, created_at = NOW() WHERE id = ?');
     $upd->execute([$dbPath, $mime, $existing['id']]);
 } else {
     $ins = $pdo->prepare(
-        'INSERT INTO berkas_santri (pendaftaran_id, jenis, nama_file, mime_type, uploaded_at)
-         VALUES (?,?,?,?,NOW())'
+        'INSERT INTO berkas_santri (pendaftaran_id, jenis, nama_file, mime_type)
+         VALUES (?,?,?,?)'
     );
     $ins->execute([$pendaftaranId, $jenis, $dbPath, $mime]);
 }

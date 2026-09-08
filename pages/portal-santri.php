@@ -124,7 +124,7 @@ $pendaftaran = $s->fetch();
 
 // Ambil daftar berkas yang sudah di-upload
 $berkasStmt = $pdo->prepare(
-    'SELECT id, jenis, nama_file, mime_type, uploaded_at FROM berkas_santri
+    'SELECT id, jenis, nama_file, mime_type, created_at AS uploaded_at FROM berkas_santri
      WHERE pendaftaran_id = ? ORDER BY id'
 );
 $berkasStmt->execute([$pendaftaranId]);
