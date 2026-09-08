@@ -220,28 +220,7 @@ include __DIR__ . '/includes/header.php';
                     <?php endif; ?>
                 </td>
                 <td>
-                    <button type="button" class="btn-sm btn-sm-warning" onclick="toggleEditForm('edit-<?= (int)$v['id'] ?>')">Edit</button>
-                    <div id="edit-<?= (int)$v['id'] ?>" style="display:none;margin-top:8px;">
-                        <form method="post" class="admin-form" style="background:#faf9f6;padding:12px;border-radius:6px;">
-                            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-                            <input type="hidden" name="act" value="edit">
-                            <input type="hidden" name="id" value="<?= (int) $v['id'] ?>">
-                            <div class="form-group" style="margin-bottom:8px;">
-                                <label>Nama pemenang</label>
-                                <input type="text" name="nama_pemenang" class="form-control" value="<?= e($v['nama_pemenang'] ?? '') ?>">
-                            </div>
-                            <div class="form-group" style="margin-bottom:8px;">
-                                <label>Nominal (Rp)</label>
-                                <input type="number" name="nominal" class="form-control" min="1" value="<?= (int) $v['nominal_potongan'] ?>">
-                            </div>
-                            <div class="form-group" style="margin-bottom:8px;">
-                                <label>Berlaku s/d</label>
-                                <input type="date" name="expire_at" class="form-control" value="<?= e($v['expire_at'] ?? '') ?>">
-                            </div>
-                            <button type="submit" class="btn-sm btn-sm-primary">Simpan</button>
-                            <button type="button" class="btn-sm btn-sm-secondary" onclick="toggleEditForm('edit-<?= (int)$v['id'] ?>')">Batal</button>
-                        </form>
-                    </div>
+                    <button type="button" class="btn-sm btn-sm-warning" onclick="openEditAkashi(<?= (int)$v['id'] ?>, '<?= e(addslashes($v['kode'])) ?>', '<?= e(addslashes($v['nama_pemenang'] ?? '')) ?>', <?= (int)$v['nominal_potongan'] ?>, '<?= e(addslashes($v['expire_at'] ?? '')) ?>')">Edit</button>
                     <?php if (!$v['pendaftaran_id']): ?>
                     <form method="post" style="display:inline;" onsubmit="return confirm('Hapus kode <?= e($v['kode']) ?>?')">
                         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
@@ -260,12 +239,59 @@ include __DIR__ . '/includes/header.php';
     <?php endif; ?>
 </div>
 
+<!-- ── MODAL EDIT VOUCHER ─────────────────────────────────────── -->
+<div id="editAkashiModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:20px;" hidden>
+    <div class="admin-form-card" style="width:100%;max-width:440px;margin-bottom:0;">
+        <div class="admin-form-title" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Edit Voucher — <code id="modalKode"></code></span>
+            <button type="button" class="btn-sm btn-sm-secondary" onclick="closeEditAkashi()" aria-label="Tutup">&times;</button>
+        </div>
+        <form method="POST" class="admin-form">
+            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+            <input type="hidden" name="act" value="edit">
+            <input type="hidden" name="id" id="modalId">
+            <div class="form-group">
+                <label>Nama Pemenang</label>
+                <input type="text" name="nama_pemenang" id="modalNama" class="form-control" placeholder="cth: Ahmad Fauzi">
+            </div>
+            <div class="form-group">
+                <label>Nominal Potongan (Rp)</label>
+                <input type="number" name="nominal" id="modalNominal" class="form-control" min="1" step="1000" required>
+            </div>
+            <div class="form-group">
+                <label>Masa Berlaku s/d</label>
+                <input type="date" name="expire_at" id="modalExpire" class="form-control">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-sm btn-sm-primary">Simpan</button>
+                <button type="button" class="btn-sm btn-sm-secondary" onclick="closeEditAkashi()">Batal</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-function toggleEditForm(id) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+function openEditAkashi(id, kode, nama, nominal, expire) {
+    document.getElementById('modalId').value = id;
+    document.getElementById('modalKode').textContent = kode;
+    document.getElementById('modalNama').value = nama;
+    document.getElementById('modalNominal').value = nominal;
+    document.getElementById('modalExpire').value = expire || '';
+    var modal = document.getElementById('editAkashiModal');
+    modal.removeAttribute('hidden');
+    modal.style.display = 'flex';
 }
+function closeEditAkashi() {
+    var modal = document.getElementById('editAkashiModal');
+    modal.setAttribute('hidden', '');
+    modal.style.display = 'none';
+}
+document.getElementById('editAkashiModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditAkashi();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeEditAkashi();
+});
 </script>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
