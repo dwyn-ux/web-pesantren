@@ -127,6 +127,9 @@ ob_start();
 include $filePath;
 $pageContent = ob_get_clean();
 
-include ROOT_PATH . '/includes/header.php';
+// Halaman santri — pakai header khusus (menu kebutuhan santri)
+$santriPages = ['portal-santri', 'profil-santri'];
+
+include ROOT_PATH . (in_array($page, $santriPages, true) ? '/includes/header-santri.php' : '/includes/header.php');
 echo $pageContent;
 include ROOT_PATH . '/includes/footer.php';

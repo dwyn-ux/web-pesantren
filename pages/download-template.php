@@ -94,3 +94,4 @@ echo '<div class="toolbar"><button onclick="window.print()">🖨 Print</button><
 echo '<div class="doc">' . $html . '</div>';
 echo '<script>function downloadDoc(){const blob=new Blob([document.querySelector(".doc").outerHTML],{type:"text/html"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=' . json_encode(preg_replace('/[^a-z0-9]+/i', '-', strtolower($tpl['judul'])) . '.html') . ';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}</script>';
 echo '</body></html>';
+exit;

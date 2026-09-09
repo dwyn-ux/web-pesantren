@@ -423,7 +423,12 @@ $statusClass = match($pendaftaran['status']) {
     default               => 'status-info',
 };
 
-$activePage      = 'psb';
+$activePage      = match($stepSekarang) {
+    'pembayaran' => 'pembayaran',
+    'surat-ttd'  => 'dokumen-santri',
+    'berkas-wajib', 'berkas-jalur', 'berkas-pelengkap' => 'berkas-santri',
+    default      => 'portal-santri',
+};
 $pageTitle       = 'Portal Santri — ' . APP_NAME;
 $pageDescription = 'Portal calon peserta PSB Pondok Pesantren Ash-Shiddiq.';
 $pageCanonical   = BASE_URL . '/portal-santri';

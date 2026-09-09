@@ -29,7 +29,7 @@ $labelStatus = [
     'pending' => 'Menunggu', 'diterima' => 'Diterima', 'ditolak' => 'Ditolak', 'daftar-ulang' => 'Daftar Ulang',
 ];
 
-$activePage = 'profil';
+$activePage = 'profil-santri';
 $pageTitle  = 'Profil Santri | ' . APP_NAME;
 $pageDescription = 'Profil dan data pendaftaran santri.';
 $pageCanonical = BASE_URL . '/profil-santri';
