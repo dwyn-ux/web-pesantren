@@ -21,7 +21,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              WHERE id=?"
         )->execute([$_SESSION['user_id'], $id]);
         $msg = 'Cicilan diverifikasi.'; $msgType = 'success';
-    } elseif ($act === 'tolak' && $id) {
+    } elseif ($act === 'verifikasi_batch' && $id) {
+        // Verifikasi sekaligus semua baris satu batch (id = batch_id string aman via whitelist query)
+        $batch = preg_replace('/[^0-9a-f]/', '', (string) ($_POST['batch'] ?? ''));
+        if ($batch !== '') {
+            $pdo->beginTransaction();
+            try {
+                $pdo->prepare(
+                    "UPDATE pembiayaan_cicilan
+                     SET status='verified', verified_by=?, verified_at=NOW()
+                     WHERE batch_id=? AND status='pending'"
+                )->execute([$_SESSION['user_id'], $batch]);
+                $pdo->commit();
+                $msg = 'Batch gabungan diverifikasi sekaligus.'; $msgType = 'success';
+            } catch (Throwable $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                error_log('Verifikasi batch gagal: ' . $e->getMessage());
+                $msg = 'Gagal verifikasi batch.'; $msgType = 'error';
+            }
+        }
+    } elseif ($act === 'tolak_batch' && $id) {
         $catatan = sanitizeString($_POST['catatan'] ?? '');
         $pdo->prepare(
             "UPDATE pembiayaan_cicilan
@@ -89,43 +108,82 @@ include __DIR__ . '/includes/header.php';
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($list as $r): ?>
+            <?php
+            // Kelompokkan baris se-batch agar verifikasi sekaligus
+            $grup = [];
+            foreach ($list as $r) {
+                $k = !empty($r['batch_id']) ? 'batch:' . $r['batch_id'] : 'row:' . $r['id'];
+                $grup[$k][] = $r;
+            }
+            foreach ($grup as $rows):
+                $isBatch = count($rows) > 1 || !empty($rows[0]['batch_id']);
+                $pertama = $rows[0];
+                $totalGrup = array_sum(array_map(static fn($x) => (float) $x['nominal'], $rows));
+                $semuaPending = array_reduce($rows, static fn($c, $x) => $c && $x['status'] === 'pending', true);
+            ?>
             <tr>
                 <td>
-                    <strong><?= e($r['nama_lengkap']) ?></strong><br>
-                    <code><?= e($r['nomor_daftar']) ?></code>
+                    <strong><?= e($pertama['nama_lengkap']) ?></strong><br>
+                    <code><?= e($pertama['nomor_daftar']) ?></code>
                 </td>
                 <td>
-                    <?= e($r['item_nama']) ?>
-                    <br><small class="muted">Tagihan: Rp <?= number_format((float)$r['item_nominal'], 0, ',', '.') ?></small>
+                    <?php if ($isBatch): ?>
+                        <span class="badge badge-diterima">Gabungan (<?= count($rows) ?> item)</span><br>
+                        <?php foreach ($rows as $gr): ?>
+                            <?= e($gr['item_nama']) ?>: <strong>Rp <?= number_format((float)$gr['nominal'], 0, ',', '.') ?></strong><br>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <?= e($pertama['item_nama']) ?>
+                        <br><small class="muted">Tagihan: Rp <?= number_format((float)$pertama['item_nominal'], 0, ',', '.') ?></small>
+                    <?php endif; ?>
                 </td>
-                <td><strong>Rp <?= number_format((float)$r['nominal'], 0, ',', '.') ?></strong></td>
-                <td><?= e($r['metode']) ?></td>
-                <td style="font-size:12px;"><?= e($r['tanggal_bayar']) ?></td>
+                <td><strong>Rp <?= number_format($totalGrup, 0, ',', '.') ?></strong></td>
+                <td><?= e($pertama['metode']) ?></td>
+                <td style="font-size:12px;"><?= e($pertama['tanggal_bayar']) ?></td>
                 <td>
-                    <?php if ($r['status'] === 'verified'): ?>
+                    <?php if ($semuaPending): ?>
+                        <span class="badge badge-pending">Menunggu</span>
+                    <?php elseif (array_reduce($rows, static fn($c, $x) => $c && $x['status'] === 'verified', true)): ?>
                         <span class="badge badge-diterima">Diverifikasi</span>
-                    <?php elseif ($r['status'] === 'rejected'): ?>
+                    <?php elseif (array_reduce($rows, static fn($c, $x) => $c && $x['status'] === 'rejected', true)): ?>
                         <span class="badge badge-ditolak">Ditolak</span>
                     <?php else: ?>
-                        <span class="badge badge-pending">Menunggu</span>
+                        <span class="badge badge-pending">Sebagian</span>
                     <?php endif; ?>
                 </td>
                 <td>
-                    <?php if ($r['status'] === 'pending'): ?>
+                    <?php if ($semuaPending): ?>
+                        <?php if ($isBatch): ?>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                                <input type="hidden" name="act" value="verifikasi_batch">
+                                <input type="hidden" name="id" value="<?= (int)$pertama['id'] ?>">
+                                <input type="hidden" name="batch" value="<?= e($pertama['batch_id']) ?>">
+                                <button type="submit" class="btn-sm btn-sm-primary">✓ Verifikasi Semua</button>
+                            </form>
+                            <form method="post" style="display:inline;" onsubmit="return confirm('Tolak seluruh batch ini?')">
+                                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                                <input type="hidden" name="act" value="tolak_batch">
+                                <input type="hidden" name="id" value="<?= (int)$pertama['id'] ?>">
+                                <input type="hidden" name="batch" value="<?= e($pertama['batch_id']) ?>">
+                                <input type="hidden" name="catatan" value="Bukti tidak valid">
+                                <button type="submit" class="btn-sm btn-sm-danger">✕ Tolak Semua</button>
+                            </form>
+                        <?php else: ?>
                         <form method="post" style="display:inline;">
                             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                             <input type="hidden" name="act" value="verifikasi">
-                            <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                            <input type="hidden" name="id" value="<?= (int)$pertama['id'] ?>">
                             <button type="submit" class="btn-sm btn-sm-primary">✓ Verifikasi</button>
                         </form>
                         <form method="post" style="display:inline;" onsubmit="return confirm('Tolak cicilan ini?')">
                             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                             <input type="hidden" name="act" value="tolak">
-                            <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                            <input type="hidden" name="id" value="<?= (int)$pertama['id'] ?>">
                             <input type="hidden" name="catatan" value="Bukti tidak valid">
                             <button type="submit" class="btn-sm btn-sm-danger">✕ Tolak</button>
                         </form>
+                        <?php endif; ?>
                     <?php else: ?>
                         <small class="muted">Selesai</small>
                     <?php endif; ?>

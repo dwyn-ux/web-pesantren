@@ -340,6 +340,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan
     }
 }
 
+// ── Submit cicilan gabungan: satu nominal untuk beberapa item ─
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan-gabungan'
+    && in_array($pendaftaran['status'], ['diterima', 'daftar-ulang'], true)) {
+    validateCsrf();
+    $ids = array_values(array_unique(array_map('intval', (array) ($_POST['ids'] ?? []))));
+    $nominalGab = sanitizeFloat($_POST['nominal'] ?? 0);
+    $tanggalGab = sanitizeString($_POST['tanggal_bayar'] ?? date('Y-m-d'));
+    $metodeGab = sanitizeString($_POST['metode'] ?? 'transfer');
+    if (!in_array($metodeGab, ['tunai', 'transfer', 'virtual-account'], true)) $metodeGab = 'transfer';
+
+    if (count($ids) < 1) {
+        $errors['gabungan'] = 'Centang minimal satu tagihan.';
+    } elseif ($nominalGab <= 0) {
+        $errors['gabungan'] = 'Nominal harus lebih dari 0.';
+    } else {
+        // Ambil item milik pendaftar + sisa per item
+        $sisaPerItem = [];
+        $totalSisa = 0.0;
+        foreach ($ids as $pid) {
+            $cek = $pdo->prepare('SELECT id, nominal FROM pembiayaan WHERE id = ? AND pendaftaran_id = ?');
+            $cek->execute([$pid, $pendaftaranId]);
+            $row = $cek->fetch();
+            if (!$row) {
+                $errors['gabungan'] = 'Item tagihan tidak valid.';
+                break;
+            }
+            $sum = $pdo->prepare("SELECT COALESCE(SUM(nominal),0) FROM pembiayaan_cicilan WHERE pembiayaan_id = ? AND status = 'verified'");
+            $sum->execute([$pid]);
+            $sisa = (float) $row['nominal'] - (float) $sum->fetchColumn();
+            if ($sisa <= 0) continue; // sudah lunas → lewati
+            $sisaPerItem[$pid] = $sisa;
+            $totalSisa += $sisa;
+        }
+        if (empty($errors)) {
+            if (empty($sisaPerItem)) {
+                $errors['gabungan'] = 'Semua item tercentang sudah lunas.';
+            } elseif ($nominalGab > $totalSisa) {
+                $errors['gabungan'] = 'Nominal melebihi total sisa (Rp ' . number_format($totalSisa, 0, ',', '.') . ').';
+            } else {
+                // Distribusi berurutan, dalam satu transaksi + satu batch_id
+                $batchId = bin2hex(random_bytes(16));
+                try {
+                    $pdo->beginTransaction();
+                    $sisaNominal = $nominalGab;
+                    foreach ($sisaPerItem as $pid => $sisa) {
+                        if ($sisaNominal <= 0) break;
+                        $bagi = min($sisa, $sisaNominal);
+                        $ke = $pdo->prepare('SELECT COALESCE(MAX(angsuran_ke),0)+1 FROM pembiayaan_cicilan WHERE pembiayaan_id = ?');
+                        $ke->execute([$pid]);
+                        $ins = $pdo->prepare(
+                            'INSERT INTO pembiayaan_cicilan
+                             (pembiayaan_id, batch_id, angsuran_ke, nominal, tanggal_bayar, metode, status)
+                             VALUES (?,?,?,?,?,?,\'pending\')'
+                        );
+                        $ins->execute([$pid, $batchId, (int) $ke->fetchColumn(), $bagi, $tanggalGab, $metodeGab]);
+                        $sisaNominal -= $bagi;
+                    }
+                    $pdo->commit();
+                    $_SESSION['flash_success'] = 'Pembayaran gabungan Rp ' . number_format($nominalGab, 0, ',', '.') . ' dikirim. Menunggu verifikasi admin.';
+                    redirect('/portal-santri?step=pembayaran');
+                } catch (Throwable $e) {
+                    if ($pdo->inTransaction()) $pdo->rollBack();
+                    error_log('Cicilan gabungan error: ' . $e->getMessage());
+                    $errors['gabungan'] = 'Terjadi kesalahan sistem.';
+                }
+            }
+        }
+    }
+}
+
 // ── Submit surat & TTD (status diterima/daftar-ulang) ──────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'surat-ttd'
     && in_array($pendaftaran['status'], ['diterima', 'daftar-ulang'], true)) {
@@ -1051,24 +1121,10 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
 
   <?php endif; // faseSelesai ?>
 
-  <?php if (in_array($pendaftaran['status'], ['diterima','daftar-ulang'], true)): ?>
-  <nav class="portal-steps" aria-label="Langkah pasca-diterima" style="margin-top:20px;">
-    <a href="?step=pembayaran" class="portal-step <?= $stepSekarang === 'pembayaran' ? 'active' : '' ?>">
-      <span class="num">💰</span><span class="lbl">Pembayaran</span>
-    </a>
-    <a href="?step=surat-ttd" class="portal-step <?= $stepSekarang === 'surat-ttd' ? 'active' : '' ?>">
-      <span class="num">✍</span><span class="lbl">Surat &amp; TTD</span>
-    </a>
-    <a href="?step=berkas-pelengkap" class="portal-step <?= $stepSekarang === 'berkas-pelengkap' ? 'active' : '' ?>">
-      <span class="num">📄</span><span class="lbl">Berkas Pelengkap</span>
-    </a>
-  </nav>
-  <?php endif; ?>
-
   <?php if ($stepSekarang === 'pembayaran' && in_array($pendaftaran['status'], ['diterima','daftar-ulang'], true)): ?>
     <section class="portal-card">
       <h2>Pembayaran Tagihan</h2>
-      <p>Berikut adalah tagihan final Anda. Silakan lakukan pembayaran dan upload bukti cicilan.</p>
+      <p>Centang beberapa tagihan lalu bayar sekaligus, atau bayar per item di bawah.</p>
 
       <?php
       $tagihan = $pdo->prepare(
@@ -1086,9 +1142,68 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       }
       ?>
 
+      <?php
+      $rekeningTujuan = $pdo->query("SELECT value FROM pengaturan WHERE key_name='rekening_pondok'")->fetchColumn()
+          ?: 'BCA 123-456-7890 a.n. Pondok Pesantren Ash-Shiddiq';
+      ?>
       <?php if (empty($itemList)): ?>
         <p style="color:#999;">Belum ada tagihan. Tagihan akan muncul setelah Panitia melakukan snapshot final.</p>
       <?php else: ?>
+        <form method="post" id="formGabungan" class="tagihan-item" style="border-color:var(--green-deep);">
+          <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+          <input type="hidden" name="step" value="cicilan-gabungan">
+          <h4 style="font-size:15px;margin-bottom:4px;">Bayar Gabungan</h4>
+          <p class="portal-note" style="margin-bottom:12px;">Centang tagihan di bawah, total sisa muncul otomatis. Nominal boleh kurang dari total (cicilan).</p>
+          <?php if (!empty($errors['gabungan'])): ?><p class="field-error"><?= e($errors['gabungan']) ?></p><?php endif; ?>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Total Sisa Tercentang</label>
+              <div id="gabTotal" style="font-size:18px;font-weight:800;color:var(--green-deep);">Rp 0</div>
+            </div>
+            <div class="form-group">
+              <label>Nominal Bayar (Rp)</label>
+              <input type="number" name="nominal" id="gabNominal" min="1" required class="form-control" placeholder="Ketik nominal">
+            </div>
+            <div class="form-group">
+              <label>Tanggal Bayar</label>
+              <input type="date" name="tanggal_bayar" required class="form-control" value="<?= date('Y-m-d') ?>">
+            </div>
+            <div class="form-group">
+              <label>Metode</label>
+              <select name="metode" class="form-control">
+                <option value="transfer">Transfer Bank</option>
+                <option value="virtual-account">Virtual Account</option>
+                <option value="tunai">Tunai (ke Panitia)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button type="submit" class="btn-primary">Bayar Gabungan</button>
+            </div>
+          </div>
+          <p class="form-note">Rekening tujuan: <strong><?= e($rekeningTujuan) ?></strong></p>
+        </form>
+        <script>
+        (function () {
+          var totalEl = document.getElementById('gabTotal');
+          var nomEl = document.getElementById('gabNominal');
+          if (!totalEl || !nomEl) return;
+          function rp(n) { return 'Rp ' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+          function hitung() {
+            var t = 0;
+            document.querySelectorAll('.cek-item:checked').forEach(function (c) {
+              t += parseFloat(c.dataset.sisa || '0');
+            });
+            totalEl.textContent = rp(t);
+            nomEl.max = Math.floor(t);
+            nomEl.placeholder = t > 0 ? 'Maks ' + rp(t) : 'Ketik nominal';
+          }
+          document.querySelectorAll('.cek-item').forEach(function (c) {
+            c.addEventListener('change', hitung);
+          });
+          hitung();
+        })();
+        </script>
         <?php foreach ($itemList as $it):
             $sisa = (float)$it['nominal'] - ($sumVerified[$it['id']] ?? 0);
             $lunas = $sisa <= 0;
@@ -1098,7 +1213,12 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         ?>
         <div class="tagihan-item">
           <div class="tagihan-head">
-            <div>
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <?php if (!$lunas): ?>
+              <input type="checkbox" class="cek-item" form="formGabungan" name="ids[]" value="<?= (int)$it['id'] ?>"
+                     data-sisa="<?= (float)$sisa ?>" style="width:18px;height:18px;margin-top:4px;" aria-label="Pilih <?= e($it['nama']) ?>">
+              <?php endif; ?>
+              <div>
               <h4><?= e($it['nama']) ?> <small>(<?= e($it['jenis']) ?>)</small></h4>
               <div style="font-size:13px;color:#888;">
                 <?php if ((float)$it['harga_diskon'] > 0): ?>
@@ -1110,6 +1230,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
                 <?php else: ?>
                   <span class="badge badge-warning">Sisa Rp <?= number_format($sisa, 0, ',', '.') ?></span>
                 <?php endif; ?>
+                </div>
               </div>
             </div>
           </div>
@@ -1121,7 +1242,9 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
                 <?php foreach ($cicilanAll as $c): ?>
                 <tr>
                   <td><?= (int)$c['angsuran_ke'] ?></td>
-                  <td>Rp <?= number_format((float)$c['nominal'], 0, ',', '.') ?></td>
+                  <td>Rp <?= number_format((float)$c['nominal'], 0, ',', '.') ?>
+                    <?php if (!empty($c['batch_id'])): ?><small style="color:#0d7a4a;"> (gabungan)</small><?php endif; ?>
+                  </td>
                   <td><?= e($c['tanggal_bayar']) ?></td>
                   <td><?= e($c['metode']) ?></td>
                   <td>
