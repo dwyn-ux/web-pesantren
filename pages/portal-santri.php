@@ -357,7 +357,8 @@ $pageDescription = 'Portal calon peserta PSB Pondok Pesantren Ash-Shiddiq.';
 $pageCanonical   = BASE_URL . '/portal-santri';
 $bodyClass       = 'portal-santri-page';
 
-$extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.css?v=' . ASSET_VERSION . '">';
+$extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.css?v=' . ASSET_VERSION . '">'
+    . '<script src="' . BASE_URL . '/assets/js/kompres-gambar.js?v=' . ASSET_VERSION . '" defer></script>';
 ?>
 <main class="page-section">
 <div class="container portal-container">
@@ -766,7 +767,8 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
   <?php elseif ($stepSekarang === 'berkas-wajib'): ?>
     <section class="portal-card">
       <h2>Upload Berkas Wajib</h2>
-      <p class="portal-note">Upload 4 berkas di bawah ini. Format: JPG/PNG/WEBP/PDF, maks 5MB (foto maks 2MB). Ijazah/SKL dilengkapi setelah diterima.</p>
+      <p class="portal-note">Upload 4 berkas di bawah ini. Gambar (JPG/PNG/WEBP) otomatis dikompres ke ≤1MB; PDF maks 5MB. Ijazah/SKL dilengkapi setelah diterima.</p>
+      <input type="hidden" id="csrfGlobal" value="<?= generateCsrfToken() ?>">
 
       <div class="berkas-list">
         <?php foreach ($berkasWajibList as $jenis => $label): ?>
@@ -798,47 +800,14 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       </div>
     </section>
 
-    <script>
-    document.querySelectorAll('.btn-upload').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const jenis = this.dataset.jenis;
-        const input = document.querySelector('.berkas-input[data-jenis="' + jenis + '"]');
-        if (!input.files || !input.files[0]) {
-          alert('Pilih file terlebih dahulu.');
-          return;
-        }
-        const fd = new FormData();
-        fd.append('csrf_token', '<?= generateCsrfToken() ?>');
-        fd.append('jenis', jenis);
-        fd.append('file', input.files[0]);
-        this.disabled = true;
-        this.textContent = 'Uploading...';
-        fetch('/api/upload-berkas.php', { method: 'POST', body: fd, credentials: 'same-origin' })
-          .then(r => r.json())
-          .then(data => {
-            if (data.success) {
-              location.reload();
-            } else {
-              alert('Gagal: ' + (data.message || 'Unknown error'));
-              this.disabled = false;
-              this.textContent = 'Upload';
-            }
-          })
-          .catch(e => {
-            alert('Error: ' + e.message);
-            this.disabled = false;
-            this.textContent = 'Upload';
-          });
-      });
-    });
-    </script>
-
   <?php elseif ($stepSekarang === 'berkas-jalur'): ?>
     <section class="portal-card">
       <h2>Upload Berkas Jalur</h2>
       <p class="portal-note">
-        Jalur Anda saat ini: <strong><?= e($labelJalur[$pendaftaran['jalur']] ?? '—') ?></strong>
+        Jalur Anda saat ini: <strong><?= e($labelJalur[$pendaftaran['jalur']] ?? '—') ?></strong>.
+        Gambar otomatis dikompres ke ≤1MB; PDF maks 5MB.
       </p>
+      <input type="hidden" id="csrfGlobal" value="<?= generateCsrfToken() ?>">
 
       <?php
       // Template dokumen yang bisa di-download per jalur
@@ -931,26 +900,6 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         <a href="?step=finalisasi" class="btn-primary">Lanjut: Finalisasi &rarr;</a>
       </div>
     </section>
-
-    <script>
-    document.querySelectorAll('.btn-upload').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const jenis = this.dataset.jenis;
-        const input = document.querySelector('.berkas-input[data-jenis="' + jenis + '"]');
-        if (!input.files || !input.files[0]) { alert('Pilih file terlebih dahulu.'); return; }
-        const fd = new FormData();
-        fd.append('csrf_token', '<?= generateCsrfToken() ?>');
-        fd.append('jenis', jenis);
-        fd.append('file', input.files[0]);
-        this.disabled = true;
-        this.textContent = 'Uploading...';
-        fetch('/api/upload-berkas.php', { method: 'POST', body: fd, credentials: 'same-origin' })
-          .then(r => r.json())
-          .then(data => { data.success ? location.reload() : (alert('Gagal: ' + (data.message || '')), this.disabled = false, this.textContent = 'Upload'); })
-          .catch(e => { alert('Error: ' + e.message); this.disabled = false; this.textContent = 'Upload'; });
-      });
-    });
-    </script>
 
   <?php elseif ($stepSekarang === 'finalisasi'): ?>
     <section class="portal-card">
@@ -1129,6 +1078,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
     <section class="portal-card">
       <h2>Berkas Pelengkap</h2>
       <p class="portal-note">Dilengkapi setelah diterima. Ijazah/SKL boleh menyusul setelah lulus. Format: JPG/PNG/WEBP/PDF, maks 5MB.</p>
+      <input type="hidden" id="csrfGlobal" value="<?= generateCsrfToken() ?>">
 
       <div class="berkas-list">
         <?php foreach ($berkasPelengkapList as $jenis => $label): ?>
@@ -1159,25 +1109,6 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       </div>
     </section>
 
-    <script>
-    document.querySelectorAll('.btn-upload-pelengkap').forEach(btn => {
-      btn.addEventListener('click', function () {
-        const jenis = this.dataset.jenis;
-        const input = document.querySelector('.berkas-input[data-jenis="' + jenis + '"]');
-        if (!input.files || !input.files[0]) { alert('Pilih file terlebih dahulu.'); return; }
-        const fd = new FormData();
-        fd.append('csrf_token', '<?= generateCsrfToken() ?>');
-        fd.append('jenis', jenis);
-        fd.append('file', input.files[0]);
-        this.disabled = true;
-        this.textContent = 'Uploading...';
-        fetch('/api/upload-berkas.php', { method: 'POST', body: fd, credentials: 'same-origin' })
-          .then(r => r.json())
-          .then(data => { data.success ? location.reload() : (alert('Gagal: ' + (data.message || '')), this.disabled = false, this.textContent = 'Upload'); })
-          .catch(e => { alert('Error: ' + e.message); this.disabled = false; this.textContent = 'Upload'; });
-      });
-    });
-    </script>
   <?php endif; ?>
 </div>
 </main>

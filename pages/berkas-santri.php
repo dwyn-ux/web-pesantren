@@ -23,12 +23,29 @@ if (!in_array($jenis, $jenisValid, true)) {
 }
 
 $pdo = getDB();
-$stmt = $pdo->prepare(
-    'SELECT bs.*, p.user_id FROM berkas_santri bs
-     JOIN pendaftaran p ON p.id = bs.pendaftaran_id
-     WHERE bs.jenis = ? ORDER BY bs.id DESC LIMIT 1'
-);
-$stmt->execute([$jenis]);
+
+// Pendaftar hanya boleh melihat miliknya sendiri — filter ganda
+// (pendaftaran_id + jenis) agar tak salah ambil milik orang lain.
+if (isCalonSantri()) {
+    $pendaftaran = getCurrentPendaftaran();
+    if (!$pendaftaran) {
+        http_response_code(404);
+        exit('Data pendaftaran tidak ditemukan.');
+    }
+    $stmt = $pdo->prepare(
+        'SELECT bs.* FROM berkas_santri bs
+         WHERE bs.jenis = ? AND bs.pendaftaran_id = ?
+         ORDER BY bs.id DESC LIMIT 1'
+    );
+    $stmt->execute([$jenis, (int) $pendaftaran['id']]);
+} else {
+    $stmt = $pdo->prepare(
+        'SELECT bs.*, p.user_id FROM berkas_santri bs
+         JOIN pendaftaran p ON p.id = bs.pendaftaran_id
+         WHERE bs.jenis = ? ORDER BY bs.id DESC LIMIT 1'
+    );
+    $stmt->execute([$jenis]);
+}
 $berkas = $stmt->fetch();
 
 if (!$berkas) {
@@ -37,7 +54,11 @@ if (!$berkas) {
 }
 
 // Access control: admin ATAU pemilik
-$isOwner = isCalonSantri() && (int)($_SESSION['user_id'] ?? 0) === (int)$berkas['user_id'];
+if (isCalonSantri()) {
+    $isOwner = true; // sudah difilter ke pendaftaran milik sendiri
+} else {
+    $isOwner = false;
+}
 if (!$isOwner && !isAdmin()) {
     http_response_code(403);
     exit('Anda tidak memiliki akses.');

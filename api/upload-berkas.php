@@ -5,8 +5,10 @@
  * POST multipart/form-data:
  *   - csrf_token     (required)
  *   - jenis          enum: kartu-keluarga, akta-lahir, ijazah, foto, ktp-ortu, bukti-bayar,
- *                          sertifikat-tka, surat-rekomendasi, sktm, surat-pernyataan, mou-kaderisasi
- *   - file           (required) file upload
+ *                          sertifikat-tka, sertifikat-tahfidz, surat-rekomendasi, sktm,
+ *                          surat-pernyataan, mou-kaderisasi
+ *   - file           (required) file upload; gambar diterima s/d 10MB lalu
+ *                    dikompres server ke ≤1MB, PDF maks 5MB
  *
  * Response: JSON {success, message, file?, url?}
  */
@@ -15,6 +17,152 @@ require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
+
+/**
+ * Simpan gambar ke $dest dengan target ukuran ≤ $targetBytes.
+ * JPEG/WEBP: turunkan dimensi + quality bertahap.
+ * PNG besar: coba kompresi dulu, kalau tetap besar konversi ke JPG.
+ * File kecil (≤ target & lebar ≤1600) langsung dipindah tanpa olah ulang.
+ *
+ * @return array{ok:bool, error:string, ext:string, mime:string}
+ */
+function simpanGambarKompres(string $tmp, string $dest, string $mime, int $targetBytes): array {
+    $fail = static fn(string $e) => ['ok' => false, 'error' => $e, 'ext' => '', 'mime' => $mime];
+    $info = @getimagesize($tmp);
+    if ($info === false) {
+        if (@filesize($tmp) <= $targetBytes && @move_uploaded_file($tmp, $dest)) {
+            return ['ok' => true, 'error' => '', 'ext' => 'jpg', 'mime' => $mime];
+        }
+        return $fail('Gambar tidak terbaca. Gunakan file JPG/PNG/WEBP yang valid.');
+    }
+    [$w, $h, $type] = $info;
+    if ($w <= 0 || $h <= 0) {
+        return $fail('Dimensi gambar tidak valid.');
+    }
+    // Jalur cepat: sudah kecil → pindah langsung
+    if (@filesize($tmp) <= $targetBytes && $w <= 1600) {
+        if (@move_uploaded_file($tmp, $dest)) {
+            $ext = match ($type) {
+                IMAGETYPE_JPEG => 'jpg',
+                IMAGETYPE_PNG => 'png',
+                IMAGETYPE_WEBP => 'webp',
+                default => 'jpg',
+            };
+            $m = match ($type) {
+                IMAGETYPE_JPEG => 'image/jpeg',
+                IMAGETYPE_PNG => 'image/png',
+                IMAGETYPE_WEBP => 'image/webp',
+                default => $mime,
+            };
+            return ['ok' => true, 'error' => '', 'ext' => $ext, 'mime' => $m];
+        }
+        return $fail('Gagal memindahkan file.');
+    }
+    $src = match ($type) {
+        IMAGETYPE_JPEG => (function_exists('imagecreatefromjpeg') ? @imagecreatefromjpeg($tmp) : null),
+        IMAGETYPE_PNG => (function_exists('imagecreatefrompng') ? @imagecreatefrompng($tmp) : null),
+        IMAGETYPE_WEBP => (function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($tmp) : null),
+        default => null,
+    };
+    if (!$src) {
+        // GD tidak mendukung format ini → pindah mentah bila ≤ target
+        if (@filesize($tmp) <= $targetBytes && @move_uploaded_file($tmp, $dest)) {
+            $extJatuh = match ($type) {
+                IMAGETYPE_JPEG => 'jpg',
+                IMAGETYPE_PNG => 'png',
+                IMAGETYPE_WEBP => 'webp',
+                default => 'jpg',
+            };
+            return ['ok' => true, 'error' => '', 'ext' => $extJatuh, 'mime' => $mime];
+        }
+        return $fail('Gambar tidak terbaca. Gunakan file JPG/PNG/WEBP yang valid.');
+    }
+    $buatKanvas = static function ($srcImg, int $w, int $h, int $maxDim, bool $alpha): array {
+        $skala = min(1.0, $maxDim / max($w, $h));
+        $nw = max(1, (int) round($w * $skala));
+        $nh = max(1, (int) round($h * $skala));
+        $kanvas = imagecreatetruecolor($nw, $nh);
+        if ($alpha) {
+            imagealphablending($kanvas, false);
+            imagesavealpha($kanvas, true);
+            $trans = imagecolorallocatealpha($kanvas, 0, 0, 0, 127);
+            imagefill($kanvas, 0, 0, $trans);
+        }
+        imagecopyresampled($kanvas, $srcImg, 0, 0, 0, 0, $nw, $nh, $w, $h);
+        return [$kanvas, $nw, $nh];
+    };
+    // JPEG / WEBP: loop dimensi × quality
+    if ($type === IMAGETYPE_JPEG || $type === IMAGETYPE_WEBP) {
+        $isWebp = $type === IMAGETYPE_WEBP;
+        $bisaTulis = $isWebp ? function_exists('imagewebp') : function_exists('imagejpeg');
+        if (!$bisaTulis) {
+            imagedestroy($src);
+            if (@filesize($tmp) <= $targetBytes && @move_uploaded_file($tmp, $dest)) {
+                return ['ok' => true, 'error' => '', 'ext' => $isWebp ? 'webp' : 'jpg', 'mime' => $mime];
+            }
+            return $fail('Server tidak mendukung kompresi format ini dan file di atas 1MB.');
+        }
+        foreach ([1600, 1280, 960] as $maxDim) {
+            foreach ([85, 75, 65, 55] as $q) {
+                [$kanvas] = $buatKanvas($src, $w, $h, $maxDim, false);
+                $ok = $isWebp
+                    ? (function_exists('imagewebp') && @imagewebp($kanvas, $dest, $q))
+                    : @imagejpeg($kanvas, $dest, $q);
+                imagedestroy($kanvas);
+                if ($ok && @filesize($dest) <= $targetBytes) {
+                    imagedestroy($src);
+                    return ['ok' => true, 'error' => '', 'ext' => $isWebp ? 'webp' : 'jpg',
+                            'mime' => $isWebp ? 'image/webp' : 'image/jpeg'];
+                }
+            }
+        }
+        imagedestroy($src);
+        @unlink($dest);
+        return $fail('Gambar masih di atas 1MB setelah kompresi. Gunakan foto resolusi lebih kecil.');
+    }
+    // PNG: coba pertahankan PNG dulu
+    if (!function_exists('imagepng')) {
+        imagedestroy($src);
+        if (@filesize($tmp) <= $targetBytes && @move_uploaded_file($tmp, $dest)) {
+            return ['ok' => true, 'error' => '', 'ext' => 'png', 'mime' => $mime];
+        }
+        return $fail('Server tidak mendukung kompresi PNG dan file di atas 1MB.');
+    }
+    foreach ([1600, 1280] as $maxDim) {
+        foreach ([6, 9] as $level) {
+            [$kanvas] = $buatKanvas($src, $w, $h, $maxDim, true);
+            $ok = @imagepng($kanvas, $dest, $level);
+            imagedestroy($kanvas);
+            if ($ok && @filesize($dest) <= $targetBytes) {
+                imagedestroy($src);
+                return ['ok' => true, 'error' => '', 'ext' => 'png', 'mime' => 'image/png'];
+            }
+        }
+    }
+    // PNG tetap besar → konversi ke JPG latar putih
+    if (!function_exists('imagejpeg')) {
+        imagedestroy($src);
+        @unlink($dest);
+        return $fail('Gambar masih di atas 1MB setelah kompresi. Gunakan foto resolusi lebih kecil.');
+    }
+    foreach ([1600, 1280, 960] as $maxDim) {
+        foreach ([85, 75, 65] as $q) {
+            [$kanvas] = $buatKanvas($src, $w, $h, $maxDim, false);
+            $putih = imagecolorallocate($kanvas, 255, 255, 255);
+            imagefill($kanvas, 0, 0, $putih);
+            imagecopyresampled($kanvas, $src, 0, 0, 0, 0, imagesx($kanvas), imagesy($kanvas), $w, $h);
+            $ok = @imagejpeg($kanvas, $dest, $q);
+            imagedestroy($kanvas);
+            if ($ok && @filesize($dest) <= $targetBytes) {
+                imagedestroy($src);
+                return ['ok' => true, 'error' => '', 'ext' => 'jpg', 'mime' => 'image/jpeg'];
+            }
+        }
+    }
+    imagedestroy($src);
+    @unlink($dest);
+    return $fail('Gambar masih di atas 1MB setelah kompresi. Gunakan foto resolusi lebih kecil.');
+}
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -72,12 +220,27 @@ if (!isBerkasEditable($pendaftaran['status']) && $jenis !== 'bukti-bayar' && !$b
     exit;
 }
 
-if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+if (empty($_FILES['file'])) {
     echo json_encode(['success' => false, 'message' => 'File tidak diterima.']);
     exit;
 }
 
 $file = $_FILES['file'];
+
+// ── Petakan kode error upload ke pesan yang jelas ──
+if ($file['error'] !== UPLOAD_ERR_OK) {
+    $pesan = match ($file['error']) {
+        UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE =>
+            'File terlalu besar untuk server (maks upload PHP). Kecilkan di bawah 10 MB lalu coba lagi.',
+        UPLOAD_ERR_PARTIAL => 'Upload terputus. Silakan coba lagi.',
+        UPLOAD_ERR_NO_FILE => 'File tidak diterima.',
+        default => 'File tidak diterima (kode ' . (int) $file['error'] . ').',
+    };
+    echo json_encode(['success' => false, 'message' => $pesan]);
+    exit;
+}
+
+$namaAsli = substr(basename($file['name'] ?? 'file'), 0, 255);
 
 // ── Validasi MIME via finfo (jangan percaya $_FILES['type']) ──
 $finfo = new finfo(FILEINFO_MIME_TYPE);
@@ -95,8 +258,10 @@ if (!isset($mimeAllowed[$mime])) {
     exit;
 }
 
-// Max size: 5 MB (foto bukti bayar boleh 2MB, lainnya 5MB)
-$maxSize = $jenis === 'foto' ? 2 * 1024 * 1024 : 5 * 1024 * 1024;
+// Gambar diterima s/d 10MB lalu dikompres server ke ≤1MB.
+// PDF tetap maks 5MB tanpa kompresi.
+$isGambar = str_starts_with($mime, 'image/');
+$maxSize = $isGambar ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
 if ($file['size'] > $maxSize) {
     echo json_encode([
         'success' => false,
@@ -106,6 +271,7 @@ if ($file['size'] > $maxSize) {
 }
 
 $ext = $mimeAllowed[$mime];
+$finalMime = $mime;
 $newName = bin2hex(random_bytes(16)) . '.' . $ext;
 
 // ── Siapkan folder tujuan ──
@@ -120,52 +286,23 @@ if (!is_dir($uploadDir)) {
 $destPath = $uploadDir . '/' . $newName;
 $dbPath = 'santri/' . $pendaftaranId . '/' . $newName;
 
-// ── Resize gambar (kecuali PDF) ──
-if (str_starts_with($mime, 'image/') && $mime !== 'image/webp') {
-    $info = getimagesize($file['tmp_name']);
-    if ($info !== false) {
-        [$w, $h, $type] = $info;
-        $maxW = 1200;
-        if ($w > $maxW) {
-            $ratio = $maxW / $w;
-            $newW = $maxW;
-            $newH = (int) ($h * $ratio);
-            $src = match ($type) {
-                IMAGETYPE_JPEG => imagecreatefromjpeg($file['tmp_name']),
-                IMAGETYPE_PNG  => imagecreatefrompng($file['tmp_name']),
-                default        => null,
-            };
-            if ($src) {
-                $canvas = imagecreatetruecolor($newW, $newH);
-                if ($type === IMAGETYPE_PNG) {
-                    imagealphablending($canvas, false);
-                    imagesavealpha($canvas, true);
-                }
-                imagecopyresampled($canvas, $src, 0, 0, 0, 0, $newW, $newH, $w, $h);
-                $ok = match ($type) {
-                    IMAGETYPE_JPEG => imagejpeg($canvas, $destPath, 85),
-                    IMAGETYPE_PNG  => imagepng($canvas, $destPath, 6),
-                    default        => false,
-                };
-                imagedestroy($src);
-                imagedestroy($canvas);
-                if (!$ok) {
-                    echo json_encode(['success' => false, 'message' => 'Gagal resize gambar.']);
-                    exit;
-                }
-            } else {
-                if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-                    echo json_encode(['success' => false, 'message' => 'Gagal memindahkan file.']);
-                    exit;
-                }
-            }
-        } else {
-            if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-                echo json_encode(['success' => false, 'message' => 'Gagal memindahkan file.']);
-                exit;
-            }
-        }
+// ── Simpan gambar dengan kompresi target ≤1MB (kecuali PDF) ──
+if ($isGambar) {
+    $simpan = simpanGambarKompres($file['tmp_name'], $destPath, $mime, 1024 * 1024);
+    if (!$simpan['ok']) {
+        echo json_encode(['success' => false, 'message' => $simpan['error']]);
+        exit;
     }
+    // PNG besar dikonversi ke JPG — selaraskan nama & mime
+    if ($simpan['ext'] !== $ext) {
+        $extLama = $uploadDir . '/' . $newName;
+        $newName = bin2hex(random_bytes(16)) . '.' . $simpan['ext'];
+        $destBaru = $uploadDir . '/' . $newName;
+        rename($extLama, $destBaru);
+        $destPath = $destBaru;
+        $dbPath = 'santri/' . $pendaftaranId . '/' . $newName;
+    }
+    $finalMime = $simpan['mime'];
 } else {
     if (!move_uploaded_file($file['tmp_name'], $destPath)) {
         echo json_encode(['success' => false, 'message' => 'Gagal memindahkan file.']);
@@ -178,22 +315,62 @@ chmod($destPath, 0644);
 // ── Cek apakah sudah ada row berkas utk jenis ini ──
 // (UPDATE) atau INSERT baru
 $pdo = getDB();
-$cek = $pdo->prepare('SELECT id, nama_file FROM berkas_santri WHERE pendaftaran_id = ? AND jenis = ? LIMIT 1');
-$cek->execute([$pendaftaranId, $jenis]);
-$existing = $cek->fetch();
+try {
+    $cek = $pdo->prepare('SELECT id, nama_file FROM berkas_santri WHERE pendaftaran_id = ? AND jenis = ? LIMIT 1');
+    $cek->execute([$pendaftaranId, $jenis]);
+    $existing = $cek->fetch();
+} catch (PDOException $e) {
+    // Kemungkinan ENUM jenis belum mencakup jenis baru (migrasi 016 belum jalan)
+    @unlink($destPath);
+    error_log('Upload berkas SELECT gagal: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Jenis berkas belum didukung database. Hubungi admin (migrasi 016).']);
+    exit;
+}
 
-if ($existing) {
-    // Hapus file lama
-    $oldPath = __DIR__ . '/../uploads/' . $existing['nama_file'];
-    if (is_file($oldPath)) @unlink($oldPath);
-    $upd = $pdo->prepare('UPDATE berkas_santri SET nama_file = ?, mime_type = ?, created_at = NOW() WHERE id = ?');
-    $upd->execute([$dbPath, $mime, $existing['id']]);
-} else {
-    $ins = $pdo->prepare(
-        'INSERT INTO berkas_santri (pendaftaran_id, jenis, nama_file, mime_type)
-         VALUES (?,?,?,?)'
-    );
-    $ins->execute([$pendaftaranId, $jenis, $dbPath, $mime]);
+// Kolom nama_asli opsional — ada di install baru, mungkin absen di DB lama
+$kolomAsli = null;
+try {
+    $kolomAsli = $pdo->query(
+        "SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+         AND TABLE_NAME='berkas_santri' AND COLUMN_NAME='nama_asli'"
+    )->fetchColumn() ? true : false;
+} catch (PDOException $e) {
+    $kolomAsli = false;
+}
+
+try {
+    if ($existing) {
+        // Hapus file lama
+        $oldPath = __DIR__ . '/../uploads/' . $existing['nama_file'];
+        if (is_file($oldPath)) @unlink($oldPath);
+        if ($kolomAsli) {
+            $upd = $pdo->prepare('UPDATE berkas_santri SET nama_file = ?, nama_asli = ?, mime_type = ?, created_at = NOW() WHERE id = ?');
+            $upd->execute([$dbPath, $namaAsli, $finalMime, $existing['id']]);
+        } else {
+            $upd = $pdo->prepare('UPDATE berkas_santri SET nama_file = ?, mime_type = ?, created_at = NOW() WHERE id = ?');
+            $upd->execute([$dbPath, $finalMime, $existing['id']]);
+        }
+    } else {
+        if ($kolomAsli) {
+            $ins = $pdo->prepare(
+                'INSERT INTO berkas_santri (pendaftaran_id, jenis, nama_file, nama_asli, mime_type)
+                 VALUES (?,?,?,?,?)'
+            );
+            $ins->execute([$pendaftaranId, $jenis, $dbPath, $namaAsli, $finalMime]);
+        } else {
+            $ins = $pdo->prepare(
+                'INSERT INTO berkas_santri (pendaftaran_id, jenis, nama_file, mime_type)
+                 VALUES (?,?,?,?)'
+            );
+            $ins->execute([$pendaftaranId, $jenis, $dbPath, $finalMime]);
+        }
+    }
+} catch (PDOException $e) {
+    // Jangan tinggalkan file orphan di disk
+    @unlink($destPath);
+    error_log('Upload berkas INSERT gagal: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'Gagal menyimpan ke database. Hubungi admin.']);
+    exit;
 }
 
 echo json_encode([

@@ -232,6 +232,7 @@
 }
 .berkas-status.success { background: rgba(13, 122, 74, 0.1); color: var(--green-deep); }
 .berkas-status.pending { background: rgba(100, 116, 139, 0.1); color: #64748b; }
+.berkas-status.error { background: rgba(195, 51, 51, 0.1); color: #c33333; }
 .berkas-action {
   display: flex;
   align-items: center;
