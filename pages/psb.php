@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
 
         // Validasi enum
         $validJK      = ['L', 'P'];
-        $validJenjang = ['smp', 'sma', 'tahfidz-intensif'];
+        $validJenjang = ['smp', 'sma'];
         $validQuran   = ['belum-bisa', 'bisa-membaca', 'tartil', 'hafal-juz-30', 'hafal-lebih'];
 
         if ($data['jenis_kelamin'] && !in_array($data['jenis_kelamin'], $validJK, true)) {
@@ -209,7 +209,6 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/psb.css?v
 $labelJenjang = [
     'smp'              => 'SMP Muhammadiyah Unggulan Ashidiq',
     'sma'              => 'SMA Pondok Pesantren Ash-Shiddiq',
-    'tahfidz-intensif' => 'Tahfidz Intensif',
 ];
 $labelQuran = [
     'belum-bisa'   => 'Belum Bisa Membaca',

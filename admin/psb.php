@@ -85,9 +85,8 @@ $adminTitle = 'Data PSB';
 $adminPage  = 'admin/psb';
 
 $labelJenjang = [
-    'mts'              => 'SMP',
-    'ma'               => 'SMA',
-    'tahfidz-intensif' => 'Tahfidz',
+    'smp'              => 'SMP',
+    'sma'              => 'SMA',
 ];
 $labelStatus = [
     'pending'      => 'Menunggu',

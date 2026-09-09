@@ -1,24 +1,26 @@
 <?php
-if (empty($_SESSION['santri_id'])) {
-    setFlash('info', 'Silakan login dengan akun pendaftaran.');
-    redirect('/login-santri');
-}
+// Profil santri — pakai pendaftaran milik akun login (calon-santri)
+requireCalonSantri();
 $pdo = getDB();
-$id  = (int) $_SESSION['santri_id'];
+$pendaftaran = getCurrentPendaftaran();
+if (!$pendaftaran) redirect('/psb');
+$id = (int) $pendaftaran['id'];
 
 $s = $pdo->prepare('SELECT * FROM pendaftaran WHERE id=?');
 $s->execute([$id]);
 $p = $s->fetch();
-if (!$p) {
-    unset($_SESSION['santri_id']);
-    redirect('/login-santri');
-}
+if (!$p) redirect('/psb');
 
 $sf = $pdo->prepare("SELECT nama_file FROM berkas_santri WHERE pendaftaran_id=? AND jenis='foto' ORDER BY id DESC LIMIT 1");
 $sf->execute([$id]);
 $fotoAda = (bool) $sf->fetchColumn();
 
-$labelJenjang = ['mts' => 'SMP', 'ma' => 'SMA', 'tahfidz-intensif' => 'Tahfidz Intensif'];
+// Semua berkas milik santri untuk daftar + link Lihat
+$bs = $pdo->prepare('SELECT jenis, created_at FROM berkas_santri WHERE pendaftaran_id=? ORDER BY id');
+$bs->execute([$id]);
+$semuaBerkas = $bs->fetchAll();
+
+$labelJenjang = ['smp' => 'SMP', 'sma' => 'SMA'];
 $labelQuran = [
     'belum-bisa' => 'Belum Bisa Membaca', 'bisa-membaca' => 'Bisa Membaca',
     'tartil' => 'Tartil', 'hafal-juz-30' => 'Hafal Juz 30', 'hafal-lebih' => 'Hafal Lebih dari Juz 30',
@@ -55,7 +57,9 @@ $row = fn(string $label, string $value): string =>
         <?= $row('Nama Lengkap', e($p['nama_lengkap'])) ?>
         <?= $row('Tempat, Tanggal Lahir', e($p['tempat_lahir'] . ', ' . date('d/m/Y', strtotime($p['tanggal_lahir'])))) ?>
         <?= $row('Jenis Kelamin', e($p['jenis_kelamin'] === 'P' ? 'Perempuan' : 'Laki-laki')) ?>
+        <?= $row('Agama', e($p['agama'] ?? '-')) ?>
         <?= $row('Jenjang', e($labelJenjang[$p['jenjang']] ?? $p['jenjang'])) ?>
+        <?= $row('Kelas', e($p['kelas'] ?? '-')) ?>
         <?= $row('Tinggi / Berat Badan', e((!empty($p['tinggi_badan']) ? (float) $p['tinggi_badan'] . ' cm' : '-') . ' / ' . (!empty($p['berat_badan']) ? (float) $p['berat_badan'] . ' kg' : '-'))) ?>
         <?= $row('No. WhatsApp', e($p['whatsapp'])) ?>
     </div>
@@ -83,6 +87,34 @@ $row = fn(string $label, string $value): string =>
         <h2>Kesanggupan</h2>
         <?= $row('Kesanggupan biaya', e($p['kesanggupan_setuju'] ? 'Sudah ditandatangani' : 'Belum')) ?>
         <?= $row('Ditandatangani pada', e(date('d/m/Y H:i', strtotime($p['kesanggupan_at'])))) ?>
+    </div>
+    <?php endif; ?>
+
+    <div class="portal-card profile-card">
+        <h2>Berkas Terupload (<?= count($semuaBerkas) ?>)</h2>
+        <?php if (empty($semuaBerkas)): ?>
+            <p style="color:#999;font-size:14px;">Belum ada berkas. <a href="<?= BASE_URL ?>/portal-santri">Lengkapi di portal</a>.</p>
+        <?php else: ?>
+            <?php foreach ($semuaBerkas as $b): ?>
+                <div class="profile-row">
+                    <span class="profile-label"><?= e(ucwords(str_replace('-', ' ', $b['jenis']))) ?></span>
+                    <span class="profile-value">✓ <?= e(date('d/m/Y', strtotime($b['created_at']))) ?>
+                        — <a href="<?= BASE_URL ?>/berkas-santri?jenis=<?= e($b['jenis']) ?>" target="_blank" rel="noopener">Lihat</a>
+                    </span>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+
+    <?php if (in_array($p['status'], ['diterima', 'daftar-ulang'], true)): ?>
+    <div class="portal-card profile-card">
+        <h2>Dokumen Kelulusan</h2>
+        <?php foreach (dokumenKelulusanList($p['jenjang'] ?? 'smp') as $tipe => $label): ?>
+            <div class="profile-row">
+                <span class="profile-label"><?= e($label) ?></span>
+                <span class="profile-value"><a href="<?= BASE_URL ?>/dokumen-santri?tipe=<?= e($tipe) ?>" target="_blank" rel="noopener">🖨 Cetak</a></span>
+            </div>
+        <?php endforeach; ?>
     </div>
     <?php endif; ?>
 </div></main>

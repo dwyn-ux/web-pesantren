@@ -202,15 +202,16 @@ $berkasWajibList = [
     'ktp-ortu'       => 'KTP Orang Tua / KIA',
 ];
 
-// Berkas pelengkap — dilengkapi setelah diterima (SKL/Ijazah menyusul kelulusan)
+// Berkas pelengkap — dilengkapi setelah diterima (opsional, tidak blokir finalisasi)
 $berkasPelengkapList = [
-    'ijazah' => 'Ijazah / SKL (menyusul setelah lulus)',
+    'ijazah' => 'Ijazah (menyusul setelah lulus, opsional)',
+    'skl'    => 'SKL / Surat Keterangan Lulus (opsional)',
+    'kip'    => 'KIP / Kartu Indonesia Pintar (opsional, bila ada)',
 ];
 
 $labelJenjang = [
     'smp'              => 'SMP Muhammadiyah Unggulan Ashidiq',
     'sma'              => 'SMA Pondok Pesantren Ash-Shiddiq',
-    'tahfidz-intensif' => 'Tahfidz Intensif',
 ];
 
 $labelJalur = jalurPendaftaran();
@@ -231,7 +232,7 @@ $simulasi = ($pendaftaran['gelombang_id'] && !empty($pendaftaran['jalur']))
     : null;
 
 $stepSekarang = sanitizeString($_GET['step'] ?? 'akademik');
-$stepValid = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi', 'pembayaran', 'berkas-pelengkap'];
+$stepValid = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi', 'pembayaran', 'surat-ttd', 'berkas-pelengkap'];
 if (!in_array($stepSekarang, $stepValid, true)) $stepSekarang = 'akademik';
 
 // ── Klaim jalur alumni (voucher + NISN) ────────────────────
@@ -339,6 +340,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan
     }
 }
 
+// ── Submit surat & TTD (status diterima/daftar-ulang) ──────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'surat-ttd'
+    && in_array($pendaftaran['status'], ['diterima', 'daftar-ulang'], true)) {
+    validateCsrf();
+    $agama = sanitizeString($_POST['agama'] ?? '');
+    $kelas = sanitizeString($_POST['kelas'] ?? '');
+    $jenjangNow = $pendaftaran['jenjang'] ?? 'smp';
+
+    if (!in_array($agama, agamaOptions(), true)) {
+        $errors['agama'] = 'Pilih agama.';
+    }
+    if (!in_array($kelas, kelasOptions($jenjangNow), true)) {
+        $errors['kelas'] = 'Pilih kelas sesuai jenjang (' . ($jenjangNow === 'sma' ? '10-12' : '7-9') . ').';
+    }
+
+    // Simpan TTD canvas bila diisi (boleh kosong → surat tampil garis titik-titik)
+    $ttdDir = UPLOADS_PATH . '/santri/' . $pendaftaranId;
+    $ttdSantriFile = $pendaftaran['ttd_santri'] ?? null;
+    $ttdWaliFile = $pendaftaran['ttd_wali'] ?? null;
+    if (empty($errors)) {
+        $dataSantri = trim($_POST['ttd_santri'] ?? '');
+        $dataWali = trim($_POST['ttd_wali'] ?? '');
+        if ($dataSantri !== '' && $dataSantri !== 'kosong') {
+            $baru = saveSignature($dataSantri, $ttdDir);
+            if ($baru === false) {
+                $errors['ttd_santri'] = 'Tanda tangan santri tidak valid. Ulangi di kanvas.';
+            } else {
+                if ($ttdSantriFile) @unlink($ttdDir . '/' . basename($ttdSantriFile));
+                $ttdSantriFile = $baru;
+            }
+        }
+        if ($dataWali !== '' && $dataWali !== 'kosong') {
+            $baru = saveSignature($dataWali, $ttdDir);
+            if ($baru === false) {
+                $errors['ttd_wali'] = 'Tanda tangan wali tidak valid. Ulangi di kanvas.';
+            } else {
+                if ($ttdWaliFile) @unlink($ttdDir . '/' . basename($ttdWaliFile));
+                $ttdWaliFile = $baru;
+            }
+        }
+    }
+
+    if (empty($errors)) {
+        // Kolom agama/kelas/ttd mungkin belum ada bila migrasi 022 belum jalan
+        $kolom = [];
+        try {
+            $kolom = array_column($pdo->query(
+                "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pendaftaran'"
+            )->fetchAll(PDO::FETCH_NUM), 0);
+        } catch (PDOException $e) {
+            $kolom = [];
+        }
+        $set = [];
+        $par = [];
+        if (in_array('agama', $kolom, true)) { $set[] = 'agama = ?'; $par[] = $agama; }
+        if (in_array('kelas', $kolom, true)) { $set[] = 'kelas = ?'; $par[] = $kelas; }
+        if (in_array('ttd_santri', $kolom, true)) { $set[] = 'ttd_santri = ?'; $par[] = $ttdSantriFile; }
+        if (in_array('ttd_wali', $kolom, true)) { $set[] = 'ttd_wali = ?'; $par[] = $ttdWaliFile; }
+        if (!empty($set)) {
+            $par[] = $pendaftaranId;
+            $pdo->prepare('UPDATE pendaftaran SET ' . implode(', ', $set) . ' WHERE id = ?')->execute($par);
+            $pendaftaran['agama'] = $agama;
+            $pendaftaran['kelas'] = $kelas;
+            $pendaftaran['ttd_santri'] = $ttdSantriFile;
+            $pendaftaran['ttd_wali'] = $ttdWaliFile;
+        }
+        $_SESSION['flash_success'] = 'Data surat & tanda tangan tersimpan.';
+        redirect('/portal-santri?step=surat-ttd');
+    }
+}
+
 // Status badge
 $statusLabel = statusLabel($pendaftaran['status']);
 $statusClass = match($pendaftaran['status']) {
@@ -388,6 +460,24 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
   <?php endif; ?>
 
   <?php if ($faseSelesai): ?>
+    <?php if (in_array($pendaftaran['status'], ['diterima', 'daftar-ulang'], true)): ?>
+      <?php $kontakPanitia = $pdo->query("SELECT value FROM pengaturan WHERE key_name='kontak_whatsapp'")->fetchColumn() ?: '6281234567890'; ?>
+      <div class="portal-info-box" style="border-left:4px solid var(--green-deep);">
+        <h2>🎉 Selamat, Anda DITERIMA!</h2>
+        <p>Ananda <strong><?= e($pendaftaran['nama_lengkap']) ?></strong> (<?= e($pendaftaran['nomor_daftar']) ?>) diterima di <?= e($labelJenjang[$pendaftaran['jenjang']] ?? $pendaftaran['jenjang']) ?>.</p>
+        <p><strong>Langkah selanjutnya:</strong></p>
+        <ol style="margin:8px 0 8px 20px;font-size:14px;line-height:1.8;">
+          <li><a href="?step=pembayaran" class="btn-link">Bayar / cicil tagihan</a></li>
+          <li><a href="?step=surat-ttd" class="btn-link">Isi agama + kelas, bubuhkan TTD, cetak 3 surat</a></li>
+          <li><a href="?step=berkas-pelengkap" class="btn-link">Lengkapi berkas susulan (opsional)</a></li>
+          <li>Hubungi panitia untuk jadwal daftar ulang</li>
+        </ol>
+        <p>
+          <a href="https://wa.me/<?= e(preg_replace('/\D/', '', $kontakPanitia)) ?>?text=<?= rawurlencode('Assalamualaikum, saya ' . ($pendaftaran['nama_lengkap'] ?? '') . ' (' . ($pendaftaran['nomor_daftar'] ?? '') . '). Saya sudah DITERIMA dan ingin info daftar ulang.') ?>" target="_blank" rel="noopener" class="btn-primary" style="display:inline-block;padding:10px 22px;font-size:13px;text-decoration:none;">💬 Hubungi Panitia via WA</a>
+          <a href="<?= BASE_URL ?>/profil-santri" class="btn-outline" style="display:inline-block;padding:10px 22px;font-size:13px;text-decoration:none;margin-left:8px;">Lihat Profil</a>
+        </p>
+      </div>
+    <?php else: ?>
     <div class="portal-info-box">
       <h2>Berkas Terkirim</h2>
       <p>Seluruh tahapan formulir telah selesai. Panitia akan memverifikasi dan menghubungi Anda.</p>
@@ -396,6 +486,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         <p>Jadwal Tes Pemetaan: <strong><?= date('d M Y', strtotime($pendaftaran['tanggal_tes_gelombang'])) ?></strong></p>
       <?php endif; ?>
     </div>
+    <?php endif; ?>
   <?php else: ?>
 
   <nav class="portal-steps" aria-label="Langkah portal">
@@ -414,14 +505,6 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
     <a href="?step=finalisasi" class="portal-step <?= $stepSekarang === 'finalisasi' ? 'active' : '' ?>">
       <span class="num">✓</span><span class="lbl">Kirim</span>
     </a>
-    <?php if (in_array($pendaftaran['status'], ['diterima','daftar-ulang'], true)): ?>
-    <a href="?step=pembayaran" class="portal-step <?= $stepSekarang === 'pembayaran' ? 'active' : '' ?>">
-      <span class="num">💰</span><span class="lbl">Pembayaran</span>
-    </a>
-    <a href="?step=berkas-pelengkap" class="portal-step <?= $stepSekarang === 'berkas-pelengkap' ? 'active' : '' ?>">
-      <span class="num">📄</span><span class="lbl">Berkas Pelengkap</span>
-    </a>
-    <?php endif; ?>
   </nav>
 
   <?php if ($stepSekarang === 'akademik'): ?>
@@ -963,6 +1046,20 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
 
   <?php endif; // faseSelesai ?>
 
+  <?php if (in_array($pendaftaran['status'], ['diterima','daftar-ulang'], true)): ?>
+  <nav class="portal-steps" aria-label="Langkah pasca-diterima" style="margin-top:20px;">
+    <a href="?step=pembayaran" class="portal-step <?= $stepSekarang === 'pembayaran' ? 'active' : '' ?>">
+      <span class="num">💰</span><span class="lbl">Pembayaran</span>
+    </a>
+    <a href="?step=surat-ttd" class="portal-step <?= $stepSekarang === 'surat-ttd' ? 'active' : '' ?>">
+      <span class="num">✍</span><span class="lbl">Surat &amp; TTD</span>
+    </a>
+    <a href="?step=berkas-pelengkap" class="portal-step <?= $stepSekarang === 'berkas-pelengkap' ? 'active' : '' ?>">
+      <span class="num">📄</span><span class="lbl">Berkas Pelengkap</span>
+    </a>
+  </nav>
+  <?php endif; ?>
+
   <?php if ($stepSekarang === 'pembayaran' && in_array($pendaftaran['status'], ['diterima','daftar-ulang'], true)): ?>
     <section class="portal-card">
       <h2>Pembayaran Tagihan</h2>
@@ -1072,6 +1169,127 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         <?php endforeach; ?>
       <?php endif; ?>
     </section>
+  <?php endif; ?>
+
+  <?php if ($stepSekarang === 'surat-ttd' && in_array($pendaftaran['status'], ['diterima','daftar-ulang'], true)): ?>
+    <?php
+    $daftarSurat = dokumenKelulusanList($pendaftaran['jenjang'] ?? 'smp');
+    $opsiKelas = kelasOptions($pendaftaran['jenjang'] ?? 'smp');
+    ?>
+    <section class="portal-card">
+      <h2>Surat &amp; Tanda Tangan</h2>
+      <p class="portal-note">Lengkapi agama + kelas, bubuhkan 2 tanda tangan digital, lalu cetak 3 surat. Tahun ajaran terisi otomatis.</p>
+
+      <form method="post" id="formSuratTtd" novalidate>
+        <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+        <input type="hidden" name="step" value="surat-ttd">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Agama</label>
+            <select name="agama" class="form-control" id="agamaSelect" required>
+              <option value="">-- Pilih Agama --</option>
+              <?php foreach (agamaOptions() as $ag): ?>
+                <option value="<?= e($ag) ?>" <?= ($pendaftaran['agama'] ?? '') === $ag ? 'selected' : '' ?>><?= e($ag) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <?php if (!empty($errors['agama'])): ?><p class="field-error"><?= e($errors['agama']) ?></p><?php endif; ?>
+          </div>
+          <div class="form-group">
+            <label>Kelas (<?= ($pendaftaran['jenjang'] ?? '') === 'sma' ? 'SMA: 10-12' : 'SMP: 7-9' ?>)</label>
+            <select name="kelas" class="form-control" required>
+              <option value="">-- Pilih Kelas --</option>
+              <?php foreach ($opsiKelas as $kl): ?>
+                <option value="<?= e($kl) ?>" <?= ($pendaftaran['kelas'] ?? '') === $kl ? 'selected' : '' ?>><?= e($kl) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <?php if (!empty($errors['kelas'])): ?><p class="field-error"><?= e($errors['kelas']) ?></p><?php endif; ?>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tanda Tangan Santri</label>
+            <canvas id="ttdSantri" width="400" height="150" style="border:1.5px dashed #ccc;border-radius:6px;width:100%;touch-action:none;background:#fff;"></canvas>
+            <input type="hidden" name="ttd_santri" id="ttdSantriData" value="kosong">
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button type="button" class="btn-outline" style="padding:6px 14px;font-size:12px;" onclick="bersihTtd('ttdSantri','ttdSantriData')">Hapus</button>
+              <?php if (!empty($pendaftaran['ttd_santri'])): ?><span class="berkas-status success">✓ Tersimpan</span><?php endif; ?>
+            </div>
+            <?php if (!empty($errors['ttd_santri'])): ?><p class="field-error"><?= e($errors['ttd_santri']) ?></p><?php endif; ?>
+          </div>
+          <div class="form-group">
+            <label>Tanda Tangan Wali</label>
+            <canvas id="ttdWali" width="400" height="150" style="border:1.5px dashed #ccc;border-radius:6px;width:100%;touch-action:none;background:#fff;"></canvas>
+            <input type="hidden" name="ttd_wali" id="ttdWaliData" value="kosong">
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <button type="button" class="btn-outline" style="padding:6px 14px;font-size:12px;" onclick="bersihTtd('ttdWali','ttdWaliData')">Hapus</button>
+              <?php if (!empty($pendaftaran['ttd_wali'])): ?><span class="berkas-status success">✓ Tersimpan</span><?php endif; ?>
+            </div>
+            <?php if (!empty($errors['ttd_wali'])): ?><p class="field-error"><?= e($errors['ttd_wali']) ?></p><?php endif; ?>
+          </div>
+        </div>
+
+        <div class="portal-actions">
+          <a href="?step=pembayaran" class="btn-outline">&larr; Pembayaran</a>
+          <button type="submit" class="btn-primary">Simpan Data &amp; TTD</button>
+        </div>
+      </form>
+
+      <script>
+      function pasangTtd(idCanvas, idInput) {
+        var c = document.getElementById(idCanvas);
+        if (!c) return;
+        var ctx = c.getContext('2d');
+        var gambar = false;
+        function pos(e) {
+          var r = c.getBoundingClientRect();
+          var t = (e.touches && e.touches[0]) || e;
+          return [(t.clientX - r.left) * (c.width / r.width), (t.clientY - r.top) * (c.height / r.height)];
+        }
+        var jalan = false, px = 0, py = 0;
+        function mulai(e) { e.preventDefault(); jalan = true; var p = pos(e); px = p[0]; py = p[1]; }
+        function gerak(e) {
+          if (!jalan) return;
+          e.preventDefault();
+          var p = pos(e);
+          ctx.strokeStyle = '#0f2318'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(p[0], p[1]); ctx.stroke();
+          px = p[0]; py = p[1]; gambar = true;
+        }
+        function selesai() { jalan = false; }
+        c.addEventListener('mousedown', mulai);
+        c.addEventListener('mousemove', gerak);
+        document.addEventListener('mouseup', selesai);
+        c.addEventListener('touchstart', mulai, { passive: false });
+        c.addEventListener('touchmove', gerak, { passive: false });
+        c.addEventListener('touchend', selesai);
+        document.getElementById('formSuratTtd').addEventListener('submit', function () {
+          document.getElementById(idInput).value = gambar ? c.toDataURL('image/png') : 'kosong';
+        });
+      }
+      function bersihTtd(idCanvas, idInput) {
+        var c = document.getElementById(idCanvas);
+        c.getContext('2d').clearRect(0, 0, c.width, c.height);
+        document.getElementById(idInput).value = 'kosong';
+      }
+      pasangTtd('ttdSantri', 'ttdSantriData');
+      pasangTtd('ttdWali', 'ttdWaliData');
+      </script>
+
+      <hr style="margin:24px 0;border:none;border-top:1px solid var(--cream-dark);">
+      <h3 style="font-size:15px;margin-bottom:12px;">Cetak Dokumen</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <?php foreach ($daftarSurat as $tipe => $label): ?>
+          <a href="<?= BASE_URL ?>/dokumen-santri?tipe=<?= e($tipe) ?>" target="_blank" rel="noopener" class="btn-outline" style="padding:10px 18px;font-size:13px;">🖨 <?= e($label) ?></a>
+        <?php endforeach; ?>
+      </div>
+      <p class="portal-note" style="margin-top:10px;">TTD yang sudah disimpan otomatis tampil di surat. Kosong = garis titik-titik.</p>
+
+      <div class="portal-actions">
+        <a href="?step=berkas-pelengkap" class="btn-primary">Lanjut: Berkas Pelengkap &rarr;</a>
+      </div>
+    </section>
+
   <?php endif; ?>
 
   <?php if ($stepSekarang === 'berkas-pelengkap' && in_array($pendaftaran['status'], ['diterima','daftar-ulang'], true)): ?>

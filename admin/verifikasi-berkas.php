@@ -38,6 +38,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($act === 'tolak_pendaftaran' && $pendaftaranId) {
         $pdo->prepare("UPDATE pendaftaran SET status='ditolak' WHERE id=?")->execute([$pendaftaranId]);
         $msg = 'Pendaftaran ditolak.'; $msgType = 'success';
+    } elseif ($act === 'wa_log' && $pendaftaranId) {
+        // Catat klik tombol Kirim WA (opsi B: link wa.me dibuka di tab baru)
+        $isi = sanitizeString($_POST['isi'] ?? '');
+        $nomor = sanitizeString($_POST['nomor'] ?? '');
+        try {
+            $pdo->prepare(
+                "INSERT INTO notif_log (pendaftaran_id, kanal, nomor, isi, status, oleh)
+                 VALUES (?,?,?,?, 'klik-kirim', ?)"
+            )->execute([$pendaftaranId, 'wa', $nomor, $isi, $_SESSION['user_id'] ?? null]);
+            $msg = 'Terkirim via WA (tercatat di log).'; $msgType = 'success';
+        } catch (PDOException $e) {
+            error_log('WA log gagal: ' . $e->getMessage());
+            $msg = 'Gagal mencatat log WA.'; $msgType = 'error';
+        }
     }
 }
 
@@ -248,6 +262,22 @@ $labelStatus = [
 
         <h4>Aksi Verifikasi</h4>
         <div class="form-actions">
+            <?php if (in_array($d['status'], ['diterima', 'daftar-ulang'], true)): ?>
+                <?php $pesanWa = templateWaDiterima($pdo, $d); ?>
+                <a href="<?= e(linkWa($d['whatsapp'] ?? $d['hp_ortu'] ?? '', $pesanWa)) ?>" target="_blank" rel="noopener"
+                   class="btn-sm btn-sm-primary" style="text-decoration:none;" id="btnKirimWa">💬 Kirim WA Diterima</a>
+                <script>
+                document.getElementById('btnKirimWa').addEventListener('click', function () {
+                  var fd = new FormData();
+                  fd.append('csrf_token', '<?= generateCsrfToken() ?>');
+                  fd.append('act', 'wa_log');
+                  fd.append('pendaftaran_id', '<?= (int)$did ?>');
+                  fd.append('nomor', '<?= e(nomorWa($d['whatsapp'] ?? $d['hp_ortu'] ?? '')) ?>');
+                  fd.append('isi', <?= json_encode($pesanWa, JSON_UNESCAPED_UNICODE) ?>);
+                  fetch(location.pathname + '?detail=<?= (int)$did ?>', { method: 'POST', body: fd, credentials: 'same-origin' });
+                });
+                </script>
+            <?php endif; ?>
             <?php if (in_array($d['jalur'], ['alumni-sdmua','dhuafa'], true) && $d['jalur_status'] === 'pending'): ?>
                 <form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">

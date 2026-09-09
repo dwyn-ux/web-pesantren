@@ -49,7 +49,7 @@ if (!empty($p['kesanggupan_sign'])) {
     }
 }
 
-$labelJenjang = ['smp' => 'SMP', 'sma' => 'SMA', 'tahfidz-intensif' => 'Tahfidz Intensif'];
+$labelJenjang = ['smp' => 'SMP', 'sma' => 'SMA'];
 $labelQuran = [
     'belum-bisa' => 'Belum Bisa Membaca', 'bisa-membaca' => 'Bisa Membaca',
     'tartil' => 'Tartil', 'hafal-juz-30' => 'Hafal Juz 30', 'hafal-lebih' => 'Hafal Lebih dari Juz 30',

@@ -42,7 +42,7 @@ $labelKategori = [
     'kajian'   => 'Kajian',  'kegiatan' => 'Kegiatan',
     'psb-info' => 'PSB',     'alumni' => 'Alumni',
 ];
-$labelJenjang  = ['smp' => 'SMP', 'sma' => 'SMA', 'tahfidz-intensif' => 'Tahfidz'];
+$labelJenjang  = ['smp' => 'SMP', 'sma' => 'SMA'];
 
 // ── Counter per status & gelombang (untuk dashboard) ─────
 $statusCounts = $pdo->query(

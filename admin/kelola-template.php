@@ -69,6 +69,10 @@ if (isset($_GET['edit'])) {
                 <p class="muted" style="margin-top:8px;">
                     Gunakan tag <code>&lt;div&gt;</code>, <code>&lt;table&gt;</code>, <code>&lt;h2&gt;</code> dll.
                     Variabel placeholder: <code>__NAMA__</code>, <code>__NOMOR_DAFTAR__</code> (akan diganti saat generate).
+                    Dokumen kelulusan: <code>__TTL__</code> <code>__JK__</code> <code>__AGAMA__</code> <code>__ORTU__</code>
+                    <code>__NAMA_WALI__</code> <code>__PEKERJAAN_ORTU__</code> <code>__HP_ORTU__</code> <code>__ALAMAT__</code>
+                    <code>__KELAS__</code> <code>__JENJANG_LABEL__</code> <code>__TAHUN_AJARAN__</code> <code>__TANGGAL_CETAK__</code>
+                    <code>__RINCIAN_BIAYA__</code> <code>__TTD_SANTRI__</code> <code>__TTD_WALI__</code> <code>__NAMA_DIREKTUR__</code>.
                 </p>
             </div>
 

@@ -1379,3 +1379,131 @@ function statusLabel(string $status): string {
 function isBerkasEditable(string $status): bool {
     return in_array($status, ['pending', 'menunggu-verifikasi'], true);
 }
+
+// ── Data kelulusan (surat & TTD) ─────────────────────────────
+
+/** Daftar agama untuk dropdown. */
+function agamaOptions(): array {
+    return ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu'];
+}
+
+/** Daftar kelas mengikuti jenjang: SMP 7-9, SMA 10-12. */
+function kelasOptions(string $jenjang): array {
+    if ($jenjang === 'sma') return ['10', '11', '12'];
+    return ['7', '8', '9'];
+}
+
+/** Label jenjang singkat (SMP/SMA). */
+function jenjangLabel(string $jenjang): string {
+    return match ($jenjang) {
+        'smp' => 'SMP',
+        'sma' => 'SMA',
+        default => $jenjang,
+    };
+}
+
+/**
+ * Render template dokumen kelulusan dengan data pendaftaran.
+ * Placeholder didukung: __NAMA__ __TTL__ __JK__ __AGAMA__ __ORTU__
+ * __NAMA_WALI__ __PEKERJAAN_ORTU__ __HP_ORTU__ __ALAMAT__ __KELAS__
+ * __JENJANG_LABEL__ __NOMOR_DAFTAR__ __TAHUN_AJARAN__ __TANGGAL_CETAK__
+ * __RINCIAN_BIAYA__ __TTD_SANTRI__ __TTD_WALI__ __NAMA_DIREKTUR__
+ */
+function renderDokumenKelulusan(PDO $pdo, array $p, string $isiHtml): string {
+    $pengaturan = [];
+    foreach ($pdo->query("SELECT key_name, value FROM pengaturan WHERE key_name IN ('psb_tahun','nama_direktur')")->fetchAll() as $row) {
+        $pengaturan[$row['key_name']] = $row['value'];
+    }
+    $tahunAjaran = $pengaturan['psb_tahun'] ?? (date('Y') . '/' . (date('Y') + 1));
+    $namaDirektur = $pengaturan['nama_direktur'] ?? 'Suroto Abu Nizam, M.Pd';
+
+    $ttl = trim(($p['tempat_lahir'] ?? '') . ', ' . (!empty($p['tanggal_lahir']) ? date('d-m-Y', strtotime($p['tanggal_lahir'])) : ''));
+    $jk = ($p['jenis_kelamin'] ?? '') === 'P' ? 'Perempuan' : 'Laki-laki';
+    $ortu = trim(($p['nama_ayah'] ?? '') . ' / ' . ($p['nama_ibu'] ?? ''), ' /');
+    $namaWali = $p['nama_ayah'] ?: ($p['nama_ibu'] ?? '');
+
+    // Rincian biaya dari snapshot pembiayaan
+    $st = $pdo->prepare('SELECT jenis, nama, nominal FROM pembiayaan WHERE pendaftaran_id = ? ORDER BY urutan, id');
+    $st->execute([(int) $p['id']]);
+    $rincian = '<ul>';
+    foreach ($st->fetchAll() as $it) {
+        $rincian .= '<li>' . htmlspecialchars($it['nama'] ?: $it['jenis'], ENT_QUOTES, 'UTF-8')
+            . ' : ' . formatRupiah((float) $it['nominal']) . '</li>';
+    }
+    $rincian .= '</ul>';
+
+    // TTD sebagai <img> bila file ada
+    $pid = (int) ($p['id'] ?? 0);
+    $ttdImg = static function (?string $file) use ($pid): string {
+        if (!$file) return '(.............................)';
+        $path = UPLOADS_PATH . '/santri/' . $pid . '/' . basename($file);
+        if (!is_file($path)) return '(.............................)';
+        return '<img src="' . e(BASE_URL . '/dokumen-santri?tipe=ttd&f=' . basename($file)) . '" alt="Tanda tangan" style="max-width:170px;max-height:65px;">';
+    };
+
+    $ganti = [
+        '__NAMA__' => $p['nama_lengkap'] ?? '',
+        '__TTL__' => $ttl,
+        '__JK__' => $jk,
+        '__AGAMA__' => $p['agama'] ?? '',
+        '__ORTU__' => $ortu,
+        '__NAMA_WALI__' => $namaWali,
+        '__PEKERJAAN_ORTU__' => $p['pekerjaan_ortu'] ?? '',
+        '__HP_ORTU__' => $p['hp_ortu'] ?? '',
+        '__ALAMAT__' => $p['alamat'] ?? '',
+        '__KELAS__' => $p['kelas'] ?? '',
+        '__JENJANG_LABEL__' => jenjangLabel($p['jenjang'] ?? ''),
+        '__NOMOR_DAFTAR__' => $p['nomor_daftar'] ?? '',
+        '__TAHUN_AJARAN__' => $tahunAjaran,
+        '__TANGGAL_CETAK__' => date('d-m-Y'),
+        '__RINCIAN_BIAYA__' => $rincian,
+        '__TTD_SANTRI__' => $ttdImg($p['ttd_santri'] ?? null),
+        '__TTD_WALI__' => $ttdImg($p['ttd_wali'] ?? null),
+        '__NAMA_DIREKTUR__' => $namaDirektur,
+    ];
+    $html = str_replace(array_keys($ganti), array_values(array_map(
+        static fn($v, $k) => str_starts_with($k, '__RINCIAN') || str_starts_with($k, '__TTD') ? $v : htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'),
+        $ganti, array_keys($ganti)
+    )), $isiHtml);
+    return $html;
+}
+
+/** Slug template surat kelulusan + label untuk portal. */
+function dokumenKelulusanList(string $jenjang): array {
+    $biaya = $jenjang === 'sma' ? 'kesanggupan-biaya-sma' : 'kesanggupan-biaya-smp';
+    return [
+        $biaya => 'Komitmen Pembiayaan',
+        'pernyataan-santri' => 'Pernyataan Santri',
+        'pernyataan-wali' => 'Pernyataan Wali Santri',
+    ];
+}
+
+// ── Notifikasi WA opsi B (link wa.me prefilled + log) ────────
+
+/** Normalisasi nomor HP ke format 62xxxxxxxxxx. */
+function nomorWa(string $nomor): string {
+    $d = preg_replace('/\D/', '', $nomor);
+    if (str_starts_with($d, '0')) return '62' . substr($d, 1);
+    if (str_starts_with($d, '62')) return $d;
+    return $d;
+}
+
+/** Template pesan WA kelulusan, diisi data pendaftaran + total tagihan. */
+function templateWaDiterima(PDO $pdo, array $p): string {
+    $st = $pdo->prepare('SELECT COALESCE(SUM(nominal),0) FROM pembiayaan WHERE pendaftaran_id = ?');
+    $st->execute([(int) $p['id']]);
+    $total = (float) $st->fetchColumn();
+    $tahun = $pdo->query("SELECT value FROM pengaturan WHERE key_name='psb_tahun'")->fetchColumn()
+        ?: (date('Y') . '/' . (date('Y') + 1));
+    $wali = $p['nama_ayah'] ?: ($p['nama_ibu'] ?? 'Bapak/Ibu');
+    return "Assalamu'alaikum {$wali}, ananda {$p['nama_lengkap']} ({$p['nomor_daftar']}) "
+        . 'DITERIMA di ' . jenjangLabel($p['jenjang'] ?? '') . " TA {$tahun}. "
+        . 'Total tagihan: ' . formatRupiah($total) . '. '
+        . 'Silakan login ke portal: ' . BASE_URL . '/login-santri '
+        . 'untuk pembayaran, tanda tangan surat, dan cetak dokumen.';
+}
+
+/** Link wa.me dengan pesan prefilled. */
+function linkWa(string $nomor, string $pesan): string {
+    return 'https://wa.me/' . nomorWa($nomor) . '?text=' . rawurlencode($pesan);
+}

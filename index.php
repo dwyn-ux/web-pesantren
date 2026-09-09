@@ -30,7 +30,7 @@ if (preg_match('#^artikel/([a-z0-9\-]+)$#', $rawPage, $m)) {
 $publicPages = [
     'home', 'profil', 'sekapur-sirih',
     'artikel', 'artikel-detail',
-    'psb', 'login', 'login-santri', 'portal-santri', 'profil-santri', 'surat-kesanggupan', 'dokumentasi', 'alumni', 'pendataan-alumni', 'dokumen-lihat', 'berkas-santri', 'download-template', '404', 'galeri',
+    'psb', 'login', 'login-santri', 'portal-santri', 'profil-santri', 'surat-kesanggupan', 'dokumentasi', 'alumni', 'pendataan-alumni', 'dokumen-lihat', 'berkas-santri', 'download-template', 'dokumen-santri', '404', 'galeri',
 ];
 
 // Halaman yang butuh login (admin)
@@ -96,6 +96,7 @@ $pageMap = [
     'admin/voucher-alumni' => ROOT_PATH . '/admin/voucher-alumni.php',
     'admin/voucher-akashi' => ROOT_PATH . '/admin/voucher-akashi.php',
     'download-template' => ROOT_PATH . '/pages/download-template.php',
+    'dokumen-santri' => ROOT_PATH . '/pages/dokumen-santri.php',
 ];
 
 // Tangani logout langsung

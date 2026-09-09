@@ -201,6 +201,7 @@ $jenisValid = [
     'bukti-bayar',
     'sertifikat-tka', 'sertifikat-tahfidz',
     'surat-rekomendasi', 'sktm', 'surat-pernyataan', 'mou-kaderisasi',
+    'kip', 'skl',
 ];
 if (!in_array($jenis, $jenisValid, true)) {
     echo json_encode(['success' => false, 'message' => 'Jenis berkas tidak valid.']);
@@ -208,8 +209,9 @@ if (!in_array($jenis, $jenisValid, true)) {
 }
 
 // Cegah upload jika status bukan editable.
-// Pengecualian: ijazah (berkas pelengkap) boleh diupload setelah diterima/daftar-ulang.
-$bolehPelengkap = $jenis === 'ijazah'
+// Pengecualian: berkas pelengkap (ijazah/kip/skl, opsional) boleh
+// diupload setelah diterima/daftar-ulang.
+$bolehPelengkap = in_array($jenis, ['ijazah', 'kip', 'skl'], true)
     && in_array($pendaftaran['status'], ['diterima', 'daftar-ulang'], true);
 if (!isBerkasEditable($pendaftaran['status']) && $jenis !== 'bukti-bayar' && !$bolehPelengkap) {
     http_response_code(403);
