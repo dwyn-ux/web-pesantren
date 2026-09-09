@@ -74,6 +74,7 @@ if ($tipe === 'ttd') {
 // ── Petakan tipe → slug template ──
 $slug = match ($tipe) {
     'kesanggupan-biaya' => ($p['jenjang'] === 'sma' ? 'kesanggupan-biaya-sma' : 'kesanggupan-biaya-smp'),
+    'kesanggupan-biaya-smp', 'kesanggupan-biaya-sma' => $tipe, // slug langsung dari tombol portal/profil
     'pernyataan-santri' => 'pernyataan-santri',
     'pernyataan-wali' => 'pernyataan-wali',
     default => '',
