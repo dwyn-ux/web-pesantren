@@ -14,14 +14,7 @@
         }
     });
 
-    // Konfirmasi hapus
-    document.addEventListener('click', function (e) {
-        var btn = e.target.closest('[data-confirm]');
-        if (!btn) return;
-        if (!window.confirm(btn.dataset.confirm || 'Yakin ingin menghapus data ini?')) {
-            e.preventDefault();
-        }
-    });
+    // Konfirmasi hapus ditangani terpusat oleh notif.js (modal template)
 
     // Auto-dismiss flash
     document.querySelectorAll('.flash-message').forEach(function (msg) {

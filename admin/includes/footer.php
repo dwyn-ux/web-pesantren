@@ -1,6 +1,7 @@
     </div><!-- /.admin-content -->
 </div><!-- /.admin-main -->
 
+<script src="<?= BASE_URL ?>/assets/js/notif.js?v=<?= ASSET_VERSION ?>"></script>
 <script src="<?= BASE_URL ?>/assets/js/main.js?v=<?= ASSET_VERSION ?>"></script>
 <script src="<?= BASE_URL ?>/assets/js/admin.js?v=<?= ASSET_VERSION ?>"></script>
 <script src="<?= BASE_URL ?>/assets/js/article-editor.js?v=<?= ASSET_VERSION ?>"></script>

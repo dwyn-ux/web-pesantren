@@ -108,14 +108,8 @@
     }, 5000);
   });
 
-  // ── Konfirmasi hapus (tombol dengan data-confirm) ───────────
-  document.addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-confirm]');
-    if (!btn) return;
-    if (!window.confirm(btn.dataset.confirm || 'Apakah Anda yakin?')) {
-      e.preventDefault();
-    }
-  });
+  // ── Konfirmasi hapus ditangani terpusat oleh notif.js (modal template)
+  // [data-confirm] + inline confirm(...) di-upgrade otomatis di sana.
 
   // ── Aktifkan tab / accordion sederhana ─────────────────────
   document.querySelectorAll('[data-tab]').forEach(function (btn) {

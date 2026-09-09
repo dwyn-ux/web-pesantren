@@ -70,6 +70,7 @@ $currentYear = date('Y');
 </footer>
 
 <!-- ══ SCRIPTS ════════════════════════════════════════════════ -->
+<script src="<?= BASE_URL ?>/assets/js/notif.js?v=<?= ASSET_VERSION ?>" defer></script>
 <script src="<?= BASE_URL ?>/assets/js/main.js?v=<?= ASSET_VERSION ?>" defer></script>
 <?php if (!empty($extraScripts)) echo $extraScripts; ?>
 
