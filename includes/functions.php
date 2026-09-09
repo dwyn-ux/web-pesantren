@@ -1468,6 +1468,16 @@ function renderDokumenKelulusan(PDO $pdo, array $p, string $isiHtml): string {
     return $html;
 }
 
+/** Jenis tagihan fixed — nominal tidak bisa diubah, klik = sisa otomatis. */
+function jenisBayarFixed(): array {
+    return ['laundry', 'syahriyah', 'infak'];
+}
+
+/** Cek apakah jenis tagihan fixed (nominal terkunci). */
+function isJenisBayarFixed(string $jenis): bool {
+    return in_array($jenis, jenisBayarFixed(), true);
+}
+
 /** Slug template surat kelulusan + label untuk portal. */
 function dokumenKelulusanList(string $jenjang): array {
     $biaya = $jenjang === 'sma' ? 'kesanggupan-biaya-sma' : 'kesanggupan-biaya-smp';

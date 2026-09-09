@@ -302,9 +302,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan
     $metodeValid = ['tunai', 'transfer', 'virtual-account'];
     if (!in_array($metode, $metodeValid, true)) $metode = 'transfer';
 
-    if ($pembiayaanId && $nominal > 0) {
+    // Validasi bukti transfer wajib (JPG/PNG/WEBP/PDF ≤5MB)
+    $errBukti = validateUpload($_FILES['bukti'] ?? [], ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
+        ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'], 5 * 1024 * 1024);
+
+    if ($pembiayaanId && $nominal > 0 && empty($errBukti)) {
         // Validasi: pembiayaan milik pendaftar yang login
-        $cek = $pdo->prepare("SELECT id, nominal FROM pembiayaan WHERE id=? AND pendaftaran_id=?");
+        $cek = $pdo->prepare('SELECT id, jenis, nominal FROM pembiayaan WHERE id=? AND pendaftaran_id=?');
         $cek->execute([$pembiayaanId, $pendaftaranId]);
         $pem = $cek->fetch();
         if ($pem) {
@@ -312,31 +316,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan
             $sumCicilan = $pdo->prepare("SELECT COALESCE(SUM(nominal),0) FROM pembiayaan_cicilan WHERE pembiayaan_id=? AND status='verified'");
             $sumCicilan->execute([$pembiayaanId]);
             $sisa = (float)$pem['nominal'] - (float)$sumCicilan->fetchColumn();
+            // Jenis fixed (laundry/spp/infak): nominal dikunci = sisa otomatis
+            if (isJenisBayarFixed($pem['jenis'])) {
+                $nominal = $sisa;
+            }
             if ($nominal > $sisa) {
                 $msgCicilan = 'Nominal melebihi sisa tagihan (Rp ' . number_format($sisa, 0, ',', '.') . ').';
             } else {
-                // Hitung angsuran ke
-                $ke = $pdo->prepare("SELECT COALESCE(MAX(angsuran_ke),0)+1 FROM pembiayaan_cicilan WHERE pembiayaan_id=?");
-                $ke->execute([$pembiayaanId]);
-                $angsuranKe = (int)$ke->fetchColumn();
+                // Simpan bukti transfer
+                $buktiFile = saveUpload($_FILES['bukti'], UPLOADS_PATH . '/bukti/' . $pendaftaranId);
+                if ($buktiFile === false) {
+                    $msgCicilan = 'Gagal menyimpan bukti transfer.';
+                } else {
+                    // Hitung angsuran ke
+                    $ke = $pdo->prepare("SELECT COALESCE(MAX(angsuran_ke),0)+1 FROM pembiayaan_cicilan WHERE pembiayaan_id=?");
+                    $ke->execute([$pembiayaanId]);
+                    $angsuranKe = (int)$ke->fetchColumn();
 
-                $ins = $pdo->prepare(
-                    "INSERT INTO pembiayaan_cicilan
-                     (pembiayaan_id, angsuran_ke, nominal, tanggal_bayar, metode, status)
-                     VALUES (?,?,?,?,?,'pending')"
-                );
-                $ins->execute([$pembiayaanId, $angsuranKe, $nominal, $tanggal, $metode]);
-                $msgCicilan = 'Cicilan dikirim. Menunggu verifikasi admin.';
+                    $ins = $pdo->prepare(
+                        "INSERT INTO pembiayaan_cicilan
+                         (pembiayaan_id, angsuran_ke, nominal, tanggal_bayar, metode, bukti_file, status)
+                         VALUES (?,?,?,?,?,?,'pending')"
+                    );
+                    $ins->execute([$pembiayaanId, $angsuranKe, $nominal, $tanggal, $metode, 'bukti/' . $pendaftaranId . '/' . $buktiFile]);
+                    $msgCicilan = 'Bukti pembayaran dikirim. Menunggu verifikasi admin.';
+                }
             }
         } else {
             $msgCicilan = 'Item tagihan tidak valid.';
         }
     } else {
-        $msgCicilan = 'Nominal dan item tagihan wajib diisi.';
+        $msgCicilan = !empty($errBukti) ? implode(' ', $errBukti) : 'Nominal, item tagihan, dan bukti transfer wajib diisi.';
     }
     if ($msgCicilan) {
-        $_SESSION['flash_success'] = $msgCicilan;
-        redirect('/portal-santri?step=pembayaran');
+        // Sukses → toast hijau + redirect; gagal → tampil inline tanpa redirect
+        if (str_starts_with($msgCicilan, 'Bukti pembayaran dikirim')) {
+            $_SESSION['flash_success'] = $msgCicilan;
+            redirect('/portal-santri?step=pembayaran');
+        }
+        $errors['cicilan'] = $msgCicilan;
     }
 }
 
@@ -349,11 +367,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan
     $tanggalGab = sanitizeString($_POST['tanggal_bayar'] ?? date('Y-m-d'));
     $metodeGab = sanitizeString($_POST['metode'] ?? 'transfer');
     if (!in_array($metodeGab, ['tunai', 'transfer', 'virtual-account'], true)) $metodeGab = 'transfer';
+    $errBuktiGab = validateUpload($_FILES['bukti'] ?? [], ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
+        ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'], 5 * 1024 * 1024);
 
     if (count($ids) < 1) {
         $errors['gabungan'] = 'Centang minimal satu tagihan.';
     } elseif ($nominalGab <= 0) {
         $errors['gabungan'] = 'Nominal harus lebih dari 0.';
+    } elseif (!empty($errBuktiGab)) {
+        $errors['gabungan'] = implode(' ', $errBuktiGab);
     } else {
         // Ambil item milik pendaftar + sisa per item
         $sisaPerItem = [];
@@ -379,31 +401,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan
             } elseif ($nominalGab > $totalSisa) {
                 $errors['gabungan'] = 'Nominal melebihi total sisa (Rp ' . number_format($totalSisa, 0, ',', '.') . ').';
             } else {
-                // Distribusi berurutan, dalam satu transaksi + satu batch_id
-                $batchId = bin2hex(random_bytes(16));
-                try {
-                    $pdo->beginTransaction();
-                    $sisaNominal = $nominalGab;
-                    foreach ($sisaPerItem as $pid => $sisa) {
-                        if ($sisaNominal <= 0) break;
-                        $bagi = min($sisa, $sisaNominal);
-                        $ke = $pdo->prepare('SELECT COALESCE(MAX(angsuran_ke),0)+1 FROM pembiayaan_cicilan WHERE pembiayaan_id = ?');
-                        $ke->execute([$pid]);
-                        $ins = $pdo->prepare(
-                            'INSERT INTO pembiayaan_cicilan
-                             (pembiayaan_id, batch_id, angsuran_ke, nominal, tanggal_bayar, metode, status)
-                             VALUES (?,?,?,?,?,?,\'pending\')'
-                        );
-                        $ins->execute([$pid, $batchId, (int) $ke->fetchColumn(), $bagi, $tanggalGab, $metodeGab]);
-                        $sisaNominal -= $bagi;
+                // Simpan 1 bukti untuk se-batch, distribusi berurutan dalam transaksi
+                $buktiGab = saveUpload($_FILES['bukti'], UPLOADS_PATH . '/bukti/' . $pendaftaranId);
+                if ($buktiGab === false) {
+                    $errors['gabungan'] = 'Gagal menyimpan bukti transfer.';
+                } else {
+                    $buktiPath = 'bukti/' . $pendaftaranId . '/' . $buktiGab;
+                    $batchId = bin2hex(random_bytes(16));
+                    try {
+                        $pdo->beginTransaction();
+                        $sisaNominal = $nominalGab;
+                        foreach ($sisaPerItem as $pid => $sisa) {
+                            if ($sisaNominal <= 0) break;
+                            $bagi = min($sisa, $sisaNominal);
+                            $ke = $pdo->prepare('SELECT COALESCE(MAX(angsuran_ke),0)+1 FROM pembiayaan_cicilan WHERE pembiayaan_id = ?');
+                            $ke->execute([$pid]);
+                            $ins = $pdo->prepare(
+                                'INSERT INTO pembiayaan_cicilan
+                                 (pembiayaan_id, batch_id, angsuran_ke, nominal, tanggal_bayar, metode, bukti_file, status)
+                                 VALUES (?,?,?,?,?,?,?,\'pending\')'
+                            );
+                            $ins->execute([$pid, $batchId, (int) $ke->fetchColumn(), $bagi, $tanggalGab, $metodeGab, $buktiPath]);
+                            $sisaNominal -= $bagi;
+                        }
+                        $pdo->commit();
+                        $_SESSION['flash_success'] = 'Pembayaran gabungan Rp ' . number_format($nominalGab, 0, ',', '.') . ' dikirim. Menunggu verifikasi admin.';
+                        redirect('/portal-santri?step=pembayaran');
+                    } catch (Throwable $e) {
+                        if ($pdo->inTransaction()) $pdo->rollBack();
+                        @unlink(UPLOADS_PATH . '/' . $buktiPath);
+                        error_log('Cicilan gabungan error: ' . $e->getMessage());
+                        $errors['gabungan'] = 'Terjadi kesalahan sistem.';
                     }
-                    $pdo->commit();
-                    $_SESSION['flash_success'] = 'Pembayaran gabungan Rp ' . number_format($nominalGab, 0, ',', '.') . ' dikirim. Menunggu verifikasi admin.';
-                    redirect('/portal-santri?step=pembayaran');
-                } catch (Throwable $e) {
-                    if ($pdo->inTransaction()) $pdo->rollBack();
-                    error_log('Cicilan gabungan error: ' . $e->getMessage());
-                    $errors['gabungan'] = 'Terjadi kesalahan sistem.';
                 }
             }
         }
@@ -1125,6 +1154,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
     <section class="portal-card">
       <h2>Pembayaran Tagihan</h2>
       <p>Centang beberapa tagihan lalu bayar sekaligus, atau bayar per item di bawah.</p>
+      <?php if (!empty($errors['cicilan'])): ?><p class="field-error"><?= e($errors['cicilan']) ?></p><?php endif; ?>
 
       <?php
       $tagihan = $pdo->prepare(
@@ -1149,7 +1179,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       <?php if (empty($itemList)): ?>
         <p style="color:#999;">Belum ada tagihan. Tagihan akan muncul setelah Panitia melakukan snapshot final.</p>
       <?php else: ?>
-        <form method="post" id="formGabungan" class="tagihan-item" style="border-color:var(--green-deep);">
+        <form method="post" id="formGabungan" class="tagihan-item" style="border-color:var(--green-deep);" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
           <input type="hidden" name="step" value="cicilan-gabungan">
           <h4 style="font-size:15px;margin-bottom:4px;">Bayar Gabungan</h4>
@@ -1163,6 +1193,10 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
             <div class="form-group">
               <label>Nominal Bayar (Rp)</label>
               <input type="number" name="nominal" id="gabNominal" min="1" required class="form-control" placeholder="Ketik nominal">
+            </div>
+            <div class="form-group">
+              <label>Bukti Transfer (JPG/PNG/PDF ≤5MB)</label>
+              <input type="file" name="bukti" required class="form-control" accept="image/jpeg,image/png,image/webp,application/pdf">
             </div>
             <div class="form-group">
               <label>Tanggal Bayar</label>
@@ -1263,15 +1297,18 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           <?php endif; ?>
 
           <?php if (!$lunas): ?>
+            <?php $fixed = isJenisBayarFixed($it['jenis']); ?>
             <form method="post" class="cicilan-form" enctype="multipart/form-data">
               <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
               <input type="hidden" name="step" value="cicilan">
               <input type="hidden" name="pembiayaan_id" value="<?= (int)$it['id'] ?>">
               <div class="form-row">
                 <div class="form-group">
-                  <label>Nominal (Rp)</label>
+                  <label>Nominal (Rp)<?= $fixed ? ' — terkunci' : '' ?></label>
                   <input type="number" name="nominal" min="1" max="<?= (int)$sisa ?>" required
-                         class="form-control" placeholder="Maks Rp <?= number_format($sisa, 0, ',', '.') ?>">
+                         class="form-control" value="<?= $fixed ? (int)$sisa : '' ?>"
+                         <?= $fixed ? 'readonly' : '' ?>
+                         placeholder="<?= $fixed ? 'Rp ' . number_format($sisa, 0, ',', '.') : 'Maks Rp ' . number_format($sisa, 0, ',', '.') ?>">
                 </div>
                 <div class="form-group">
                   <label>Tanggal Bayar</label>
@@ -1286,11 +1323,15 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
                   </select>
                 </div>
                 <div class="form-group">
+                  <label>Bukti Transfer (JPG/PNG/PDF)</label>
+                  <input type="file" name="bukti" required class="form-control" accept="image/jpeg,image/png,image/webp,application/pdf">
+                </div>
+                <div class="form-group">
                   <label>&nbsp;</label>
-                  <button type="submit" class="btn-primary">Bayar / Cicil</button>
+                  <button type="submit" class="btn-primary">Kirim Bukti</button>
                 </div>
               </div>
-              <p class="form-note">Rekening tujuan: <strong><?= e($pdo->query("SELECT value FROM pengaturan WHERE key_name='rekening_pondok'")->fetchColumn() ?: 'BCA 123-456-7890 a.n. Pondok Pesantren Ash-Shiddiq') ?></strong></p>
+              <p class="form-note">Transfer ke: <strong><?= e($rekeningTujuan) ?></strong><?= $fixed ? ' — nominal tagihan ini tidak bisa diubah.' : '' ?></p>
             </form>
           <?php endif; ?>
         </div>

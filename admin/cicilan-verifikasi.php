@@ -101,6 +101,7 @@ include __DIR__ . '/includes/header.php';
                 <th>Pendaftar</th>
                 <th>Item</th>
                 <th>Nominal Cicilan</th>
+                <th>Bukti</th>
                 <th>Metode</th>
                 <th>Tanggal</th>
                 <th>Status</th>
@@ -138,6 +139,13 @@ include __DIR__ . '/includes/header.php';
                     <?php endif; ?>
                 </td>
                 <td><strong>Rp <?= number_format($totalGrup, 0, ',', '.') ?></strong></td>
+                <td>
+                    <?php if (!empty($pertama['bukti_file'])): ?>
+                        <a href="<?= BASE_URL ?>/admin/bukti-lihat?id=<?= (int)$pertama['id'] ?>" target="_blank" rel="noopener" class="btn-sm btn-sm-secondary" style="text-decoration:none;">🧾 Lihat</a>
+                    <?php else: ?>
+                        <small class="muted">—</small>
+                    <?php endif; ?>
+                </td>
                 <td><?= e($pertama['metode']) ?></td>
                 <td style="font-size:12px;"><?= e($pertama['tanggal_bayar']) ?></td>
                 <td>
