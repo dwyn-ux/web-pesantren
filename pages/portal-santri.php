@@ -157,12 +157,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
                 );
                 $upd->execute([$pendaftaranId]);
                 $successMsg = 'Berkas terkirim. Panitia akan memverifikasi.';
+                $notifFinalisasi = true;
             }
         }
 
         $pdo->commit();
 
         if (empty($errors) && $successMsg) {
+            if (!empty($notifFinalisasi ?? false)) {
+                kirimTelegram(
+                    "Siap verifikasi: {$pendaftaran['nama_lengkap']} ({$pendaftaran['nomor_daftar']})\n"
+                    . 'Cek: ' . BASE_URL . '/admin/verifikasi-berkas',
+                    $pdo
+                );
+            }
             $_SESSION['flash_success'] = $successMsg;
             $lanjut = ['akademik' => 'jalur', 'jalur' => 'berkas-wajib'];
             redirect('/portal-santri?step=' . ($lanjut[$step] ?? $step));
@@ -367,6 +375,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan
                     );
                     $ins->execute([$pembiayaanId, $angsuranKe, $nominal, $tanggal, $metode, 'bukti/' . $pendaftaranId . '/' . $buktiFile]);
                     $msgCicilan = 'Bukti pembayaran dikirim. Menunggu verifikasi admin.';
+                    kirimTelegram(
+                        "Pembayaran masuk Rp " . number_format($nominal, 0, ',', '.')
+                        . ": {$pendaftaran['nama_lengkap']} ({$pendaftaran['nomor_daftar']})\n"
+                        . 'Cek: ' . BASE_URL . '/admin/cicilan-verifikasi',
+                        $pdo
+                    );
                 }
             }
         } else {
@@ -452,6 +466,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan
                             $sisaNominal -= $bagi;
                         }
                         $pdo->commit();
+                        kirimTelegram(
+                            "Pembayaran gabungan Rp " . number_format($nominalGab, 0, ',', '.')
+                            . ": {$pendaftaran['nama_lengkap']} ({$pendaftaran['nomor_daftar']})\n"
+                            . 'Cek: ' . BASE_URL . '/admin/cicilan-verifikasi',
+                            $pdo
+                        );
                         $_SESSION['flash_success'] = 'Pembayaran gabungan Rp ' . number_format($nominalGab, 0, ',', '.') . ' dikirim. Menunggu verifikasi admin.';
                         redirect('/portal-santri?step=pembayaran');
                     } catch (Throwable $e) {

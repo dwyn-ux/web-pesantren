@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 "UPDATE pendaftaran SET status = ?, catatan_admin = ? WHERE id = ?"
             )->execute([$status, $catatan ?: null, $id]);
             setFlash('success', 'Status pendaftaran berhasil diperbarui.');
+            kirimTelegram('Status → ' . strtoupper($status) . ': ' . telegramInfoPendaftar($pdo, $id), $pdo);
         }
     } elseif ($_POST['action'] === 'verifikasi_jalur') {
         $id        = sanitizeInt($_POST['id'] ?? 0);
@@ -28,6 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($id > 0) {
             $res = jalurTerapkanKeputusan($pdo, $id, $keputusan, $potongan);
             setFlash($res['ok'] ? 'success' : 'error', $res['pesan']);
+            if ($res['ok']) {
+                kirimTelegram(
+                    'Jalur ' . strtoupper($keputusan) . ($potongan !== null ? " ({$potongan}%)" : '')
+                    . ': ' . telegramInfoPendaftar($pdo, $id),
+                    $pdo
+                );
+            }
         }
     } elseif ($_POST['action'] === 'issue_portal') {
         $id=sanitizeInt($_POST['id']??0);$nomorInduk=strtoupper(sanitizeString($_POST['nomor_induk']??''));$password=$_POST['portal_password']??'';
@@ -40,6 +48,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $pdo->prepare('UPDATE pembiayaan SET status=? WHERE id=?')->execute([$payment,$itemId]);
             $pdo->prepare("UPDATE berkas_santri SET status=CASE WHEN ?='lunas' THEN 'verified' WHEN ?='ditolak' THEN 'rejected' ELSE status END WHERE pembiayaan_id=? AND jenis='bukti-bayar'")->execute([$payment,$payment,$itemId]);
             setFlash('success','Status pembiayaan diperbarui.');
+            $q = $pdo->prepare('SELECT pendaftaran_id, nama, nominal FROM pembiayaan WHERE id=?');
+            $q->execute([$itemId]);
+            if ($r = $q->fetch()) {
+                kirimTelegram(
+                    'Tagihan ' . strtoupper($payment) . ' (' . $r['nama'] . ' Rp ' . number_format((float) $r['nominal'], 0, ',', '.') . ')'
+                    . ': ' . telegramInfoPendaftar($pdo, (int) $r['pendaftaran_id']),
+                    $pdo
+                );
+            }
         }
     }
     redirect('/admin/psb');

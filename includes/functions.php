@@ -1610,3 +1610,68 @@ function labelWaFollowup(string $status): string {
         default => 'Follow-up WA',
     };
 }
+
+function telegramChatIds(?PDO $pdo = null): array {
+    $raw = '';
+    try {
+        $db = $pdo ?? getDB();
+        $v = $db->query("SELECT value FROM pengaturan WHERE key_name='telegram_chat_ids' LIMIT 1")->fetchColumn();
+        if (is_string($v) && trim($v) !== '') $raw = $v;
+    } catch (Throwable $e) {
+        error_log('Telegram chat ID read gagal: ' . $e->getMessage());
+    }
+    if (trim($raw) === '') $raw = (string) ($_ENV['TELEGRAM_CHAT_IDS'] ?? '');
+    $ids = [];
+    foreach (explode(',', $raw) as $p) {
+        $p = trim($p);
+        if ($p !== '' && preg_match('/^-?\d+$/', $p)) $ids[] = $p;
+    }
+    return array_values(array_unique($ids));
+}
+
+function kirimTelegram(string $pesan, ?PDO $pdo = null): bool {
+    $token = defined('TELEGRAM_BOT_TOKEN') ? TELEGRAM_BOT_TOKEN : (string) ($_ENV['TELEGRAM_BOT_TOKEN'] ?? '');
+    if ($token === '') return false;
+    $ids = telegramChatIds($pdo);
+    if (empty($ids)) return false;
+    if (!function_exists('curl_init')) {
+        error_log('Telegram: ekstensi curl tidak tersedia.');
+        return false;
+    }
+    $ok = true;
+    foreach ($ids as $id) {
+        $ch = curl_init('https://api.telegram.org/bot' . $token . '/sendMessage');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 5,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => ['chat_id' => $id, 'text' => $pesan],
+        ]);
+        $res = curl_exec($ch);
+        if ($res === false) {
+            error_log('Telegram kirim gagal: ' . curl_error($ch));
+            $ok = false;
+        } else {
+            $j = json_decode((string) $res, true);
+            if (!is_array($j) || empty($j['ok'])) {
+                error_log('Telegram API gagal: ' . substr((string) $res, 0, 200));
+                $ok = false;
+            }
+        }
+        curl_close($ch);
+    }
+    return $ok;
+}
+
+function telegramInfoPendaftar(PDO $pdo, int $id): string {
+    try {
+        $s = $pdo->prepare('SELECT nomor_daftar, nama_lengkap FROM pendaftaran WHERE id = ?');
+        $s->execute([$id]);
+        $r = $s->fetch();
+        if ($r) return $r['nama_lengkap'] . ' (' . $r['nomor_daftar'] . ')';
+    } catch (Throwable $e) {
+        error_log('Telegram info pendaftar gagal: ' . $e->getMessage());
+    }
+    return '#' . $id;
+}

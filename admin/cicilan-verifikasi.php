@@ -21,6 +21,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              WHERE id=?"
         )->execute([$_SESSION['user_id'], $id]);
         $msg = 'Cicilan diverifikasi.'; $msgType = 'success';
+        $q = $pdo->prepare(
+            "SELECT pb.pendaftaran_id, c.nominal FROM pembiayaan_cicilan c
+             JOIN pembiayaan pb ON pb.id = c.pembiayaan_id WHERE c.id = ?"
+        );
+        $q->execute([$id]);
+        if ($r = $q->fetch()) {
+            kirimTelegram(
+                'Cicilan TERVERIFIKASI Rp ' . number_format((float) $r['nominal'], 0, ',', '.')
+                . ': ' . telegramInfoPendaftar($pdo, (int) $r['pendaftaran_id']),
+                $pdo
+            );
+        }
     } elseif ($act === 'verifikasi_batch' && $id) {
         // Verifikasi sekaligus semua baris satu batch (id = batch_id string aman via whitelist query)
         $batch = preg_replace('/[^0-9a-f]/', '', (string) ($_POST['batch'] ?? ''));
@@ -34,6 +46,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 )->execute([$_SESSION['user_id'], $batch]);
                 $pdo->commit();
                 $msg = 'Batch gabungan diverifikasi sekaligus.'; $msgType = 'success';
+                $q = $pdo->prepare(
+                    "SELECT pb.pendaftaran_id, SUM(c.nominal) AS total FROM pembiayaan_cicilan c
+                     JOIN pembiayaan pb ON pb.id = c.pembiayaan_id WHERE c.batch_id = ? GROUP BY pb.pendaftaran_id LIMIT 1"
+                );
+                $q->execute([$batch]);
+                if ($r = $q->fetch()) {
+                    kirimTelegram(
+                        'Batch TERVERIFIKASI Rp ' . number_format((float) $r['total'], 0, ',', '.')
+                        . ': ' . telegramInfoPendaftar($pdo, (int) $r['pendaftaran_id']),
+                        $pdo
+                    );
+                }
             } catch (Throwable $e) {
                 if ($pdo->inTransaction()) $pdo->rollBack();
                 error_log('Verifikasi batch gagal: ' . $e->getMessage());
@@ -48,6 +72,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              WHERE id=?"
         )->execute([$_SESSION['user_id'], $catatan, $id]);
         $msg = 'Cicilan ditolak.'; $msgType = 'success';
+        $q = $pdo->prepare(
+            "SELECT pb.pendaftaran_id FROM pembiayaan_cicilan c
+             JOIN pembiayaan pb ON pb.id = c.pembiayaan_id WHERE c.id = ?"
+        );
+        $q->execute([$id]);
+        if ($r = $q->fetch()) {
+            kirimTelegram('Cicilan DITOLAK: ' . telegramInfoPendaftar($pdo, (int) $r['pendaftaran_id']), $pdo);
+        }
     }
 }
 

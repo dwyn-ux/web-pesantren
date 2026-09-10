@@ -382,3 +382,15 @@ echo json_encode([
     'file'    => $newName,
     'url'     => BASE_URL . '/berkas-santri?jenis=' . $jenis,
 ]);
+
+try {
+    $info = $pendaftaran['nama_lengkap'] . ' (' . $pendaftaran['nomor_daftar'] . ')';
+    $label = berkasLabel($jenis);
+    if ($jenis === 'bukti-bayar') {
+        kirimTelegram("Bukti bayar masuk: {$info}\nCek: " . BASE_URL . '/admin/cicilan-verifikasi', $pdo);
+    } else {
+        kirimTelegram("Berkas masuk ({$label}): {$info}\nCek: " . BASE_URL . '/admin/verifikasi-berkas', $pdo);
+    }
+} catch (Throwable $e) {
+    error_log('Telegram notif upload gagal: ' . $e->getMessage());
+}

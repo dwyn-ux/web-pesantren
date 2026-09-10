@@ -167,6 +167,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
                 ]);
                 $pdo->commit();
 
+                kirimTelegram(
+                    "Pendaftar baru: {$data['nama_lengkap']} ({$nomorDaftar})\n"
+                    . 'Jenjang: ' . strtoupper($data['jenjang']) . ' | Gelombang: ' . $gelombangAktif['label'] . "\n"
+                    . "WA: {$data['whatsapp']} | Cek: " . BASE_URL . '/admin/verifikasi-berkas',
+                    $pdo
+                );
+
                 // Auto-login calon
                 session_regenerate_id(true);
                 $_SESSION['user_id']    = $userId;

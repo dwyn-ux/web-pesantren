@@ -3,11 +3,20 @@ require_once __DIR__ . '/bootstrap.php';
 requireAdmin();
 $pdo = getDB();
 
-$keys = ['rekening_pembayaran'];
+$keys = ['rekening_pembayaran', 'telegram_chat_ids'];
 
 // ── Proses simpan ────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrf();
+
+    // ── Tes notifikasi Telegram ──
+    if (($_POST['aksi'] ?? '') === 'tes_telegram') {
+        $ok = kirimTelegram('Tes notifikasi bot PSB Ash-Shiddiq. Bot terhubung.', $pdo);
+        setFlash($ok ? 'success' : 'error', $ok
+            ? 'Tes terkirim. Cek grup/chat Telegram.'
+            : 'Tes gagal. Pastikan token di .env dan chat ID terisi, lalu bot sudah di-chat/diundang ke grup.');
+        redirect('/admin/pengaturan');
+    }
 
     // ── Upload logo (opsional) → logo.png / logo.svg ─────────
     if (!empty($_FILES['logo']['name'])) {
@@ -49,6 +58,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Simpan nilai pengaturan (rekening dll)
     foreach ($keys as $k) {
         $v = sanitizeString($_POST[$k] ?? '');
+        if ($k === 'telegram_chat_ids') {
+            // Hanya digit/negatif/koma/spasi yang lolos
+            $parts = array_filter(array_map('trim', explode(',', $v)));
+            $valid = [];
+            foreach ($parts as $p) {
+                if (preg_match('/^-?\d+$/', $p)) $valid[] = $p;
+            }
+            $v = implode(',', array_values(array_unique($valid)));
+        }
         $pdo->prepare('INSERT INTO pengaturan (key_name,value,label) VALUES (?,?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)')
             ->execute([$k, $v, $k]);
     }
@@ -241,9 +259,21 @@ require __DIR__ . '/includes/header.php';
     <div class="form-group"><label>Rekening tujuan transfer</label><textarea class="form-control" name="rekening_pembayaran"><?= e($data['rekening_pembayaran'] ?? '') ?></textarea></div>
 </div>
 
+<div class="admin-form-card">
+    <h2 class="admin-form-title">Notifikasi Telegram</h2>
+    <div class="form-group"><label>Chat ID tujuan (grup + pribadi, pisahkan koma)</label><input class="form-control" name="telegram_chat_ids" placeholder="cth: -1001234567890, 123456789" value="<?= e($data['telegram_chat_ids'] ?? '') ?>"></div>
+    <p class="muted">Cara isi: chat bot 1x, undang bot ke grup panitia sebagai admin, lalu lihat chat ID via tombol Tes di bawah atau getUpdates. Token bot disimpan di .env (TELEGRAM_BOT_TOKEN).</p>
+</div>
+
 <div class="form-actions">
 <button class="btn-sm btn-sm-primary">Simpan Pengaturan</button>
 </div>
+</form>
+
+<form method="post" style="margin-top:16px;">
+<input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+<input type="hidden" name="aksi" value="tes_telegram">
+<button class="btn-sm btn-sm-secondary">Kirim Tes Telegram</button>
 </form>
 
 <script>

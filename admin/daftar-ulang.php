@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("UPDATE pendaftaran SET status='daftar-ulang' WHERE id=?")->execute([$id]);
             $msg = 'Status diubah ke Daftar Ulang. Generate surat di menu Surat Kesanggupan.';
             $msgType = 'success';
+            kirimTelegram('Daftar ulang: ' . telegramInfoPendaftar($pdo, $id), $pdo);
         }
     } elseif ($act === 'batal' && $id) {
         $pdo->prepare("UPDATE pendaftaran SET status='diterima' WHERE id=?")->execute([$id]);

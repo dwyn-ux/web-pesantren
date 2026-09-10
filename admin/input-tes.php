@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Set status pendaftar ke tes-selesai
         $pdo->prepare("UPDATE pendaftaran SET status='tes-selesai' WHERE id=? AND status='menunggu-verifikasi'")->execute([$pendaftaranId]);
         $msg = 'Nilai tes pemetaan tersimpan.'; $msgType = 'success';
+        kirimTelegram('Tes selesai (' . $status . '): ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
     } elseif ($act === 'simpan_hafalan' && $pendaftaranId) {
         $tgl = sanitizeString($_POST['tanggal_tes'] ?? date('Y-m-d'));
         $juz = sanitizeInt($_POST['juz_dinilai'] ?? 0);
@@ -49,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  VALUES (?,?,?,?,?,?,?)"
             )->execute([$pendaftaranId, $tgl, $juz, $status, $penguji, $catatan, $_SESSION['user_id']]);
             $msg = 'Nilai tes hafalan tersimpan.'; $msgType = 'success';
+            kirimTelegram('Tes hafalan (' . $status . '): ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
         }
     }
 }

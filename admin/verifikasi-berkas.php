@@ -20,17 +20,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             "UPDATE pendaftaran SET jalur_status='disetujui', jalur_potongan=? WHERE id=?"
         )->execute([$potongan, $pendaftaranId]);
         $msg = 'Jalur disetujui.'; $msgType = 'success';
+        kirimTelegram('Jalur disetujui: ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
     } elseif ($act === 'tolak' && $pendaftaranId) {
         $pdo->prepare(
             "UPDATE pendaftaran SET jalur_status='ditolak' WHERE id=?"
         )->execute([$pendaftaranId]);
         $msg = 'Jalur ditolak.'; $msgType = 'success';
+        kirimTelegram('Jalur ditolak: ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
     } elseif ($act === 'snapshot' && $pendaftaranId) {
         // Trigger snapshot final
         $ok = applyTarifToSnapshot($pdo, $pendaftaranId);
         if ($ok) {
             $pdo->prepare("UPDATE pendaftaran SET status='diterima' WHERE id=?")->execute([$pendaftaranId]);
             $msg = 'Tagihan final disnapshot. Status: DITERIMA.'; $msgType = 'success';
+            kirimTelegram('DITERIMA: ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
         } else {
             $msg = 'Gagal snapshot. Pastikan jalur sudah disetujui (jika alumni/dhuafa).';
             $msgType = 'error';
@@ -38,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($act === 'tolak_pendaftaran' && $pendaftaranId) {
         $pdo->prepare("UPDATE pendaftaran SET status='ditolak' WHERE id=?")->execute([$pendaftaranId]);
         $msg = 'Pendaftaran ditolak.'; $msgType = 'success';
+        kirimTelegram('Pendaftaran DITOLAK: ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
     } elseif ($act === 'wa_log' && $pendaftaranId) {
         // Catat klik tombol Kirim WA (opsi B: link wa.me dibuka di tab baru)
         $isi = sanitizeString($_POST['isi'] ?? '');
