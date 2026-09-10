@@ -663,22 +663,32 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
     </section>
 
   <?php elseif ($stepSekarang === 'jalur'): ?>
+    <?php
+    // Voucher Akashi valid yang menempel pada pendaftaran ini
+    $cekAk = $pdo->prepare("SELECT juara, nominal_potongan FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1");
+    $cekAk->execute([$pendaftaranId]);
+    $akVoucher = $cekAk->fetch();
+    $akashiTerbuka = (bool) $akVoucher;
+    $akashiCfg = getPotonganAkashi(getJalurPotonganAdmin($pdo));
+    $akashiLabel = ['juara-1' => 'Juara 1', 'juara-2' => 'Juara 2', 'juara-3' => 'Juara 3'];
+    // Kartu alumni terbuka kalau voucher sudah divalidasi (kode+NISN cocok)
+    $cekVoucher = $pdo->prepare(
+        "SELECT kode FROM voucher_alumni WHERE pendaftaran_id = ? AND jalur = 'alumni-sdmua' LIMIT 1"
+    );
+    $cekVoucher->execute([$pendaftaranId]);
+    $voucherValid = $cekVoucher->fetchColumn() ?: null;
+    $alumniTerbuka = (bool) $voucherValid;
+    $syaratJuknis = jalurSyaratJuknis();
+    ?>
     <section class="portal-card">
       <h2>Pilih Jalur Pendaftaran</h2>
-      <p class="portal-note">Simulasi biaya muncul di sebelah kanan setelah Anda memilih jalur.</p>
+      <p class="portal-note">Pilih kartu jalur di kiri — syarat &amp; simulasi biaya muncul di kanan.</p>
+      <div class="jalur-layout">
+        <div class="jalur-kiri">
       <form method="post" id="formJalur" novalidate>
         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
         <input type="hidden" name="step" value="jalur">
 
-        <?php
-      // Voucher Akashi valid yang menempel pada pendaftaran ini
-      $cekAk = $pdo->prepare("SELECT juara, nominal_potongan FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1");
-      $cekAk->execute([$pendaftaranId]);
-      $akVoucher = $cekAk->fetch();
-      $akashiTerbuka = (bool) $akVoucher;
-      $akashiCfg = getPotonganAkashi(getJalurPotonganAdmin($pdo));
-      $akashiLabel = ['juara-1' => 'Juara 1', 'juara-2' => 'Juara 2', 'juara-3' => 'Juara 3'];
-      ?>
         <div class="jalur-grid">
           <?php foreach ($labelJalur as $val => $lbl): ?>
             <?php if (in_array($val, jalurTersembunyi(), true)) continue; ?>
@@ -693,16 +703,6 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
               </span>
             </label>
           <?php endforeach; ?>
-          <?php
-          // Kartu alumni terbuka kalau voucher sudah divalidasi (kode+NISN cocok)
-          // ATAU jalur tersimpan sudah alumni. Selama belum valid, tampil kartu "+" misteri.
-          $cekVoucher = $pdo->prepare(
-              "SELECT kode FROM voucher_alumni WHERE pendaftaran_id = ? AND jalur = 'alumni-sdmua' LIMIT 1"
-          );
-          $cekVoucher->execute([$pendaftaranId]);
-          $voucherValid = $cekVoucher->fetchColumn() ?: null;
-          $alumniTerbuka = (bool) $voucherValid;
-          ?>
           <?php if ($alumniTerbuka): ?>
           <label class="jalur-radio-item">
             <input type="radio" name="jalur" value="alumni-sdmua"
@@ -763,15 +763,22 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           </div>
         <?php endforeach; ?>
 
-        <div id="simulasiBox" style="display:none;">
-          <h4>Simulasi Biaya</h4>
-          <div id="simulasiContent"></div>
-        </div>
-
         <div class="portal-actions">
           <button type="submit" class="btn-primary">Simpan Jalur &amp; Lanjut</button>
         </div>
       </form>
+        </div><!-- /.jalur-kiri -->
+        <aside class="jalur-kanan" aria-live="polite">
+          <div id="syaratBox">
+            <h4 id="syaratJudul">Syarat Jalur</h4>
+            <div id="syaratContent"></div>
+          </div>
+          <div id="simulasiBox" style="display:none;">
+            <h4>Simulasi Biaya</h4>
+            <div id="simulasiContent"></div>
+          </div>
+        </aside>
+      </div>
 
       <?php if (!$alumniTerbuka): ?>
       <div id="klaimWrap" <?= !empty($errors['alumni_klaim']) ? '' : 'hidden' ?> style="margin-top:20px;">
@@ -819,12 +826,26 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
 
     <script>
     const JALUR_OPTS = <?= json_encode($optsJalur, JSON_UNESCAPED_UNICODE) ?>;
+    const SYARAT_JUKNIS = <?= json_encode($syaratJuknis, JSON_UNESCAPED_UNICODE) ?>;
     const SIMULASI_DATA = <?= json_encode($simulasi, JSON_UNESCAPED_UNICODE) ?>;
     const FORMAT_RUPIAH = (n) => 'Rp ' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+    function tampilSyarat(jalur) {
+      const box = document.getElementById('syaratContent');
+      const judul = document.getElementById('syaratJudul');
+      if (!box) return;
+      const list = SYARAT_JUKNIS[jalur] || [];
+      const nama = document.querySelector('input[name="jalur"][value="' + jalur + '"]');
+      const lbl = nama ? nama.closest('.jalur-radio-item').querySelector('.jalur-radio-label').childNodes[0].textContent.trim() : jalur;
+      judul.textContent = 'Syarat — ' + lbl;
+      if (list.length === 0) { box.innerHTML = '<p class="portal-note">Tidak ada syarat khusus untuk jalur ini. Lanjut ke simulasi biaya di bawah.</p>'; return; }
+      box.innerHTML = '<ul class="syarat-list">' + list.map(s => '<li>' + s.replace(/</g, '&lt;') + '</li>').join('') + '</ul>';
+    }
 
     function psbSyncJalur() {
       const checked = document.querySelector('input[name="jalur"]:checked');
       const jalur = checked ? checked.value : 'reguler';
+      tampilSyarat(jalur);
       // Hide all detail blocks
       document.querySelectorAll('.jalur-detail-wrap').forEach(el => el.style.display = 'none');
       // Show relevant

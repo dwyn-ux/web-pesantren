@@ -19,7 +19,7 @@ $santriNavLinks = [
     'portal-santri'   => ['url' => BASE_URL . '/portal-santri',   'label' => 'Portal'],
     'profil-santri'   => ['url' => BASE_URL . '/profil-santri',   'label' => 'Profil'],
     'dokumen-santri'  => ['url' => BASE_URL . '/portal-santri?step=surat-ttd', 'label' => 'Surat & TTD'],
-    'berkas-santri'   => ['url' => BASE_URL . '/portal-santri?step=berkas-wajib', 'label' => 'Upload Berkas'],
+    'berkas-santri'   => ['url' => BASE_URL . '/upload-berkas', 'label' => 'Upload Berkas'],
     'pembayaran'      => ['url' => BASE_URL . '/portal-santri?step=pembayaran', 'label' => 'Pembayaran'],
 ];
 

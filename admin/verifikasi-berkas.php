@@ -262,22 +262,35 @@ $labelStatus = [
 
         <h4>Aksi Verifikasi</h4>
         <div class="form-actions">
-            <?php if (in_array($d['status'], ['diterima', 'daftar-ulang'], true)): ?>
-                <?php $pesanWa = templateWaDiterima($pdo, $d); ?>
-                <a href="<?= e(linkWa($d['whatsapp'] ?? $d['hp_ortu'] ?? '', $pesanWa)) ?>" target="_blank" rel="noopener"
-                   class="btn-sm btn-sm-primary" style="text-decoration:none;" id="btnKirimWa">💬 Kirim WA Diterima</a>
-                <script>
-                document.getElementById('btnKirimWa').addEventListener('click', function () {
-                  var fd = new FormData();
-                  fd.append('csrf_token', '<?= generateCsrfToken() ?>');
-                  fd.append('act', 'wa_log');
-                  fd.append('pendaftaran_id', '<?= (int)$did ?>');
-                  fd.append('nomor', '<?= e(nomorWa($d['whatsapp'] ?? $d['hp_ortu'] ?? '')) ?>');
-                  fd.append('isi', <?= json_encode($pesanWa, JSON_UNESCAPED_UNICODE) ?>);
-                  fetch(location.pathname + '?detail=<?= (int)$did ?>', { method: 'POST', body: fd, credentials: 'same-origin' });
-                });
-                </script>
-            <?php endif; ?>
+            <?php
+            // WA follow-up dinamis: berkas kurang utk status pending
+            $kurangWa = [];
+            if ($d['status'] === 'pending') {
+                $cekW = $pdo->prepare('SELECT jenis FROM berkas_santri WHERE pendaftaran_id = ?');
+                $cekW->execute([(int) $did]);
+                $adaW = array_column($cekW->fetchAll(), 'jenis');
+                foreach (berkasWajib() as $w) {
+                    if (!in_array($w, $adaW, true)) $kurangWa[] = berkasLabel($w);
+                }
+                foreach (jalurBerkasUntuk($d['jalur'] ?? 'reguler') as $jb) {
+                    if (!in_array($jb, $adaW, true)) $kurangWa[] = berkasLabel($jb);
+                }
+            }
+            $pesanWa = templateWaFollowup($pdo, $d, $kurangWa);
+            ?>
+            <a href="<?= e(linkWa($d['whatsapp'] ?? $d['hp_ortu'] ?? '', $pesanWa)) ?>" target="_blank" rel="noopener"
+               class="btn-sm btn-sm-primary" style="text-decoration:none;" id="btnKirimWa">💬 <?= e(labelWaFollowup($d['status'])) ?></a>
+            <script>
+            document.getElementById('btnKirimWa').addEventListener('click', function () {
+              var fd = new FormData();
+              fd.append('csrf_token', '<?= generateCsrfToken() ?>');
+              fd.append('act', 'wa_log');
+              fd.append('pendaftaran_id', '<?= (int)$did ?>');
+              fd.append('nomor', '<?= e(nomorWa($d['whatsapp'] ?? $d['hp_ortu'] ?? '')) ?>');
+              fd.append('isi', <?= json_encode($pesanWa, JSON_UNESCAPED_UNICODE) ?>);
+              fetch(location.pathname + '?detail=<?= (int)$did ?>', { method: 'POST', body: fd, credentials: 'same-origin' });
+            });
+            </script>
             <?php if (in_array($d['jalur'], ['alumni-sdmua','dhuafa'], true) && $d['jalur_status'] === 'pending'): ?>
                 <form method="post" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">

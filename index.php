@@ -30,7 +30,7 @@ if (preg_match('#^artikel/([a-z0-9\-]+)$#', $rawPage, $m)) {
 $publicPages = [
     'home', 'profil', 'sekapur-sirih',
     'artikel', 'artikel-detail',
-    'psb', 'login', 'login-santri', 'portal-santri', 'profil-santri', 'surat-kesanggupan', 'dokumentasi', 'alumni', 'pendataan-alumni', 'dokumen-lihat', 'berkas-santri', 'download-template', 'dokumen-santri', '404', 'galeri',
+    'psb', 'login', 'login-santri', 'portal-santri', 'profil-santri', 'surat-kesanggupan', 'dokumentasi', 'alumni', 'pendataan-alumni', 'dokumen-lihat', 'berkas-santri', 'upload-berkas', 'download-template', 'dokumen-santri', '404', 'galeri',
 ];
 
 // Halaman yang butuh login (admin)
@@ -64,6 +64,7 @@ $pageMap = [
     'galeri'          => ROOT_PATH . '/pages/galeri.php',
     'dokumen-lihat'   => ROOT_PATH . '/pages/dokumen-lihat.php',
     'berkas-santri'   => ROOT_PATH . '/pages/berkas-santri.php',
+    'upload-berkas'   => ROOT_PATH . '/pages/upload-berkas.php',
     'alumni'          => ROOT_PATH . '/pages/alumni.php',
     'pendataan-alumni' => ROOT_PATH . '/pages/pendataan-alumni.php',
     'login'           => ROOT_PATH . '/pages/login.php',
@@ -129,7 +130,7 @@ include $filePath;
 $pageContent = ob_get_clean();
 
 // Halaman santri — pakai header khusus (menu kebutuhan santri)
-$santriPages = ['portal-santri', 'profil-santri'];
+$santriPages = ['portal-santri', 'profil-santri', 'upload-berkas'];
 
 include ROOT_PATH . (in_array($page, $santriPages, true) ? '/includes/header-santri.php' : '/includes/header.php');
 echo $pageContent;

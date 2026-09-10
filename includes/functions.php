@@ -633,6 +633,39 @@ function jalurBerkasUntuk(string $jalur): array {
 }
 
 /**
+ * Syarat & ketentuan per jalur sesuai juknis — tampil di panel kanan
+ * halaman pilih jalur. Tiap item: list string syarat.
+ *
+ * @return array<string, list<string>>
+ */
+function jalurSyaratJuknis(): array {
+    return [
+        'reguler' => [],
+        'prestasi' => [
+            'Melampirkan sertifikat / piagam prestasi tingkat tertinggi.',
+            'Sertifikat diverifikasi panitia sebelum potongan aktif.',
+        ],
+        'tahfidz' => [
+            'Melampirkan sertifikat tahfidz sesuai jumlah hafalan.',
+            'Wajib mengikuti Tes Hafalan oleh penguji panitia.',
+        ],
+        'kaderisasi' => [
+            'Wajib mengabdi (pengabdian) minimal 1 tahun.',
+            'Download, tanda tangani, dan upload ulang MOU kaderisasi.',
+            'Wajib mengikuti Tes Pemetaan sesuai jadwal gelombang.',
+        ],
+        'alumni-sdmua' => [
+            'Khusus alumni SD Muhammadiyah Unggulan Ashidiq.',
+            'Potongan ditetapkan panitia setelah verifikasi.',
+        ],
+        'dhuafa' => [
+            'Melampirkan SKTM + rekomendasi PCM/PDM + surat pernyataan.',
+            'Potongan ditetapkan panitia setelah verifikasi.',
+        ],
+    ];
+}
+
+/**
  * Generate kode voucher Akashi (acak, tanpa karakter membingungkan).
  * Format: AKS-XXXXXXXXXX (huruf besar + angka, tanpa 0/O/1/I/L).
  */
@@ -1516,4 +1549,49 @@ function templateWaDiterima(PDO $pdo, array $p): string {
 /** Link wa.me dengan pesan prefilled. */
 function linkWa(string $nomor, string $pesan): string {
     return 'https://wa.me/' . nomorWa($nomor) . '?text=' . rawurlencode($pesan);
+}
+
+/**
+ * Template pesan WA follow-up admin — dinamis per nama & status.
+ * $berkasKurang: list label berkas yang belum diupload (opsional).
+ */
+function templateWaFollowup(PDO $pdo, array $p, array $berkasKurang = []): string {
+    $nama = $p['nama_lengkap'] ?? '';
+    $nomor = $p['nomor_daftar'] ?? '';
+    $wali = ($p['nama_ayah'] ?? '') ?: (($p['nama_ibu'] ?? '') ?: 'Bapak/Ibu');
+    $portal = BASE_URL . '/login-santri';
+    $salam = "Assalamu'alaikum {$wali}, ananda {$nama} ({$nomor})";
+
+    switch ($p['status'] ?? '') {
+        case 'pending':
+            $msg = $salam . ' terdaftar di ' . jenjangLabel($p['jenjang'] ?? '')
+                . '. Mohon lengkapi berkas pendaftaran di portal: ' . $portal;
+            if (!empty($berkasKurang)) {
+                $msg .= ' Berkas yang kurang: ' . implode(', ', $berkasKurang) . '.';
+            }
+            return $msg;
+        case 'menunggu-verifikasi':
+            return $salam . ' berkasnya sedang diverifikasi panitia. '
+                . 'Mohon menunggu info jadwal tes via WA ini. Pantau portal: ' . $portal;
+        case 'tes-selesai':
+            return $salam . ' telah mengikuti tes. Hasil kelulusan akan diumumkan via WA ini. '
+                . 'Pantau portal: ' . $portal;
+        case 'ditolak':
+            return $salam . '. Mohon maaf, pendaftaran ananda belum dapat kami terima. '
+                . 'Untuk info lebih lanjut hubungi panitia.';
+        default:
+            return templateWaDiterima($pdo, $p);
+    }
+}
+
+/** Label tombol WA admin sesuai status pendaftar. */
+function labelWaFollowup(string $status): string {
+    return match ($status) {
+        'pending' => 'Ingatkan Berkas',
+        'menunggu-verifikasi' => 'Info Verifikasi',
+        'tes-selesai' => 'Info Hasil Tes',
+        'diterima', 'daftar-ulang' => 'Kirim WA Diterima',
+        'ditolak' => 'Kirim WA Penolakan',
+        default => 'Follow-up WA',
+    };
 }

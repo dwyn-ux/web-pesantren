@@ -16,6 +16,7 @@ $jenisValid = [
     'bukti-bayar',
     'sertifikat-tka', 'sertifikat-tahfidz',
     'surat-rekomendasi', 'sktm', 'surat-pernyataan', 'mou-kaderisasi',
+    'kip', 'skl',
 ];
 if (!in_array($jenis, $jenisValid, true)) {
     http_response_code(400);
