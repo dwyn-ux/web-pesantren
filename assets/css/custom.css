@@ -182,7 +182,7 @@ address { font-style: normal; }
 
 /* ── Wrapper kanan-atas: bell + stack toast + panel ────────── */
 #notifWrap {
-  position: fixed; top: calc(var(--nav-height, 72px) + 12px); right: 16px; z-index: 9000;
+  position: fixed; bottom: 20px; right: 16px; z-index: 9000;
   display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
   max-width: min(400px, calc(100vw - 32px));
   pointer-events: none;
@@ -193,7 +193,7 @@ address { font-style: normal; }
 }
 /* ── Bell riwayat notifikasi ─────────────────────────────────── */
 .notif-bell {
-  width: 44px; height: 44px; border-radius: 50%; flex: none;
+  width: 52px; height: 52px; border-radius: 50%; flex: none;
   background: var(--green-deep); color: #fff; border: none; cursor: pointer;
   box-shadow: var(--shadow-md); font-size: 20px; position: relative;
   display: flex; align-items: center; justify-content: center;
@@ -562,6 +562,6 @@ footer { background: #062e1c; padding: 60px 5% 28px; color: rgba(255,255,255,0.5
 /* ── Print ─────────────────────────────────────────────────── */
 @media print {
   #mainNav, .mobile-nav, footer, .flash-message,
-  .notif-bell, .notif-panel, .asq-toasts { display: none !important; }
+  #notifWrap { display: none !important; }
   body { background: white; color: black; }
 }

@@ -40,7 +40,10 @@
       b.id = 'asqToasts';
       b.className = 'asq-toasts';
       b.setAttribute('aria-live', 'polite');
-      w.appendChild(b);
+      // Toast di atas: sisipkan sebelum bell bila bell sudah ada
+      var bell = document.getElementById('notifBell');
+      if (bell && bell.parentNode === w) w.insertBefore(b, bell);
+      else w.appendChild(b);
     }
     return b;
   }
@@ -161,8 +164,8 @@
     panel.hidden = true;
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', 'Riwayat notifikasi');
-    w.insertBefore(bell, w.firstChild);
     w.appendChild(panel);
+    w.appendChild(bell);
     bell.addEventListener('click', function (e) {
       e.stopPropagation();
       panel.hidden = !panel.hidden;
