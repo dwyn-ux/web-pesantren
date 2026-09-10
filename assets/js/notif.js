@@ -2,6 +2,11 @@
  * notif.js — toast + modal konfirmasi sesuai template web Ash-Shiddiq.
  * Vanilla JS, tanpa dependensi. Dimuat di header (defer) publik + admin.
  *
+ * Satu sistem render:
+ * - Flash PHP (dari #flashData) dirender sebagai toast di stack yang sama
+ *   dengan toast JS — tidak ada lagi tumpukan ganda.
+ * - Semua toast tercatat ke riwayat bell (localStorage, maks 20).
+ *
  * - window.asqToast(type, msg) -> toast success/error/info/warning
  * - window.asqConfirm(msg, {title, yes, danger}) -> Promise<boolean>
  * - window.alert() dialihkan ke toast agar gaya seragam (non-blocking)
@@ -11,50 +16,34 @@
 (function () {
   'use strict';
 
+  var TITLES = { success: 'Berhasil', error: 'Gagal', info: 'Info', warning: 'Perhatian' };
   var ICONS = { success: '✓', error: '✕', info: 'i', warning: '!' };
 
+  function wrap() {
+    var w = document.getElementById('notifWrap');
+    if (!w) {
+      w = document.createElement('div');
+      w.id = 'notifWrap';
+      document.body.appendChild(w);
+    }
+    // Pindahkan stack toast lama (fixed) ke dalam wrapper agar urutan rapi
+    var lama = document.getElementById('asqToasts');
+    if (lama && lama.parentNode !== w) w.appendChild(lama);
+    return w;
+  }
+
   function box() {
+    var w = wrap();
     var b = document.getElementById('asqToasts');
     if (!b) {
       b = document.createElement('div');
       b.id = 'asqToasts';
       b.className = 'asq-toasts';
       b.setAttribute('aria-live', 'polite');
-      document.body.appendChild(b);
+      w.appendChild(b);
     }
     return b;
   }
-
-  function toast(type, msg) {
-    type = ICONS[type] ? type : 'info';
-    var b = box();
-    while (b.children.length >= 4) b.removeChild(b.firstChild);
-    var el = document.createElement('div');
-    el.className = 'asq-toast asq-' + type;
-    el.setAttribute('role', type === 'error' ? 'alert' : 'status');
-    var ic = document.createElement('span');
-    ic.className = 'asq-toast-icon';
-    ic.setAttribute('aria-hidden', 'true');
-    ic.textContent = ICONS[type];
-    var tx = document.createElement('span');
-    tx.className = 'asq-toast-text';
-    tx.textContent = String(msg);
-    var x = document.createElement('button');
-    x.className = 'asq-toast-close';
-    x.setAttribute('aria-label', 'Tutup');
-    x.textContent = '×';
-    x.onclick = function () { el.remove(); };
-    el.appendChild(ic);
-    el.appendChild(tx);
-    el.appendChild(x);
-    b.appendChild(el);
-    setTimeout(function () {
-      el.classList.add('asq-hide');
-      setTimeout(function () { el.remove(); }, 400);
-    }, 4500);
-  }
-
-  window.asqToast = toast;
 
   // ── Riwayat notifikasi (localStorage, maks 20) ──
   var RIWAYAT_KEY = 'asq_notif_riwayat';
@@ -73,12 +62,51 @@
     renderBell();
   }
 
-  var toastAsli = toast;
-  toast = function (type, msg) {
-    toastAsli(type, msg);
+  function toast(type, msg) {
+    type = ICONS[type] ? type : 'info';
+    var b = box();
+    while (b.children.length >= 4) b.removeChild(b.firstChild);
+    var el = document.createElement('div');
+    el.className = 'asq-toast asq-' + type;
+    el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    var ic = document.createElement('span');
+    ic.className = 'asq-toast-icon';
+    ic.setAttribute('aria-hidden', 'true');
+    ic.textContent = ICONS[type];
+    var wrap = document.createElement('div');
+    wrap.className = 'asq-toast-body';
+    var title = document.createElement('span');
+    title.className = 'asq-toast-title';
+    title.textContent = TITLES[type];
+    var tx = document.createElement('span');
+    tx.className = 'asq-toast-text';
+    tx.textContent = String(msg);
+    wrap.appendChild(title);
+    wrap.appendChild(tx);
+    var x = document.createElement('button');
+    x.className = 'asq-toast-close';
+    x.setAttribute('aria-label', 'Tutup');
+    x.textContent = '×';
+    x.onclick = function () { el.remove(); };
+    el.appendChild(ic);
+    el.appendChild(wrap);
+    el.appendChild(x);
+    b.appendChild(el);
     catatRiwayat(type, msg);
-  };
+    setTimeout(function () {
+      el.classList.add('asq-hide');
+      setTimeout(function () { el.remove(); }, 400);
+    }, 4500);
+  }
+
   window.asqToast = toast;
+
+  window.alert = function (msg) {
+    var s = String(msg == null ? '' : msg);
+    if (/^(gagal|error)/i.test(s)) toast('error', s);
+    else if (/pilih file|terlalu besar|maks \d/i.test(s)) toast('warning', s);
+    else toast('info', s);
+  };
 
   function waktuRelatif(ts) {
     var s = Math.floor((Date.now() - ts) / 1000);
@@ -106,7 +134,7 @@
     list.forEach(function (n) {
       html += '<div class="notif-item ' + (n.read ? 'read' : 'unread') + '">'
         + '<span class="notif-dot"></span>'
-        + '<div class="notif-item-text">' + n.msg.replace(/</g, '&lt;')
+        + '<div class="notif-item-text">' + String(n.msg).replace(/</g, '&lt;')
         + '<span class="notif-item-time">' + waktuRelatif(n.at) + '</span></div></div>';
     });
     panel.innerHTML = html;
@@ -120,9 +148,11 @@
 
   function pasangBell() {
     if (document.getElementById('notifBell')) return;
+    var w = wrap();
     var bell = document.createElement('button');
     bell.id = 'notifBell';
     bell.className = 'notif-bell';
+    bell.setAttribute('type', 'button');
     bell.setAttribute('aria-label', 'Riwayat notifikasi');
     bell.innerHTML = '&#128276;<span class="notif-count" hidden>0</span>';
     var panel = document.createElement('div');
@@ -131,8 +161,8 @@
     panel.hidden = true;
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', 'Riwayat notifikasi');
-    document.body.appendChild(bell);
-    document.body.appendChild(panel);
+    w.insertBefore(bell, w.firstChild);
+    w.appendChild(panel);
     bell.addEventListener('click', function (e) {
       e.stopPropagation();
       panel.hidden = !panel.hidden;
@@ -141,23 +171,26 @@
     document.addEventListener('click', function (e) {
       if (!panel.hidden && !panel.contains(e.target)) panel.hidden = true;
     });
-    // Catat flash PHP yang tampil saat load agar bisa dicek ulang
-    document.querySelectorAll('.flash-message').forEach(function (f) {
-      var body = f.querySelector('.flash-body');
-      if (body) catatRiwayat(f.getAttribute('data-notif-type') || 'info', body.textContent.trim());
-    });
     renderBell();
   }
 
-  document.addEventListener('DOMContentLoaded', pasangBell);
-  if (document.readyState !== 'loading') pasangBell();
+  function renderFlashServer() {
+    var tag = document.getElementById('flashData');
+    if (!tag) return;
+    try {
+      var list = JSON.parse(tag.textContent || '[]');
+      tag.remove();
+      list.forEach(function (f) { toast(f.type || 'info', f.msg || ''); });
+    } catch (e) { /* abaikan JSON rusak */ }
+  }
 
-  window.alert = function (msg) {
-    var s = String(msg == null ? '' : msg);
-    if (/^(gagal|error)/i.test(s)) toast('error', s);
-    else if (/pilih file|terlalu besar|maks \d/i.test(s)) toast('warning', s);
-    else toast('info', s);
-  };
+  function init() {
+    pasangBell();
+    renderFlashServer();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+  if (document.readyState !== 'loading') init();
 
   // ── Modal konfirmasi ──
   var overlay = null, msgEl = null, yesBtn = null, resolver = null;

@@ -175,28 +175,18 @@ $navLinks = [
 
 </div>
 
-<!-- ══ FLASH MESSAGE ════════════════════════════════════════ -->
+<!-- ══ FLASH MESSAGE → dirender ulang oleh notif.js sebagai toast ══ -->
 <?php
 $flash = getFlash();
 if (!empty($flash)):
-    $typeMap = ['success' => 'flash-success', 'error' => 'flash-error', 'info' => 'flash-info', 'warning' => 'flash-warning'];
-    $titleMap = ['success' => 'Berhasil', 'error' => 'Gagal', 'info' => 'Info', 'warning' => 'Perhatian'];
-    foreach ($flash as $type => $msg):
-        $cls = $typeMap[$type] ?? 'flash-info';
-        $tipe = isset($typeMap[$type]) ? $type : 'info';
+    $flashData = [];
+    foreach ($flash as $type => $msg) {
+        $tipe = in_array($type, ['success', 'error', 'info', 'warning'], true) ? $type : 'info';
+        $flashData[] = ['type' => $tipe, 'msg' => $msg];
+    }
 ?>
-<div class="flash-message <?= $cls ?>" role="alert" data-notif-type="<?= e($tipe) ?>">
-    <?= notifIcon($tipe) ?>
-    <div class="flash-body">
-        <span class="flash-title"><?= e($titleMap[$tipe] ?? 'Info') ?></span>
-        <?= e($msg) ?>
-    </div>
-    <button class="flash-close" onclick="this.parentElement.remove()" aria-label="Tutup">&times;</button>
-</div>
-<?php
-    endforeach;
-endif;
-?>
+<script id="flashData" type="application/json"><?= json_encode($flashData, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?></script>
+<?php endif; ?>
 
 <!-- ══ DROPDOWN MENU SANTRI ══════════════════════════════════ -->
 <script>

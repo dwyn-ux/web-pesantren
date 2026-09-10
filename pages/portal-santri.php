@@ -550,17 +550,18 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
     <div class="status-badge <?= e($statusClass) ?>"><?= e($statusLabel) ?></div>
   </header>
 
-  <?php if (!empty($_SESSION['flash_success'])): ?>
-    <div class="flash-message flash-success"><?= e($_SESSION['flash_success']) ?>
-      <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
-    </div>
-    <?php unset($_SESSION['flash_success']); ?>
-  <?php endif; ?>
-
-  <?php if (!empty($errors['_global'])): ?>
-    <div class="flash-message flash-error"><?= e($errors['_global']) ?>
-      <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
-    </div>
+  <?php
+  $flashInline = [];
+  if (!empty($_SESSION['flash_success'])) {
+      $flashInline[] = ['type' => 'success', 'msg' => $_SESSION['flash_success']];
+      unset($_SESSION['flash_success']);
+  }
+  if (!empty($errors['_global'])) {
+      $flashInline[] = ['type' => 'error', 'msg' => $errors['_global']];
+  }
+  if (!empty($flashInline)):
+  ?>
+  <script id="flashData" type="application/json"><?= json_encode($flashInline, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?></script>
   <?php endif; ?>
 
   <?php if ($faseSelesai): ?>
