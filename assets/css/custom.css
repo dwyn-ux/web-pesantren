@@ -157,23 +157,77 @@ address { font-style: normal; }
   background: none; border: none; line-height: 1;
 }
 
-/* ── Flash Message ─────────────────────────────────────────── */
+/* ── Flash Message (box + icon) ────────────────────────────── */
 .flash-message {
   position: fixed; top: calc(var(--nav-height) + 12px); right: 16px;
-  z-index: 90; padding: 14px 44px 14px 18px; border-radius: var(--radius-md);
+  z-index: 90; padding: 14px 44px 14px 16px; border-radius: var(--radius-md);
   font-size: 14px; font-weight: 500; max-width: 400px;
   box-shadow: var(--shadow-md); animation: flashIn 0.3s ease;
+  display: flex; align-items: flex-start; gap: 10px;
+  background: #fff; border-left: 4px solid var(--green-deep);
 }
+.flash-icon { flex: none; margin-top: 1px; }
+.flash-body { flex: 1; line-height: 1.5; }
+.flash-title { display: block; font-weight: 700; font-size: 13px; margin-bottom: 2px; }
 .flash-close {
-  position: absolute; top: 50%; right: 14px; transform: translateY(-50%);
+  position: absolute; top: 10px; right: 12px;
   background: none; border: none; cursor: pointer;
-  font-size: 18px; line-height: 1; opacity: 0.6;
+  font-size: 18px; line-height: 1; opacity: 0.5; color: inherit;
 }
-.flash-success { background: #d1fae5; color: #065f46; border-left: 4px solid #10b981; }
-.flash-error   { background: #fee2e2; color: #991b1b; border-left: 4px solid #ef4444; }
-.flash-info    { background: #dbeafe; color: #1e40af; border-left: 4px solid #3b82f6; }
-.flash-warning { background: #fef9c3; color: #92400e; border-left: 4px solid #f59e0b; }
+.flash-close:hover { opacity: 1; }
+.flash-success { background: #e6f6ee; color: #065f46; border-left-color: #10b981; }
+.flash-error   { background: #fdeaea; color: #991b1b; border-left-color: #ef4444; }
+.flash-info    { background: #e7effd; color: #1e40af; border-left-color: #3b82f6; }
+.flash-warning { background: #fdf3d7; color: #7a4d00; border-left-color: var(--gold); }
 @keyframes flashIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: none; } }
+
+/* ── Bell riwayat notifikasi ─────────────────────────────────── */
+.notif-bell {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9000;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--green-deep); color: #fff; border: none; cursor: pointer;
+  box-shadow: var(--shadow-md); font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform var(--transition), background var(--transition);
+}
+.notif-bell:hover { background: var(--green-mid); transform: scale(1.06); }
+.notif-bell .notif-count {
+  position: absolute; top: -4px; right: -4px;
+  min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
+  background: #dc2626; color: #fff; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff;
+}
+.notif-bell .notif-count[hidden] { display: none; }
+.notif-panel {
+  position: fixed; bottom: 82px; right: 20px; z-index: 9000;
+  width: min(360px, calc(100vw - 32px)); max-height: 60vh; overflow-y: auto;
+  background: #fff; border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+}
+.notif-panel[hidden] { display: none; }
+.notif-panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--cream-dark);
+  font-weight: 700; font-size: 14px; position: sticky; top: 0; background: #fff;
+}
+.notif-panel-head button {
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; color: var(--green-deep); font-weight: 600;
+}
+.notif-item {
+  display: flex; gap: 10px; padding: 12px 16px;
+  border-bottom: 1px solid var(--cream-dark); font-size: 13px;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item.unread { background: var(--cream); }
+.notif-item .notif-dot {
+  flex: none; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green-deep); margin-top: 6px;
+}
+.notif-item.read .notif-dot { background: transparent; }
+.notif-item-text { flex: 1; line-height: 1.5; color: var(--text-mid); }
+.notif-item-time { display: block; font-size: 11px; color: var(--text-light); margin-top: 2px; }
+.notif-empty { padding: 24px 16px; text-align: center; color: var(--text-light); font-size: 13px; }
 
 /* ── Notifikasi template: toast + modal konfirmasi ──────────── */
 .asq-toasts {
@@ -497,6 +551,7 @@ footer { background: #062e1c; padding: 60px 5% 28px; color: rgba(255,255,255,0.5
 
 /* ── Print ─────────────────────────────────────────────────── */
 @media print {
-  #mainNav, .mobile-nav, footer, .flash-message { display: none !important; }
+  #mainNav, .mobile-nav, footer, .flash-message,
+  .notif-bell, .notif-panel, .asq-toasts { display: none !important; }
   body { background: white; color: black; }
 }

@@ -56,6 +56,102 @@
 
   window.asqToast = toast;
 
+  // ── Riwayat notifikasi (localStorage, maks 20) ──
+  var RIWAYAT_KEY = 'asq_notif_riwayat';
+
+  function bacaRiwayat() {
+    try {
+      var d = JSON.parse(localStorage.getItem(RIWAYAT_KEY) || '[]');
+      return Array.isArray(d) ? d : [];
+    } catch (e) { return []; }
+  }
+
+  function catatRiwayat(type, msg) {
+    var list = bacaRiwayat();
+    list.unshift({ type: type, msg: String(msg), at: Date.now(), read: false });
+    try { localStorage.setItem(RIWAYAT_KEY, JSON.stringify(list.slice(0, 20))); } catch (e) {}
+    renderBell();
+  }
+
+  var toastAsli = toast;
+  toast = function (type, msg) {
+    toastAsli(type, msg);
+    catatRiwayat(type, msg);
+  };
+  window.asqToast = toast;
+
+  function waktuRelatif(ts) {
+    var s = Math.floor((Date.now() - ts) / 1000);
+    if (s < 60) return 'baru saja';
+    if (s < 3600) return Math.floor(s / 60) + ' mnt lalu';
+    if (s < 86400) return Math.floor(s / 3600) + ' jam lalu';
+    return new Date(ts).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  }
+
+  function renderBell() {
+    var bell = document.getElementById('notifBell');
+    var panel = document.getElementById('notifPanel');
+    if (!bell || !panel) return;
+    var list = bacaRiwayat();
+    var unread = list.filter(function (n) { return !n.read; }).length;
+    var badge = bell.querySelector('.notif-count');
+    badge.hidden = unread === 0;
+    badge.textContent = unread > 9 ? '9+' : String(unread);
+    if (list.length === 0) {
+      panel.innerHTML = '<div class="notif-panel-head"><span>Notifikasi</span></div><div class="notif-empty">Belum ada notifikasi.</div>';
+      return;
+    }
+    var html = '<div class="notif-panel-head"><span>Notifikasi</span>'
+      + '<button type="button" id="notifClear">Tandai dibaca</button></div>';
+    list.forEach(function (n) {
+      html += '<div class="notif-item ' + (n.read ? 'read' : 'unread') + '">'
+        + '<span class="notif-dot"></span>'
+        + '<div class="notif-item-text">' + n.msg.replace(/</g, '&lt;')
+        + '<span class="notif-item-time">' + waktuRelatif(n.at) + '</span></div></div>';
+    });
+    panel.innerHTML = html;
+    var clear = document.getElementById('notifClear');
+    if (clear) clear.addEventListener('click', function () {
+      var l = bacaRiwayat().map(function (n) { n.read = true; return n; });
+      try { localStorage.setItem(RIWAYAT_KEY, JSON.stringify(l)); } catch (e) {}
+      renderBell();
+    });
+  }
+
+  function pasangBell() {
+    if (document.getElementById('notifBell')) return;
+    var bell = document.createElement('button');
+    bell.id = 'notifBell';
+    bell.className = 'notif-bell';
+    bell.setAttribute('aria-label', 'Riwayat notifikasi');
+    bell.innerHTML = '&#128276;<span class="notif-count" hidden>0</span>';
+    var panel = document.createElement('div');
+    panel.id = 'notifPanel';
+    panel.className = 'notif-panel';
+    panel.hidden = true;
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Riwayat notifikasi');
+    document.body.appendChild(bell);
+    document.body.appendChild(panel);
+    bell.addEventListener('click', function (e) {
+      e.stopPropagation();
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden) renderBell();
+    });
+    document.addEventListener('click', function (e) {
+      if (!panel.hidden && !panel.contains(e.target)) panel.hidden = true;
+    });
+    // Catat flash PHP yang tampil saat load agar bisa dicek ulang
+    document.querySelectorAll('.flash-message').forEach(function (f) {
+      var body = f.querySelector('.flash-body');
+      if (body) catatRiwayat(f.getAttribute('data-notif-type') || 'info', body.textContent.trim());
+    });
+    renderBell();
+  }
+
+  document.addEventListener('DOMContentLoaded', pasangBell);
+  if (document.readyState !== 'loading') pasangBell();
+
   window.alert = function (msg) {
     var s = String(msg == null ? '' : msg);
     if (/^(gagal|error)/i.test(s)) toast('error', s);

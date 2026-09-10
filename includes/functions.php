@@ -19,6 +19,21 @@ function eUrl(string $url): string {
     return htmlspecialchars(filter_var($url, FILTER_SANITIZE_URL), ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Icon SVG inline untuk notifikasi (success/error/info/warning).
+ * Kembalikan string SVG aman tanpa dependensi eksternal.
+ */
+function notifIcon(string $type): string {
+    $paths = [
+        'success' => '<path d="M20 6L9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>',
+        'error'   => '<path d="M18 6L6 18M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>',
+        'warning' => '<path d="M12 8v5m0 3.5v.5M10.3 3.9L2.6 17a2 2 0 001.7 3h15.4a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+        'info'    => '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v5m0-8.5v.5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>',
+    ];
+    $p = $paths[$type] ?? $paths['info'];
+    return '<svg class="flash-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">' . $p . '</svg>';
+}
+
 // ── Input Sanitasi ───────────────────────────────────────────
 
 function sanitizeString(string $input): string {

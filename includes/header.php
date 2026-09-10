@@ -180,11 +180,17 @@ $navLinks = [
 $flash = getFlash();
 if (!empty($flash)):
     $typeMap = ['success' => 'flash-success', 'error' => 'flash-error', 'info' => 'flash-info', 'warning' => 'flash-warning'];
+    $titleMap = ['success' => 'Berhasil', 'error' => 'Gagal', 'info' => 'Info', 'warning' => 'Perhatian'];
     foreach ($flash as $type => $msg):
         $cls = $typeMap[$type] ?? 'flash-info';
+        $tipe = isset($typeMap[$type]) ? $type : 'info';
 ?>
-<div class="flash-message <?= $cls ?>" role="alert">
-    <?= e($msg) ?>
+<div class="flash-message <?= $cls ?>" role="alert" data-notif-type="<?= e($tipe) ?>">
+    <?= notifIcon($tipe) ?>
+    <div class="flash-body">
+        <span class="flash-title"><?= e($titleMap[$tipe] ?? 'Info') ?></span>
+        <?= e($msg) ?>
+    </div>
     <button class="flash-close" onclick="this.parentElement.remove()" aria-label="Tutup">&times;</button>
 </div>
 <?php
