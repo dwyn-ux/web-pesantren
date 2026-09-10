@@ -134,8 +134,11 @@ $navLinks = [
             <button class="nav-profile-btn" id="santriMenuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Menu santri">
                 <?php
                 $santriNavName = $_SESSION['user_name'] ?? '';
-                ?>
+                if ($santriNavFoto): ?>
+                <img class="nav-profile-avatar" src="<?= BASE_URL ?>/api/foto-santri.php" alt="Foto <?= e($santriNavName) ?>">
+                <?php else: ?>
                 <span class="nav-profile-avatar"><?= e(function_exists('mb_substr') ? mb_strtoupper(mb_substr($santriNavName, 0, 1)) : strtoupper(substr($santriNavName, 0, 1))) ?></span>
+                <?php endif; ?>
             </button>
             <div class="nav-profile-menu" id="santriMenu">
                 <a href="<?= BASE_URL ?>/portal-santri">Portal Santri</a>

@@ -15,7 +15,9 @@ $st->execute([$id]);
 $f  = $st->fetch();
 if (!$f) { http_response_code(404); exit; }
 
-$path = UPLOADS_PATH . '/santri/' . basename($f['nama_file']);
+// nama_file di DB berupa path relatif (santri/{id}/{file}) — jangan pakai basename()
+// agar folder per-santri ikut ter-resolve dengan benar.
+$path = UPLOADS_PATH . '/' . $f['nama_file'];
 if (!is_file($path)) { http_response_code(404); exit; }
 
 while (ob_get_level()) ob_end_clean();
