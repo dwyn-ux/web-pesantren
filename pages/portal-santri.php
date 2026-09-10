@@ -561,7 +561,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
   }
   if (!empty($flashInline)):
   ?>
-  <script id="flashData" type="application/json"><?= json_encode($flashInline, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?></script>
+  <script data-flash type="application/json"><?= json_encode($flashInline, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?></script>
   <?php endif; ?>
 
   <?php if ($faseSelesai): ?>

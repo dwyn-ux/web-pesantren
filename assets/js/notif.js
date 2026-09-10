@@ -48,20 +48,38 @@
     return b;
   }
 
-  // ── Riwayat notifikasi (localStorage, maks 20) ──
+  // ── Riwayat notifikasi (localStorage maks 20, fallback memori) ──
   var RIWAYAT_KEY = 'asq_notif_riwayat';
+  var memoriRiwayat = [];
+  var storageOk = (function () {
+    try {
+      localStorage.setItem('__asq_tes', '1');
+      localStorage.removeItem('__asq_tes');
+      return true;
+    } catch (e) { return false; }
+  })();
 
   function bacaRiwayat() {
+    if (!storageOk) return memoriRiwayat;
     try {
       var d = JSON.parse(localStorage.getItem(RIWAYAT_KEY) || '[]');
       return Array.isArray(d) ? d : [];
     } catch (e) { return []; }
   }
 
+  function tulisRiwayat(list) {
+    list = list.slice(0, 20);
+    if (storageOk) {
+      try { localStorage.setItem(RIWAYAT_KEY, JSON.stringify(list)); } catch (e) {}
+    } else {
+      memoriRiwayat = list;
+    }
+  }
+
   function catatRiwayat(type, msg) {
     var list = bacaRiwayat();
     list.unshift({ type: type, msg: String(msg), at: Date.now(), read: false });
-    try { localStorage.setItem(RIWAYAT_KEY, JSON.stringify(list.slice(0, 20))); } catch (e) {}
+    tulisRiwayat(list);
     renderBell();
   }
 
@@ -144,7 +162,7 @@
     var clear = document.getElementById('notifClear');
     if (clear) clear.addEventListener('click', function () {
       var l = bacaRiwayat().map(function (n) { n.read = true; return n; });
-      try { localStorage.setItem(RIWAYAT_KEY, JSON.stringify(l)); } catch (e) {}
+      tulisRiwayat(l);
       renderBell();
     });
   }
@@ -178,13 +196,18 @@
   }
 
   function renderFlashServer() {
-    var tag = document.getElementById('flashData');
-    if (!tag) return;
-    try {
-      var list = JSON.parse(tag.textContent || '[]');
+    // Baca SEMUA tag flash (header + konten bisa kirim masing-masing)
+    var tags = document.querySelectorAll('script#flashData, script[data-flash]');
+    if (!tags.length) return;
+    tags.forEach(function (tag) {
+      try {
+        var list = JSON.parse(tag.textContent || '[]');
+        (Array.isArray(list) ? list : [list]).forEach(function (f) {
+          toast((f && f.type) || 'info', (f && f.msg) || '');
+        });
+      } catch (e) { /* abaikan JSON rusak */ }
       tag.remove();
-      list.forEach(function (f) { toast(f.type || 'info', f.msg || ''); });
-    } catch (e) { /* abaikan JSON rusak */ }
+    });
   }
 
   function init() {
