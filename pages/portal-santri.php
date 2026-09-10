@@ -1284,7 +1284,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       ?>
 
       <?php
-      $rekeningTujuan = $pdo->query("SELECT value FROM pengaturan WHERE key_name='rekening_pondok'")->fetchColumn()
+      $rekeningTujuan = $pdo->query("SELECT value FROM pengaturan WHERE key_name='rekening_pembayaran'")->fetchColumn()
           ?: 'BCA 123-456-7890 a.n. Pondok Pesantren Ash-Shiddiq';
       ?>
       <?php if (empty($itemList)): ?>

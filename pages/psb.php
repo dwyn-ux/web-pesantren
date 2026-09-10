@@ -3,7 +3,7 @@
 $pdo = getDB();
 $stmtPengat = $pdo->query(
     "SELECT key_name, value FROM pengaturan
-     WHERE key_name IN ('psb_status','psb_tahun','psb_batas_daftar','kontak_whatsapp','rekening_pondok')"
+     WHERE key_name IN ('psb_status','psb_tahun','psb_batas_daftar','kontak_whatsapp','rekening_pembayaran')"
 );
 $pengaturan = [];
 foreach ($stmtPengat->fetchAll() as $row) {
