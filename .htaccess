@@ -41,6 +41,15 @@ ServerSignature Off
     RewriteRule ^sitemap\.xml$ sitemap.php [L]
     RewriteRule ^robots\.txt$ robots.txt [L]
 
+    # Favicon: layani /favicon.ico dengan favicon/logo brand (hindari 404).
+    # Prioritas: favicon.svg (dedicated) → logo.svg → logo.png (upload via Pengaturan).
+    RewriteCond %{DOCUMENT_ROOT}/assets/img/favicon.svg -f
+    RewriteRule ^favicon\.ico$ assets/img/favicon.svg [L,T=image/svg+xml]
+    RewriteCond %{DOCUMENT_ROOT}/assets/img/logo.svg -f
+    RewriteRule ^favicon\.ico$ assets/img/logo.svg [L,T=image/svg+xml]
+    RewriteCond %{DOCUMENT_ROOT}/assets/img/logo.png -f
+    RewriteRule ^favicon\.ico$ assets/img/logo.png [L,T=image/png]
+
     RewriteRule ^$ index.php?page=home [L,QSA]
 
     RewriteRule ^(.+)$ index.php?page=$1 [QSA,L]

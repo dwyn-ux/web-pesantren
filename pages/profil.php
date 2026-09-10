@@ -170,7 +170,7 @@ $sejarah = [
                 <div class="sejarah-item">
                     <div class="sejarah-dot" style="background:<?= $s['color'] ?>;box-shadow:0 0 0 2px <?= $s['color'] ?>;"></div>
                     <div class="sejarah-year" style="color:<?= $s['color'] ?>"><?= $s['year'] ?></div>
-                    <p class="sejarah-judul"><?= e($s['judul']) ?></p>
+                    <p class="sejarah-judul"><?= e($s['nama']) ?></p>
                     <p class="sejarah-desc"><?= e($s['desc']) ?></p>
                 </div>
                 <?php endforeach; ?>
