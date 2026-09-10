@@ -111,6 +111,14 @@
 }
 .portal-step.done:hover { border-color: var(--green-mid); }
 
+/* Step terkunci — belum boleh diisi karena step sebelumnya belum selesai */
+.portal-step.locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--cream);
+}
+.portal-step.locked:hover { border-color: var(--cream-dark); }
+
 /* ── Elemen umum konten portal ───────────────────────────── */
 .portal-actions {
   display: flex;

@@ -270,7 +270,7 @@ $pdf->tableRow(['Alamat', $p['alamat']], $w2, ['label', '']);
 
 $pdf->heading('C. Data Akademik');
 $pdf->tableRow(['Asal Sekolah', $p['asal_sekolah']], $w2, ['label', '']);
-$pdf->tableRow(['Tahun Lulus', $p['tahun_lulus']], $w2, ['label', '']);
+$pdf->tableRow(['Tahun Lulus', $p['tahun_lulus'] ?: '-'], $w2, ['label', '']);
 $pdf->tableRow(['Kemampuan Membaca Al-Qur\'an', $labelQuran[$p['kemampuan_quran']] ?? $p['kemampuan_quran']], $w2, ['label', '']);
 $pdf->tableRow(['Jumlah Hafalan', $p['jumlah_hafalan'] ?: '-'], $w2, ['label', '']);
 $pdf->tableRow(['Motivasi', $p['motivasi'] ?: '-'], $w2, ['label', '']);

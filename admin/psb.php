@@ -221,7 +221,7 @@ require_once __DIR__ . '/includes/header.php';
                         <div>
                             <strong>Akademik</strong><br>
                             Asal: <?= e($p['asal_sekolah']) ?><br>
-                            Lulus: <?= e($p['tahun_lulus']) ?><br>
+                            Lulus: <?= e($p['tahun_lulus'] ?: '-') ?><br>
                             Kemampuan Qur'an: <?= e(str_replace('-', ' ', $p['kemampuan_quran'])) ?><br>
                             Hafalan: <?= e($p['jumlah_hafalan'] ?? '-') ?>
                             <?php if (!empty($p['tinggi_badan']) || !empty($p['berat_badan'])): ?><br>

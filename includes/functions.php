@@ -653,8 +653,10 @@ function jalurBerkasUntuk(string $jalur): array {
  *
  * Step 1-2 (Data Calon, Ortu & Akun) selesai otomatis saat akun dibuat di /psb.
  * Step 3-7 mengikuti isian & berkas di tabel pendaftaran/berkas_santri.
- * Kolom akademik_at/jalur_at (migrasi 025) menandai step pernah disimpan;
- * fallback ke data lama bila migrasi belum dijalankan.
+ * Kolom akademik_at/jalur_at (migrasi 025) menandai step pernah disimpan.
+ * Fallback ke data lama HANYA bila kolom migrasi belum ada (migrasi 025
+ * belum dijalankan) — kalau kolom ada, timestamp-lah satu-satunya sumber
+ * kebenaran supaya step tidak tercentang duluan sebelum diisi.
  *
  * @return array{
  *   steps: list<array{key:string,label:string,done:bool}>,
@@ -674,19 +676,32 @@ function portalProgress(PDO $pdo, array $pendaftaran): array {
 
     $jalur = $pendaftaran['jalur'] ?? 'reguler';
     $jalurBerkas = jalurBerkasUntuk($jalur);
-    $jalurBerkasOk = empty($jalurBerkas)
-        || count(array_intersect($jalurBerkas, $adaJenis)) === count($jalurBerkas);
 
-    // Akademik dianggap selesai kalau pernah disimpan (tahun_lulus pasti terisi)
-    // atau timestamp migrasi 025 sudah ter-set.
-    $akademikOk = !empty($pendaftaran['akademik_at'] ?? null)
-        || !empty($pendaftaran['tahun_lulus'] ?? null);
+    // ── Akademik: selesai HANYA kalau step-nya pernah disimpan ──
+    // Sumber kebenaran = akademik_at (di-set saat submit form akademik).
+    // tahun_lulus TIDAK dipakai lagi: sebelum migrasi 026 kolom ini
+    // NOT NULL DEFAULT tahun berjalan sehingga selalu "terisi" meski
+    // form akademik belum pernah diisi.
+    $akademikOk = array_key_exists('akademik_at', $pendaftaran)
+        ? !empty($pendaftaran['akademik_at'])
+        : !empty($pendaftaran['tahun_lulus'] ?? null); // fallback: migrasi 025 belum jalan
 
-    // Jalur dipilih eksplisit: timestamp migrasi 025, atau pilihan non-default.
-    $jalurDipilih = !empty($pendaftaran['jalur_at'] ?? null)
-        || $jalur !== 'reguler'
-        || !empty($pendaftaran['jalur_detail'] ?? null)
-        || (($pendaftaran['jalur_status'] ?? 'none') !== 'none');
+    // ── Jalur: harus DIPILIH eksplisit lewat step "Pilih Jalur" ──
+    // Reguler juga dianggap pilihan sah hanya setelah disimpan (jalur_at
+    // ter-set). Tanpa ini, pendaftar baru langsung dianggap reguler.
+    $jalurDipilih = array_key_exists('jalur_at', $pendaftaran)
+        ? !empty($pendaftaran['jalur_at'])
+        : ($jalur !== 'reguler' // fallback: migrasi 025 belum jalan
+            || !empty($pendaftaran['jalur_detail'] ?? null)
+            || (($pendaftaran['jalur_status'] ?? 'none') !== 'none'));
+
+    // ── Berkas jalur: bergantung jalur yang DIPILIH ──
+    // Jalur reguler tidak punya berkas tambahan, tapi step ini tetap
+    // "belum selesai" sampai jalurnya dipilih dulu — kalau tidak,
+    // pendaftar baru langsung kecentang padahal belum memilih apa pun.
+    $jalurBerkasOk = $jalurDipilih
+        && (empty($jalurBerkas)
+            || count(array_intersect($jalurBerkas, $adaJenis)) === count($jalurBerkas));
 
     $status = $pendaftaran['status'] ?? 'pending';
     $steps = [

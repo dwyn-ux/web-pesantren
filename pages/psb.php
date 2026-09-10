@@ -138,6 +138,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
                 $userId = (int) $pdo->lastInsertId();
 
                 // 2. INSERT pendaftaran
+                // tahun_lulus sengaja NULL — kolom ini diisi di step
+                // "Akademik" portal, bukan saat membuat akun.
                 $stmtPendaftaran = $pdo->prepare(
                     "INSERT INTO pendaftaran
                         (user_id, nomor_daftar, nama_lengkap, tempat_lahir, tanggal_lahir,

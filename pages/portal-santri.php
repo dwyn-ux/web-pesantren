@@ -29,6 +29,11 @@ $faseSelesai = in_array($statusSekarang, [
     'menunggu-verifikasi', 'tes-selesai', 'diterima', 'ditolak', 'daftar-ulang'
 ], true);
 
+// ── Progres wizard (dipakai submit handler & tampilan) ──
+$progres = portalProgress($pdo, $pendaftaran);
+$progresLabel = array_column($progres['steps'], 'label', 'key');
+$wizardUrut = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi'];
+
 // ── Submit handler (semua step) ──
 $errors = [];
 $successMsg = '';
@@ -36,6 +41,17 @@ $successMsg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
     validateCsrf();
     $step = sanitizeString($_POST['step'] ?? '');
+
+    // Wizard harus diisi runtut: step boleh disimpan hanya kalau step
+    // sebelumnya sudah selesai (mencegah lompat ke berkas/finalisasi
+    // sebelum akademik & jalur diisi).
+    $idxStep = array_search($step, $wizardUrut, true);
+    if ($idxStep !== false && $progres['next'] !== null && $idxStep > (int) array_search($progres['next'], $wizardUrut, true)) {
+        $errors['_global'] = 'Selesaikan dulu step "' . ($progresLabel[$progres['next']] ?? $progres['next'])
+            . '" sebelum mengisi step ini.';
+        setFlash('error', $errors['_global']);
+        redirect('/portal-santri?step=' . $progres['next']);
+    }
 
     try {
         $pdo->beginTransaction();
@@ -48,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
             $beratBadan = sanitizeFloat($_POST['berat_badan'] ?? '') ?: null;
 
             if ($tahunLulus < 2015 || $tahunLulus > (int) date('Y') + 1) {
-                $errors['tahun_lulus'] = 'Tahun lulus tidak valid.';
+                $errors['tahun_lulus'] = 'Pilih tahun lulus yang valid.';
             }
             if ($tinggiBadan !== null && ($tinggiBadan < 50 || $tinggiBadan > 250)) {
                 $errors['tinggi_badan'] = 'Tinggi badan tidak valid.';
@@ -71,10 +87,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
         }
 
         elseif ($step === 'jalur') {
-            $jalur = sanitizeString($_POST['jalur'] ?? 'reguler');
+            $jalur = sanitizeString($_POST['jalur'] ?? '');
             $jalurDetail = sanitizeString($_POST['jalur_detail'] ?? '') ?: null;
             $validJalur = array_keys(jalurPendaftaran());
-            if (!in_array($jalur, $validJalur, true)) {
+            // Jalur wajib dipilih eksplisit — tidak ada default diam-diam.
+            if ($jalur === '') {
+                $errors['jalur'] = 'Pilih salah satu jalur pendaftaran dulu.';
+            } elseif (!in_array($jalur, $validJalur, true)) {
                 $errors['jalur'] = 'Jalur tidak valid.';
             }
             // Jalur alumni hanya boleh disimpan kalau voucher sudah divalidasi
@@ -199,7 +218,7 @@ $s = $pdo->prepare(
 $s->execute([$pendaftaranId]);
 $pendaftaran = $s->fetch();
 
-// Progres wizard — untuk nav step, centang otomatis, dan banner lanjutkan
+// Progres ulang — submit bisa mengubah step yang sudah selesai
 $progres = portalProgress($pdo, $pendaftaran);
 $progresLabel = array_column($progres['steps'], 'label', 'key');
 
@@ -236,17 +255,23 @@ $labelJenjang = [
 
 $labelJalur = jalurPendaftaran();
 $optsJalur = jalurDetailOptions();
-$jalurBerkas = jalurBerkasUntuk($pendaftaran['jalur'] ?? 'reguler');
+// Jalur terpilih dianggap sah hanya kalau step jalur pernah disimpan
+// (jalur_at ter-set) — INSERT pendaftaran mendaftar sebagai 'reguler'
+// tanpa berarti user memilih reguler.
+$jalurTersimpan = ($pendaftaran['jalur'] ?? '') !== ''
+    && (array_key_exists('jalur_at', $pendaftaran) ? !empty($pendaftaran['jalur_at']) : true);
+$jalurSaatIni = $jalurTersimpan ? ($pendaftaran['jalur'] ?? 'reguler') : null;
+$jalurBerkas = $jalurSaatIni !== null ? jalurBerkasUntuk($jalurSaatIni) : [];
 
-// Simulasi biaya
+// Simulasi biaya — hanya untuk jalur yang BENAR-BENAR sudah dipilih.
 $akashiJuara = null;
-if (($pendaftaran['jalur'] ?? '') === 'prestasi' && ($pendaftaran['jalur_detail'] ?? '') === 'internal') {
+if ($jalurSaatIni === 'prestasi' && ($pendaftaran['jalur_detail'] ?? '') === 'internal') {
     $ak = $pdo->prepare("SELECT juara FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1");
     $ak->execute([$pendaftaranId]);
     $akashiJuara = $ak->fetchColumn() ?: null;
 }
-$simulasi = ($pendaftaran['gelombang_id'] && !empty($pendaftaran['jalur']))
-    ? getSimulasiBiaya($pdo, $pendaftaran['jalur'], $pendaftaran['jalur_detail'],
+$simulasi = ($pendaftaran['gelombang_id'] && $jalurSaatIni !== null)
+    ? getSimulasiBiaya($pdo, $jalurSaatIni, $pendaftaran['jalur_detail'],
                        (int) $pendaftaran['gelombang_id'], $pendaftaran['jenis_kelamin'],
                        $akashiJuara)
     : null;
@@ -266,7 +291,8 @@ $faseSelesai = in_array($statusSekarang, [
 
 // ── Kunci step ──
 // Portal (=ringkasan) boleh dibuka semua status.
-// Wizard (akademik→finalisasi) hanya untuk 'pending'.
+// Wizard (akademik→finalisasi) hanya untuk 'pending' dan WAJIB runtut:
+// step hanya bisa dibuka kalau step sebelumnya sudah selesai.
 // Pembayaran/surat-ttd/berkas-pelengkap hanya untuk 'diterima'/'daftar-ulang'.
 $stepWizard = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi'];
 $stepLulus = ['pembayaran', 'surat-ttd', 'berkas-pelengkap'];
@@ -280,6 +306,16 @@ if ($faseSelesai) {
     }
 } elseif (in_array($stepSekarang, $stepLulus, true)) {
     redirect('/portal-santri?step=ringkasan');
+}
+
+// Wizard runtut: blok akses step yang melewati step pertama yang belum selesai.
+// Selesai semua → step wizard mana pun boleh dibuka (revisi data).
+$idxMinta = array_search($stepSekarang, $wizardUrut, true);
+if (!$faseSelesai && $idxMinta !== false) {
+    $idxNext = $progres['next'] !== null ? (int) array_search($progres['next'], $wizardUrut, true) : count($wizardUrut);
+    if ($idxMinta > $idxNext) {
+        redirect('/portal-santri?step=' . $progres['next']);
+    }
 }
 
 // ── Klaim jalur alumni (voucher + NISN) ────────────────────
@@ -644,12 +680,14 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
     <?php
     // Ringkasan hasil pengisian — read-only untuk semua status
     $ringkasNama = $pendaftaran['nama_lengkap'];
-    $ringkasJalurLbl = $labelJalur[$pendaftaran['jalur']] ?? $pendaftaran['jalur'];
-    if (!empty($pendaftaran['jalur_detail'])) {
+    $ringkasJalurLbl = $jalurSaatIni !== null
+        ? ($labelJalur[$jalurSaatIni] ?? $jalurSaatIni)
+        : 'Belum dipilih';
+    if ($jalurSaatIni !== null && !empty($pendaftaran['jalur_detail'])) {
         $ringkasJalurLbl .= ' (' . (($optsJalur[$pendaftaran['jalur']][$pendaftaran['jalur_detail']]['label'] ?? null) ?: $pendaftaran['jalur_detail']) . ')';
     }
-    $ringkasWajibOk = count(array_intersect_key($berkasByJenis, $berkasWajibList));
-    $ringkasJalurOk = count(array_intersect_key($berkasByJenis, array_flip($jalurBerkas)));
+$ringkasWajibOk = count(array_intersect_key($berkasByJenis, $berkasWajibList));
+$ringkasJalurOk = $jalurSaatIni !== null ? count(array_intersect_key($berkasByJenis, array_flip($jalurBerkas))) : 0;
     ?>
     <section class="portal-card">
       <h2>Ringkasan Pendaftaran</h2>
@@ -658,11 +696,12 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         <h4>Data Anda</h4>
         <ul>
           <li>Nama: <strong><?= e($ringkasNama) ?></strong></li>
+          <?php /* Jalur & berkas-jalur diringkas dengan status $jalurSaatIni (lihat bawah) */ ?>
           <li>Jenjang: <strong><?= e($labelJenjang[$pendaftaran['jenjang']] ?? $pendaftaran['jenjang']) ?></strong></li>
           <li>Jalur: <strong><?= e($ringkasJalurLbl) ?></strong></li>
           <li>Gelombang: <strong><?= e($pendaftaran['gelombang_label'] ?? '—') ?></strong></li>
           <li>Berkas wajib: <strong><?= $ringkasWajibOk ?> / <?= count($berkasWajibList) ?></strong></li>
-          <?php if (!empty($jalurBerkas)): ?>
+          <?php if ($jalurSaatIni !== null && !empty($jalurBerkas)): ?>
             <li>Berkas jalur: <strong><?= $ringkasJalurOk ?> / <?= count($jalurBerkas) ?></strong></li>
           <?php endif; ?>
           <?php if ($simulasi): ?>
@@ -713,14 +752,24 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
   <?php else: ?>
 
   <nav class="portal-steps" aria-label="Langkah portal">
-    <?php $stepNomor = 0; ?>
+    <?php
+    // Step terkunci: wizard pending & step ini berada setelah step
+    // pertama yang belum selesai → tidak bisa dibuka (runtut).
+    // Selesai semua (next = null) → semua step wizard bisa dibuka.
+    $idxNextWizard = $progres['next'] !== null
+        ? (int) array_search($progres['next'], $wizardUrut, true)
+        : count($wizardUrut);
+    $stepNomor = 0;
+    ?>
     <?php foreach ($progres['steps'] as $st): ?>
       <?php $stepNomor++; ?>
       <?php
         $stKls = ['portal-step'];
         if ($stepSekarang === $st['key']) $stKls[] = 'active';
         if ($st['done']) $stKls[] = 'done';
-        $stBisaKlik = in_array($st['key'], ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi'], true);
+        $stIdx = array_search($st['key'], $wizardUrut, true);
+        $stBisaKlik = $stIdx !== false && $stIdx <= $idxNextWizard;
+        if (!$stBisaKlik) $stKls[] = 'locked';
         $stNum = $st['done'] ? '&#10003;' : (string) $stepNomor;
       ?>
       <?php if ($stBisaKlik): ?>
@@ -728,7 +777,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           <span class="num"><?= $stNum ?></span><span class="lbl"><?= e($st['label']) ?></span>
         </a>
       <?php else: ?>
-        <span class="<?= e(implode(' ', $stKls)) ?>" title="<?= e($st['label']) ?> (selesai)">
+        <span class="<?= e(implode(' ', $stKls)) ?>" title="<?= e($st['label']) ?><?= $st['done'] ? ' (selesai)' : ' — selesaikan step sebelumnya dulu' ?>">
           <span class="num"><?= $stNum ?></span><span class="lbl"><?= e($st['label']) ?></span>
         </span>
       <?php endif; ?>
@@ -748,14 +797,16 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
 
         <div class="form-row">
           <div class="form-group">
-            <label>Tahun Lulus</label>
-            <select name="tahun_lulus" class="form-control">
+            <label>Tahun Lulus <span class="req">*</span></label>
+            <select name="tahun_lulus" class="form-control<?= isset($errors['tahun_lulus']) ? ' is-error' : '' ?>">
+              <option value="">-- Pilih Tahun --</option>
               <?php for ($y = (int) date('Y') + 1; $y >= 2018; $y--): ?>
                 <option value="<?= $y ?>" <?= (int)($pendaftaran['tahun_lulus'] ?? 0) === $y ? 'selected' : '' ?>>
                   <?= $y ?>
                 </option>
               <?php endfor; ?>
             </select>
+            <?php if (isset($errors['tahun_lulus'])): ?><p class="field-error"><?= e($errors['tahun_lulus']) ?></p><?php endif; ?>
           </div>
           <div class="form-group">
             <label>Jumlah Hafalan</label>
@@ -810,7 +861,11 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
     ?>
     <section class="portal-card">
       <h2>Pilih Jalur Pendaftaran</h2>
-      <p class="portal-note">Pilih kartu jalur di kiri — syarat &amp; simulasi biaya muncul di kanan.</p>
+      <p class="portal-note">
+        <?= $jalurSaatIni !== null
+            ? 'Jalur tersimpan Anda: <strong>' . e($labelJalur[$jalurSaatIni] ?? $jalurSaatIni) . '</strong> — pilih kartu jalur di kiri, syarat &amp; simulasi biaya muncul di kanan.'
+            : 'Anda belum memilih jalur. Pilih salah satu kartu jalur di kiri, lalu klik <strong>Simpan Jalur</strong> — syarat &amp; simulasi biaya muncul di kanan.' ?>
+      </p>
       <div class="jalur-layout">
         <div class="jalur-kiri">
       <form method="post" id="formJalur" novalidate>
@@ -820,10 +875,9 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         <div class="jalur-grid">
           <?php foreach ($labelJalur as $val => $lbl): ?>
             <?php if (in_array($val, jalurTersembunyi(), true)) continue; ?>
-            <label class="jalur-radio-item">
-              <input type="radio" name="jalur" value="<?= e($val) ?>"
-                     <?= ($akashiTerbuka ? $val === 'prestasi' : (($pendaftaran['jalur'] ?? 'reguler') === $val)) ? 'checked' : '' ?>
-                     onchange="psbSyncJalur()">
+            <label class="jalur-radio-item">                <input type="radio" name="jalur" value="<?= e($val) ?>"
+                       <?= ($akashiTerbuka ? $val === 'prestasi' : ($jalurSaatIni === $val)) ? 'checked' : '' ?>
+                       onchange="psbSyncJalur()">
               <span class="jalur-radio-label"><?= e($lbl) ?>
                 <?php if (in_array($val, jalurPerluVerifikasi(), true)): ?>
                   <small style="color:var(--text-light);">— verifikasi berkas</small>
@@ -834,7 +888,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           <?php if ($alumniTerbuka): ?>
           <label class="jalur-radio-item">
             <input type="radio" name="jalur" value="alumni-sdmua"
-                   <?= ($pendaftaran['jalur'] ?? '') === 'alumni-sdmua' ? 'checked' : '' ?> onchange="psbSyncJalur()">
+                   <?= $jalurSaatIni === 'alumni-sdmua' ? 'checked' : '' ?> onchange="psbSyncJalur()">
             <span class="jalur-radio-label">Alumni SD Ashidiq
               <small style="color:var(--text-light);">— verifikasi berkas</small>
             </span>
@@ -847,7 +901,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           <?php endif; ?>
         </div>
 
-        <?php if (($pendaftaran['jalur'] ?? '') === 'dhuafa'): ?>
+        <?php if (($pendaftaran['jalur'] ?? '') === 'dhuafa' && $jalurTersimpan): ?>
         <p class="portal-note">
           Jalur Anda (<strong><?= e($labelJalur[$pendaftaran['jalur']] ?? $pendaftaran['jalur']) ?></strong>)
           ditetapkan oleh panitia dan tidak dapat diubah lewat portal. Hubungi panitia untuk informasi lebih lanjut.
@@ -860,7 +914,8 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
             <?php foreach ($details as $val => $opt): ?>
               <label class="radio-inline">
                 <input type="radio" name="jalur_detail" value="<?= e($val) ?>"
-                       <?= (($pendaftaran['jalur_detail'] ?? '') === $val || ($jalurKey === 'prestasi' && $val === 'internal' && $akashiTerbuka)) ? 'checked' : '' ?>>
+                       <?= (($pendaftaran['jalur_detail'] ?? '') === $val
+                            || ($jalurKey === 'prestasi' && $val === 'internal' && $akashiTerbuka && $jalurSaatIni === 'prestasi')) ? 'checked' : '' ?>>
                 <?php if ($jalurKey === 'prestasi' && $val === 'internal'): ?>
                   <?= e($opt['label']) ?>
                   <?php if (!$akashiTerbuka): ?>
@@ -898,8 +953,12 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
         </div><!-- /.jalur-kiri -->
         <aside class="jalur-kanan" aria-live="polite">
           <div id="syaratBox">
-            <h4 id="syaratJudul">Syarat Jalur</h4>
-            <div id="syaratContent"></div>
+            <h4 id="syaratJudul"><?= $jalurSaatIni !== null ? 'Syarat Jalur' : 'Belum Memilih Jalur' ?></h4>
+            <div id="syaratContent">
+              <?php if ($jalurSaatIni === null): ?>
+                <p class="portal-note">Pilih salah satu kartu jalur di sebelah kiri — syarat &amp; simulasi biaya akan tampil di sini sebelum Anda menyimpan.</p>
+              <?php endif; ?>
+            </div>
           </div>
           <div id="simulasiBox" style="display:none;">
             <h4>Simulasi Biaya</h4>
@@ -962,6 +1021,11 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       const box = document.getElementById('syaratContent');
       const judul = document.getElementById('syaratJudul');
       if (!box) return;
+      if (!jalur) {
+        judul.textContent = 'Belum Memilih Jalur';
+        box.innerHTML = '<p class="portal-note">Pilih salah satu kartu jalur di sebelah kiri — syarat &amp; simulasi biaya akan tampil di sini sebelum Anda menyimpan.</p>';
+        return;
+      }
       const list = SYARAT_JUKNIS[jalur] || [];
       const nama = document.querySelector('input[name="jalur"][value="' + jalur + '"]');
       const lbl = nama ? nama.closest('.jalur-radio-item').querySelector('.jalur-radio-label').childNodes[0].textContent.trim() : jalur;
@@ -972,12 +1036,12 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
 
     function psbSyncJalur() {
       const checked = document.querySelector('input[name="jalur"]:checked');
-      const jalur = checked ? checked.value : 'reguler';
+      const jalur = checked ? checked.value : null; // tanpa default diam-diam
       tampilSyarat(jalur);
       // Hide all detail blocks
       document.querySelectorAll('.jalur-detail-wrap').forEach(el => el.style.display = 'none');
       // Show relevant
-      const wrap = document.getElementById('detail-' + jalur);
+      const wrap = jalur ? document.getElementById('detail-' + jalur) : null;
       if (wrap) {
         wrap.style.display = 'block';
         wrap.querySelectorAll('input[name="jalur_detail"]').forEach(r => { r.disabled = false; });
@@ -990,8 +1054,9 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       });
       // Tampilkan kotak klaim Akashi kalau "Tingkat Internal (Lomba Akashi)" dipilih
       toggleAkashiClaim();
-      // Show simulasi
-      hitungSimulasi(jalur);
+      // Show simulasi (butuh jalur terpilih)
+      if (jalur) hitungSimulasi(jalur);
+      else document.getElementById('simulasiBox').style.display = 'none';
     }
 
     function hitungSimulasi(jalur) {
@@ -1139,10 +1204,18 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
   <?php elseif ($stepSekarang === 'berkas-jalur'): ?>
     <section class="portal-card">
       <h2>Upload Berkas Jalur</h2>
+      <?php if ($jalurSaatIni === null): ?>
+      <div class="portal-info-box" style="border-left:4px solid #d9a520;">
+        <h2>Jalur Belum Dipilih</h2>
+        <p>Pilih jalur pendaftaran dulu di step <a href="?step=jalur" class="btn-link">Pilih Jalur</a>.
+          Berkas tambahan yang harus diupload mengikuti jalur yang dipilih.</p>
+      </div>
+      <?php else: ?>
       <p class="portal-note">
-        Jalur Anda saat ini: <strong><?= e($labelJalur[$pendaftaran['jalur']] ?? '—') ?></strong>.
+        Jalur Anda saat ini: <strong><?= e($labelJalur[$jalurSaatIni] ?? $jalurSaatIni) ?></strong>.
         Gambar otomatis dikompres ke ≤1MB; PDF maks 5MB.
       </p>
+      <?php endif; ?>
       <input type="hidden" id="csrfGlobal" value="<?= generateCsrfToken() ?>">
 
       <?php
@@ -1160,20 +1233,20 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           ['slug' => 'pernyataan-dhuafa', 'label' => 'Surat Pernyataan Dhuafa'],
         ],
       ];
-      $templates = $templatePerJalur[$pendaftaran['jalur']] ?? [];
+      $templates = $jalurSaatIni !== null ? ($templatePerJalur[$jalurSaatIni] ?? []) : [];
       ?>
-      <?php if ($pendaftaran['jalur'] === 'kaderisasi'): ?>
+      <?php if ($jalurSaatIni === 'kaderisasi'): ?>
       <div class="portal-info-box" style="margin-bottom:16px;">
         <h2>Langkah Jalur Kaderisasi</h2>
         <p>1. Download template di bawah, isi, tanda tangan, lalu upload ulang pada slot di bawah ini.</p>
         <p>2. Wajib mengikuti <strong>Tes Pemetaan</strong> sesuai jadwal gelombang.</p>
       </div>
-      <?php elseif ($pendaftaran['jalur'] === 'tahfidz'): ?>
+      <?php elseif ($jalurSaatIni === 'tahfidz'): ?>
       <div class="portal-info-box" style="margin-bottom:16px;">
         <h2>Jalur Tahfidz</h2>
         <p>Upload sertifikat tahfidz Anda. Calon jalur tahfidz akan diuji melalui <strong>Tes Hafalan</strong> oleh penguji panitia.</p>
       </div>
-      <?php elseif ($pendaftaran['jalur'] === 'prestasi'): ?>
+      <?php elseif ($jalurSaatIni === 'prestasi'): ?>
       <div class="portal-info-box" style="margin-bottom:16px;">
         <h2>Jalur Prestasi</h2>
         <p>Upload sertifikat / piagam prestasi <strong>tingkat tertinggi</strong> yang pernah diraih.</p>
@@ -1193,8 +1266,10 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
       </div>
       <?php endif; ?>
 
-      <?php if (empty($jalurBerkas)): ?>
-        <p>Tidak ada berkas tambahan yang diperlukan untuk jalur ini. Silakan lanjut ke finalisasi.</p>
+      <?php if ($jalurSaatIni === null || empty($jalurBerkas)): ?>
+        <p><?= $jalurSaatIni === null
+            ? 'Pilih jalur dulu untuk melihat berkas tambahan yang diperlukan.'
+            : 'Tidak ada berkas tambahan yang diperlukan untuk jalur ini. Silakan lanjut ke finalisasi.' ?></p>
       <?php else: ?>
         <div class="berkas-list">
           <?php foreach ($jalurBerkas as $jenis): ?>
@@ -1249,14 +1324,14 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
           <li>Nama: <strong><?= e($pendaftaran['nama_lengkap']) ?></strong></li>
           <li>Nomor: <strong><?= e($pendaftaran['nomor_daftar']) ?></strong></li>
           <li>Jenjang: <strong><?= e($labelJenjang[$pendaftaran['jenjang']] ?? $pendaftaran['jenjang']) ?></strong></li>
-          <li>Jalur: <strong><?= e($labelJalur[$pendaftaran['jalur']] ?? $pendaftaran['jalur']) ?></strong>
-            <?php if ($pendaftaran['jalur_detail']): ?>
+          <li>Jalur: <strong><?= e($jalurSaatIni !== null ? ($labelJalur[$jalurSaatIni] ?? $jalurSaatIni) : 'Belum dipilih') ?></strong>
+            <?php if ($jalurSaatIni !== null && $pendaftaran['jalur_detail']): ?>
               (<?= e(($optsJalur[$pendaftaran['jalur']][$pendaftaran['jalur_detail']]['label'] ?? $pendaftaran['jalur_detail'])) ?>)
             <?php endif; ?>
           </li>
           <li>Gelombang: <strong><?= e($pendaftaran['gelombang_label']) ?></strong></li>
           <li>Berkas wajib diupload: <strong><?= count(array_intersect_key($berkasByJenis, $berkasWajibList)) ?> / <?= count($berkasWajibList) ?></strong></li>
-          <?php if (!empty($jalurBerkas)): ?>
+          <?php if ($jalurSaatIni !== null && !empty($jalurBerkas)): ?>
             <li>Berkas jalur diupload: <strong><?= count(array_intersect_key($berkasByJenis, array_flip($jalurBerkas))) ?> / <?= count($jalurBerkas) ?></strong></li>
           <?php endif; ?>
         </ul>
@@ -1264,7 +1339,12 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
 
       <?php
       $wajibKurangView = array_diff(array_keys($berkasWajibList), array_keys($berkasByJenis));
-      $jalurKurangView = array_diff($jalurBerkas, array_keys($berkasByJenis));
+      $jalurKurangView = $jalurSaatIni !== null ? array_diff($jalurBerkas, array_keys($berkasByJenis)) : [];
+      if ($jalurSaatIni === null && empty($errors['finalisasi'])) {
+          // Tidak ada jalur tersimpan → handler sudah memblokir; tampilkan petunjuk.
+          echo '<div class="portal-info-box" style="border-left-color:#c33;"><h2>Jalur belum dipilih</h2>'
+             . '<p>Pilih jalur pendaftaran dulu di <a href="?step=jalur" class="btn-link">step Pilih Jalur</a>.</p></div>';
+      }
       ?>
       <?php if (!empty($wajibKurangView) || !empty($jalurKurangView)): ?>
       <div class="portal-info-box" style="border-left-color:#c33;">

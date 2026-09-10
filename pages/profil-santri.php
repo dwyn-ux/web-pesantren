@@ -76,7 +76,7 @@ $row = fn(string $label, string $value): string =>
     <div class="portal-card profile-card">
         <h2>Data Akademik</h2>
         <?= $row('Asal Sekolah', e($p['asal_sekolah'])) ?>
-        <?= $row('Tahun Lulus', e($p['tahun_lulus'])) ?>
+        <?= $row('Tahun Lulus', e($p['tahun_lulus'] ?: '-')) ?>
         <?= $row('Kemampuan Membaca Al-Qur\'an', e($labelQuran[$p['kemampuan_quran']] ?? $p['kemampuan_quran'])) ?>
         <?= $row('Jumlah Hafalan', e($p['jumlah_hafalan'] ?: '-')) ?>
         <?= $row('Motivasi', e($p['motivasi'] ?: '-')) ?>
