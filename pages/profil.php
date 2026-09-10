@@ -65,14 +65,14 @@ $extraHead = <<<'CSS'
 .cta-strip { background:var(--gold); padding:50px 5%; text-align:center; }
 .cta-strip h2 { font-family:'Plus Jakarta Sans',sans-serif; font-size:28px; color:var(--text-dark); margin-bottom:8px; }
 .cta-strip p  { font-size:15px; color:rgba(0,0,0,0.6); margin-bottom:24px; }
-.sejarah-timeline { position:relative; padding-left:28px; border-left:2px solid var(--cream-dark); }
-.sejarah-item { margin-bottom:32px; position:relative; }
-.sejarah-dot { position:absolute; left:-37px; top:4px; width:16px; height:16px; border-radius:50%; border:3px solid white; }
-.sejarah-year { font-size:11px; font-weight:700; letter-spacing:2px; margin-bottom:6px; }
-.sejarah-judul { font-weight:600; color:var(--text-dark); margin-bottom:6px; }
-.sejarah-desc { font-size:14px; color:var(--text-mid); line-height:1.7; }
-@media(max-width:900px){ .identitas-grid{grid-template-columns:1fr} .pengajar-grid{grid-template-columns:repeat(2,1fr)} .fasilitas-grid{grid-template-columns:repeat(2,1fr)} }
-@media(max-width:600px){ .fasilitas-grid{grid-template-columns:1fr} .org-level{flex-direction:column;align-items:center} .visi-inner>div{grid-template-columns:1fr!important} }
+.sejarah-timeline { position:relative; padding-left:32px; border-left:2px solid var(--cream-dark); max-width:680px; }
+.sejarah-item { margin-bottom:22px; position:relative; }
+.sejarah-dot { position:absolute; left:-41px; top:5px; width:14px; height:14px; border-radius:50%; border:3px solid white; box-shadow:0 0 0 2px var(--cream-dark); }
+.sejarah-year { font-size:11px; font-weight:700; letter-spacing:2px; margin-bottom:4px; }
+.sejarah-judul { font-weight:700; color:var(--text-dark); margin-bottom:4px; font-size:15px; }
+.sejarah-desc { font-size:13px; color:var(--text-mid); line-height:1.65; max-width:560px; }
+@media(max-width:900px){ .identitas-grid{grid-template-columns:1fr} .pengajar-grid{grid-template-columns:repeat(2,1fr)} .fasilitas-grid{grid-template-columns:repeat(2,1fr)} .sejarah-timeline{max-width:100%} }
+@media(max-width:600px){ .fasilitas-grid{grid-template-columns:1fr} .org-level{flex-direction:column;align-items:center} .visi-inner>div{grid-template-columns:1fr!important} .sejarah-timeline{padding-left:28px} .sejarah-dot{left:-35px;width:12px;height:12px} }
 </style>
 CSS;
 ?>
