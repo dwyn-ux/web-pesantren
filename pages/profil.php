@@ -75,6 +75,20 @@ $extraHead = <<<'CSS'
 @media(max-width:600px){ .fasilitas-grid{grid-template-columns:1fr} .org-level{flex-direction:column;align-items:center} .visi-inner>div{grid-template-columns:1fr!important} .sejarah-timeline{padding-left:28px} .sejarah-dot{left:-35px;width:12px;height:12px} }
 </style>
 CSS;
+
+// Alamat & email dari pengaturan (satu sumber kebenaran — bisa diubah via Admin → Pengaturan)
+// Fallback ke nilai lama bila database belum siap
+$profilAlamat = 'Jl. Pesantren No. 1, Kab. Ciamis, Jawa Barat 46261';
+$profilEmail  = 'info@ponpesashiddiq.or.id';
+try {
+    $stmt = getDB()->query("SELECT key_name, value FROM pengaturan WHERE key_name IN ('kontak_alamat','kontak_email')");
+    foreach ($stmt->fetchAll() as $row) {
+        if ($row['key_name'] === 'kontak_alamat' && trim((string) $row['value']) !== '') $profilAlamat = $row['value'];
+        if ($row['key_name'] === 'kontak_email'  && trim((string) $row['value']) !== '') $profilEmail  = $row['value'];
+    }
+} catch (PDOException $e) {
+    // DB belum siap — pakai nilai default di atas
+}
 ?>
 
 <!-- PAGE HERO -->
@@ -102,9 +116,9 @@ CSS;
                 <tr><td>Jenjang</td><td>SMP &amp; SMA</td></tr>
                 <tr><td>Program Unggulan</td><td>Tahfidz Al-Qur'an 30 Juz</td></tr>
                 <tr><td>Akreditasi</td><td>A (SMP) &middot; B (SMA)</td></tr>
-                <tr><td>Alamat</td><td>Jl. Pesantren No. 1, Kab. Ciamis, Jawa Barat 46261</td></tr>
+                <tr><td>Alamat</td><td><?= e($profilAlamat) ?></td></tr>
                 <tr><td>Website</td><td><a href="https://ponpesashiddiq.or.id">ponpesashiddiq.or.id</a></td></tr>
-                <tr><td>Email</td><td><a href="mailto:info@ponpesashiddiq.or.id">info@ponpesashiddiq.or.id</a></td></tr>
+                <tr><td>Email</td><td><a href="mailto:<?= e($profilEmail) ?>"><?= e($profilEmail) ?></a></td></tr>
             </tbody>
         </table>
     </div>

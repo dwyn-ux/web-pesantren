@@ -183,6 +183,25 @@ $extraHead = <<<'CSS'
 </style>
 CSS;
 
+// Kontak & alamat dari pengaturan (satu sumber kebenaran — Admin → Pengaturan)
+// Fallback ke nilai lama bila database belum siap
+$sekapurAlamat = 'Jl. Pesantren No. 1, Desa Panjalu, Kec. Panjalu, Kab. Ciamis, Jawa Barat 46261';
+$sekapurTel    = '(0265) 123-4567';
+$sekapurWA     = '6281234567890';
+$sekapurEmail  = 'info@ponpesashiddiq.or.id';
+try {
+    $stmt = getDB()->query("SELECT key_name, value FROM pengaturan WHERE key_name IN ('kontak_alamat','kontak_whatsapp','kontak_email','kontak_telepon')");
+    foreach ($stmt->fetchAll() as $row) {
+        $v = trim((string) $row['value']);
+        if ($v === '') continue;
+        if ($row['key_name'] === 'kontak_alamat')   $sekapurAlamat = $v;
+        if ($row['key_name'] === 'kontak_whatsapp') $sekapurWA     = $v;
+        if ($row['key_name'] === 'kontak_email')    $sekapurEmail  = $v;
+        if ($row['key_name'] === 'kontak_telepon')  $sekapurTel    = $v;
+    }
+} catch (PDOException $e) {
+    // DB belum siap — pakai nilai default di atas
+}
 ?>
 
 <!-- ══ PAGE HERO ════════════════════════════════════════════════ -->
@@ -349,7 +368,7 @@ CSS;
             <div class="kontak-icon" aria-hidden="true">📍</div>
             <div class="kontak-body">
                 <h4>Alamat</h4>
-                <p>Jl. Pesantren No. 1, Desa Panjalu, Kec. Panjalu,<br>Kab. Ciamis, Jawa Barat 46261</p>
+                <p><?= e($sekapurAlamat) ?></p>
             </div>
         </div>
         <div style="height:12px"></div>
@@ -358,8 +377,8 @@ CSS;
             <div class="kontak-body">
                 <h4>Telepon &amp; WhatsApp</h4>
                 <p>
-                    <a href="tel:+62265123456">(0265) 123-4567</a><br>
-                    <a href="https://wa.me/6281234567890" rel="noopener noreferrer" target="_blank">WhatsApp: 0812-3456-7890</a>
+                    <a href="tel:<?= e(preg_replace('/[^0-9+]/', '', $sekapurTel)) ?>"><?= e($sekapurTel) ?></a><br>
+                    <a href="https://wa.me/<?= e(preg_replace('/[^0-9]/', '', $sekapurWA)) ?>" rel="noopener noreferrer" target="_blank">WhatsApp: <?= e($sekapurWA) ?></a>
                 </p>
             </div>
         </div>
@@ -369,7 +388,7 @@ CSS;
             <div class="kontak-body">
                 <h4>Email</h4>
                 <p>
-                    <a href="mailto:info@ponpesashiddiq.or.id">info@ponpesashiddiq.or.id</a><br>
+                    <a href="mailto:<?= e($sekapurEmail) ?>"><?= e($sekapurEmail) ?></a><br>
                     Jam kerja: Senin–Sabtu, 08.00–16.00 WIB
                 </p>
             </div>

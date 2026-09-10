@@ -3,7 +3,7 @@ require_once __DIR__ . '/bootstrap.php';
 requireAdmin();
 $pdo = getDB();
 
-$keys = ['rekening_pembayaran', 'telegram_chat_ids', 'kontak_alamat', 'kop_alamat', 'map_latitude', 'map_longitude', 'map_zoom'];
+$keys = ['rekening_pembayaran', 'telegram_chat_ids', 'kontak_alamat', 'kop_alamat', 'kontak_whatsapp', 'kontak_email', 'kontak_telepon', 'map_latitude', 'map_longitude', 'map_zoom'];
 
 // ── Proses simpan ────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
