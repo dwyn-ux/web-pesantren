@@ -3,7 +3,7 @@ require_once __DIR__ . '/bootstrap.php';
 requireAdmin();
 $pdo = getDB();
 
-$keys = ['rekening_pembayaran', 'telegram_chat_ids'];
+$keys = ['rekening_pembayaran', 'telegram_chat_ids', 'kontak_alamat', 'kop_alamat', 'map_latitude', 'map_longitude', 'map_zoom'];
 
 // ── Proses simpan ────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -66,6 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (preg_match('/^-?\d+$/', $p)) $valid[] = $p;
             }
             $v = implode(',', array_values(array_unique($valid)));
+        }
+        if (in_array($k, ['map_latitude', 'map_longitude', 'map_zoom'], true)) {
+            $v = preg_replace('/[^0-9.\-]/', '', $v) ?? '';
         }
         $pdo->prepare('INSERT INTO pengaturan (key_name,value,label) VALUES (?,?,?) ON DUPLICATE KEY UPDATE value=VALUES(value)')
             ->execute([$k, $v, $k]);
@@ -260,8 +263,25 @@ require __DIR__ . '/includes/header.php';
 </div>
 
 <div class="admin-form-card">
+    <h2 class="admin-form-title">Kontak & Alamat</h2>
+    <div class="form-group"><label>Nomor WhatsApp</label><input class="form-control" name="kontak_whatsapp" placeholder="6281234567890" value="<?= e($data['kontak_whatsapp'] ?? '') ?>" /></div>
+    <div class="form-group"><label>Email</label><input class="form-control" type="email" name="kontak_email" value="<?= e($data['kontak_email'] ?? '') ?>" /></div>
+    <div class="form-group"><label>Nomor Telepon</label><input class="form-control" name="kontak_telepon" value="<?= e($data['kontak_telepon'] ?? '') ?>" /></div>
+    <div class="form-group"><label>Addr Lengkap (tampil di Beranda + Kop Surat)</label><textarea class="form-control" name="kontak_alamat" rows="2" placeholder="Jl. Pesantren No. 1, Kab. Ciamis, Jawa Barat" value="<?= e($data['kontak_alamat'] ?? '') ?>"
+    ></textarea></div>
+    <div class="form-group"><label>Kop Surat (alamat di kertas surat)</label><textarea class="form-control" name="kop_alamat" rows="2" placeholder="Jl. Pesantren No. 1, Kab. Ciamis, Jawa Barat 46271" value="<?= e($data['kop_alamat'] ?? '') ?>"
+    ></textarea></div>
+    <div class="form-group"><label>Peta (latitude, longitude, zoom)</label>
+    <div class="form-row">
+        <div class="form-group"><input class="form-control" name="map_latitude" placeholder="latitude" value="<?= e($data['map_latitude'] ?? '') ?>" /></div>
+        <div class="form-group"><input class="form-control" name="map_longitude" placeholder="longitude" value="<?= e($data['map_longitude'] ?? '') ?>" /></div>
+        <div class="form-group"><input class="form-control" name="map_zoom" placeholder="zoom" value="<?= e($data['map_zoom'] ?? '') ?>" /></div>
+    </div></div>
+</div>
+
+<div class="admin-form-card">
     <h2 class="admin-form-title">Notifikasi Telegram</h2>
-    <div class="form-group"><label>Chat ID tujuan (grup + pribadi, pisahkan koma)</label><input class="form-control" name="telegram_chat_ids" placeholder="cth: -1001234567890, 123456789" value="<?= e($data['telegram_chat_ids'] ?? '') ?>"></div>
+    <div class="form-group"><label>Chat ID tujuan (grup + pribadi, pisahkan koma)</label><input class="form-control" name="telegram_chat_ids" placeholder="cth: -1001234567890, 123456789" value="<?= e($data['telegram_chat_ids'] ?? '') ?>">
     <p class="muted">Cara isi: chat bot 1x, undang bot ke grup panitia sebagai admin, lalu lihat chat ID via tombol Tes di bawah atau getUpdates. Token bot disimpan di .env (TELEGRAM_BOT_TOKEN).</p>
 </div>
 
