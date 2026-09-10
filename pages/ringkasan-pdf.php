@@ -171,6 +171,11 @@ final class RingkasanPdf
     private static function win(string $t): string
     {
         $t = str_replace(["\r", "\n"], ' ', $t);
+        // Idempotent: kalau sudah bukan UTF-8 (mis. 0xB7 dari konversi sebelumnya),
+        // jangan di-convert lagi — akan jadi 0x3F ('?').
+        if (function_exists('mb_detect_encoding') && mb_detect_encoding($t, 'UTF-8', true) !== 'UTF-8') {
+            return $t;
+        }
         return function_exists('mb_convert_encoding')
             ? mb_convert_encoding($t, 'Windows-1252', 'UTF-8')
             : $t;

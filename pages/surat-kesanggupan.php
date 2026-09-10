@@ -27,13 +27,8 @@ $items = $pdo->prepare('SELECT * FROM pembiayaan WHERE pendaftaran_id=? ORDER BY
 $items->execute([$id]);
 $items = $items->fetchAll();
 
-// Hanya tampilkan item yang dipilih (administrasi/wakaf/syahriyah) + item tunggal
-$itemsShown = array_values(array_filter($items, function ($it) {
-    if (in_array($it['jenis'], ['administrasi', 'wakaf', 'syahriyah'], true)) {
-        return (int) $it['dipilih'] === 1;
-    }
-    return true;
-}));
+// ── Semua item pembiayaan masuk ke ringkasan (ADM awal, wakaf, SPP, dll) ──
+$itemsShown = array_values($items);
 
 // Tanda tangan (PNG mentah)
 $signBytes = '';
