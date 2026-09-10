@@ -24,7 +24,22 @@ if (file_exists($envFile)) {
 
 // Konstanta aplikasi
 define('APP_NAME',  $_ENV['APP_NAME']  ?? 'Pondok Pesantren Ash-Shiddiq');
-define('BASE_URL',  rtrim($_ENV['APP_URL'] ?? 'https://ponpesashiddiq.or.id', '/'));
+// BASE_URL mengikuti host request aktif (aman dari pindah host localhost↔production
+// yang bikin session hilang). APP_URL dipakai kalau host cocok / saat CLI.
+function detectBaseUrl(): string {
+    $configured = rtrim($_ENV['APP_URL'] ?? 'https://ponpesashiddiq.or.id', '/');
+    $host = strtolower(trim($_SERVER['HTTP_HOST'] ?? ''));
+    if ($host === '' || !preg_match('/^[a-z0-9.-]+(?::\d+)?$/', $host)) {
+        return $configured !== '' ? $configured : 'http://localhost';
+    }
+    $cfgHost = $configured !== '' ? strtolower((string) parse_url($configured, PHP_URL_HOST)) : '';
+    if ($cfgHost !== '' && $host === $cfgHost) {
+        return $configured;
+    }
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    return $scheme . '://' . $host;
+}
+define('BASE_URL', detectBaseUrl());
 define('APP_ENV',   $_ENV['APP_ENV']   ?? 'production');
 define('IS_DEBUG',  ($_ENV['APP_DEBUG'] ?? 'false') === 'true');
 
