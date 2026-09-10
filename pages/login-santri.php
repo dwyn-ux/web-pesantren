@@ -39,11 +39,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($user && password_verify($pass, $user['password']) && $user['is_active']) {
                 $cekPendaftaran = $pdo->prepare("SELECT id FROM pendaftaran WHERE user_id = ? LIMIT 1");
                 $cekPendaftaran->execute([$user['id']]);
-                if (!$cekPendaftaran->fetch()) {
+                $pendaftaranRow = $cekPendaftaran->fetch();
+                if (!$pendaftaranRow) {
                     $error = 'Akun Anda tidak terhubung ke pendaftaran. Hubungi panitia.';
                 } else {
                     session_regenerate_id(true);
                     $_SESSION['user_id']    = $user['id'];
+                    $_SESSION['santri_id']  = (int) $pendaftaranRow['id'];
                     $_SESSION['user_name']  = $user['name'];
                     $_SESSION['user_email'] = $user['email'];
                     $_SESSION['user_role']  = $user['role'];

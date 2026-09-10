@@ -177,6 +177,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
                 // Auto-login calon
                 session_regenerate_id(true);
                 $_SESSION['user_id']    = $userId;
+                $sid = $pdo->prepare('SELECT id FROM pendaftaran WHERE user_id = ? ORDER BY id DESC LIMIT 1');
+                $sid->execute([$userId]);
+                $_SESSION['santri_id']  = (int) ($sid->fetchColumn() ?: 0);
                 $_SESSION['user_name']  = $data['nama_lengkap'];
                 $_SESSION['user_email'] = $data['email'];
                 $_SESSION['user_role']  = 'calon-santri';
