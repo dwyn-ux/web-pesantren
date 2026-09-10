@@ -235,6 +235,24 @@ $stepSekarang = sanitizeString($_GET['step'] ?? 'akademik');
 $stepValid = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi', 'pembayaran', 'surat-ttd', 'berkas-pelengkap'];
 if (!in_array($stepSekarang, $stepValid, true)) $stepSekarang = 'akademik';
 
+// ── Kunci step wizard setelah fase selesai ──
+// Wizard (akademik→finalisasi) hanya untuk status 'pending'.
+// Yang diterima/daftar-ulang hanya boleh: pembayaran, surat-ttd, berkas-pelengkap.
+// Status kirim/verifikasi/tes/ditolak: tidak ada step yang bisa dibuka.
+$stepWizard = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi'];
+$stepLulus = ['pembayaran', 'surat-ttd', 'berkas-pelengkap'];
+if ($faseSelesai) {
+    if (in_array($pendaftaran['status'], ['diterima', 'daftar-ulang'], true)) {
+        if (!in_array($stepSekarang, $stepLulus, true)) {
+            redirect('/portal-santri?step=pembayaran');
+        }
+    } elseif (in_array($stepSekarang, array_merge($stepWizard, $stepLulus), true)) {
+        redirect('/portal-santri');
+    }
+} elseif (in_array($stepSekarang, $stepLulus, true)) {
+    redirect('/portal-santri?step=akademik');
+}
+
 // ── Klaim jalur alumni (voucher + NISN) ────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'alumni-klaim' && !$faseSelesai) {
     validateCsrf();

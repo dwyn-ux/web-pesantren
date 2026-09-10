@@ -14,14 +14,25 @@ $pageOgImage     ??= '';
 $bodyClass       ??= '';
 $activePage      ??= 'portal-santri';
 
-// Nav kebutuhan santri — kunci = nilai $activePage halaman terkait
+// Nav kebutuhan santri — kunci = nilai $activePage halaman terkait.
+// Dinamis per status: wizard hanya saat 'pending', menu lulus hanya
+// saat 'diterima'/'daftar-ulang'. Status verifikasi/tes/ditolak:
+// hanya Portal + Profil (tidak bisa ubah apa pun).
+$santriStatusNav = null;
+if (isCalonSantri()) {
+    $santriStatusNav = getCurrentPendaftaran()['status'] ?? null;
+}
 $santriNavLinks = [
     'portal-santri'   => ['url' => BASE_URL . '/portal-santri',   'label' => 'Portal'],
     'profil-santri'   => ['url' => BASE_URL . '/profil-santri',   'label' => 'Profil'],
-    'dokumen-santri'  => ['url' => BASE_URL . '/portal-santri?step=surat-ttd', 'label' => 'Surat & TTD'],
-    'berkas-santri'   => ['url' => BASE_URL . '/upload-berkas', 'label' => 'Upload Berkas'],
-    'pembayaran'      => ['url' => BASE_URL . '/portal-santri?step=pembayaran', 'label' => 'Pembayaran'],
 ];
+if ($santriStatusNav === 'pending') {
+    $santriNavLinks['berkas-santri'] = ['url' => BASE_URL . '/upload-berkas', 'label' => 'Upload Berkas'];
+} elseif (in_array($santriStatusNav, ['diterima', 'daftar-ulang'], true)) {
+    $santriNavLinks['dokumen-santri'] = ['url' => BASE_URL . '/portal-santri?step=surat-ttd', 'label' => 'Surat & TTD'];
+    $santriNavLinks['berkas-santri']  = ['url' => BASE_URL . '/upload-berkas', 'label' => 'Upload Berkas'];
+    $santriNavLinks['pembayaran']     = ['url' => BASE_URL . '/portal-santri?step=pembayaran', 'label' => 'Pembayaran'];
+}
 
 $logoFile = getLogoFile();
 $santriNavName = $_SESSION['user_name'] ?? 'Santri';
