@@ -157,11 +157,15 @@ CSS;
         <div class="reveal-right">
             <div class="sejarah-timeline">
                 <?php
-                $sejarah = [
-                    ['year'=>'2020','color'=>'var(--gold)',      'judul'=>'Pendirian Pesantren',        'desc'=>'KH. Ahmad Fauzi mendirikan Pondok Pesantren Ash-Shiddiq dengan 12 santri perdana di sebuah bangunan sederhana. Modal utama hanya keyakinan dan doa.'],
-                    ['year'=>'2013','color'=>'var(--green-mid)', 'judul'=>'Pengembangan SMP Resmi',      'desc'=>'Membuka jenjang SMP resmi ber-izin operasional Kemenag, dengan total 85 santri dan gedung baru yang lebih representatif.'],
-                    ['year'=>'2017','color'=>'var(--green-mid)', 'judul'=>'Wisuda Hafidz Perdana',       'desc'=>'Momen bersejarah: 8 santri angkatan pertama berhasil menyelesaikan hafalan 30 juz dan diwisuda dengan penuh haru.'],
-                    ['year'=>'2025','color'=>'var(--green-deep)','judul'=>'Kini: 500+ Santri Aktif',    'desc'=>'Dengan lebih dari 500 santri aktif, 300+ alumni hafidz, dan fasilitas modern, Ash-Shiddiq terus tumbuh menjadi pesantren terkemuka di Jawa Barat.'],
+$sejarah = [
+                    ['year'=>'2016','color'=>'var(--green-mid)', 'nama'=>'Awal Mula',             'desc'=>'Diawali dengan TPA Ash-Shiddiq yang mulai berjalan pada tahun 2016. Langkah kecil ini menjadi benih besar bagi seluruh perjalanan pendidikan yang kemudian mengembangkan diri ke jenjang pesantren pada tahun 2017.'],
+                    ['year'=>'2017','color'=>'var(--green-mid)', 'nama'=>'Pesantren Ash-Shiddiq',   'desc'=>'Nama Ash-Shiddiq diambil dari nama TPA, dipercayakan untuk menaungi pendidikan pesantren. Awalnya beralamat di Randusari, Watusigar, Ngawen, Gunungkidul.'],
+                    ['year'=>'2018','color'=>'var(--gold)',      'nama'=>'SD Muhammadiyah Unggulan Ashidiq', 'desc'=>'Pembangunan sekolah formal tingkat SD dengan nama SD Muhammadiyah Unggulan Ashidiq, mengawali komitmen menyeluruhkan pendidikan formal dan nonformal dalam satu wadah.'],
+                    ['year'=>'2020','color'=>'var(--gold)',      'nama'=>'Pindah ke Purworejo',   'desc'=>'Pondok Pesantren Ash-Shiddiq berpindah lokasi ke Purworejo, Jurangjero, Ngawen, Gunungkidul, sekaligus membangun sekolah formal tingkat SMP di tempat yang sama dengan nama SMP Muhammadiyah Unggulan Ashidiq.'],
+                    ['year'=>'2020','color'=>'var(--gold)',      'nama'=>'Amanah Wakaf Kampus 2', 'desc'=>'Menyambut amanah wakaf baru yang diberikan kepercayaan untuk dijadikan kampus 2, memperluas jejak pendidikan Ash-Shiddiq ke wilayah yang lebih luas dengan spirit keberlanjutan.'],
+                    ['year'=>'2020','color'=>'var(--green-mid)', 'nama'=>'PAUD & TK Ashidiq',     'desc'=>'Mendapat amanah pada tahun 2020 untuk mengelola wakaf yang kemudian didirikanlah PAUD dan TK Ashidiq, mengawali pendidikan formal sejak dini dalam lingkup yang lebih luas.'],
+                    ['year'=>'2021','color'=>'var(--green-deep)','nama'=>'SMA Pondok Pesantren Ash-Shiddiq', 'desc'=>'Dirasa pentingnya pendidikan berkelanjutan, mulai membuka kelas tingkat SMA untuk mewadahi santri lulusan SMP menuju pendidikan selanjutnya.'],
+                    ['year'=>'2026','color'=>'var(--green-deep)','nama'=>'Kini: 6 Tahun Berdiri',   'desc'=>'Lebih dari 130 santri aktif, 30+ hafidz, dan 30+ tenaga pengajar. Ash-Shiddiq terus tumbuh dengan penuh ridha, siap membentuk generasi hafidz yang berakhlak mulia.'],
                 ];
                 foreach ($sejarah as $s):
                 ?>

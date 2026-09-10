@@ -203,10 +203,10 @@ try {
     <div class="stat-inner">
         <?php
         $stats = [
-            ['num'=>500,'suffix'=>'+','label'=>'Santri Aktif'],
-            ['num'=>300,'suffix'=>'+','label'=>'Alumni Hafidz'],
-            ['num'=>15, 'suffix'=>'+','label'=>'Tahun Berdiri'],
-            ['num'=>40, 'suffix'=>'+','label'=>'Tenaga Pengajar'],
+            ['num'=>130,'suffix'=>'+','label'=>'Santri Aktif'],
+            ['num'=>30, 'suffix'=>'+','label'=>'Hafidz'],
+            ['num'=>6,  'suffix'=>'', 'label'=>'Tahun Berdiri'],
+            ['num'=>30, 'suffix'=>'+','label'=>'Tenaga Pengajar'],
         ];
         foreach ($stats as $i => $stat):
         ?>
