@@ -27,10 +27,11 @@ $santriNavLinks = [
     'profil-santri'   => ['url' => BASE_URL . '/profil-santri',   'label' => 'Profil'],
 ];
 if ($santriStatusNav === 'pending') {
-    $santriNavLinks['berkas-santri'] = ['url' => BASE_URL . '/upload-berkas', 'label' => 'Upload Berkas'];
+    // Berkas tambahan (SKL/KIP/Ijazah) — beda dari step Berkas Wajib/Jalur di wizard portal
+    $santriNavLinks['berkas-santri'] = ['url' => BASE_URL . '/upload-berkas', 'label' => 'Berkas Tambahan'];
 } elseif (in_array($santriStatusNav, ['diterima', 'daftar-ulang'], true)) {
     $santriNavLinks['dokumen-santri'] = ['url' => BASE_URL . '/portal-santri?step=surat-ttd', 'label' => 'Surat & TTD'];
-    $santriNavLinks['berkas-santri']  = ['url' => BASE_URL . '/upload-berkas', 'label' => 'Upload Berkas'];
+    $santriNavLinks['berkas-santri']  = ['url' => BASE_URL . '/upload-berkas', 'label' => 'Berkas Tambahan'];
     $santriNavLinks['pembayaran']     = ['url' => BASE_URL . '/portal-santri?step=pembayaran', 'label' => 'Pembayaran'];
 }
 

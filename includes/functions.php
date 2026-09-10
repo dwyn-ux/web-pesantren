@@ -648,6 +648,94 @@ function jalurBerkasUntuk(string $jalur): array {
 }
 
 /**
+ * Progres wizard portal santri — dipakai untuk nav step, centang otomatis,
+ * dan banner "Lanjutkan pendaftaran".
+ *
+ * Step 1-2 (Data Calon, Ortu & Akun) selesai otomatis saat akun dibuat di /psb.
+ * Step 3-7 mengikuti isian & berkas di tabel pendaftaran/berkas_santri.
+ * Kolom akademik_at/jalur_at (migrasi 025) menandai step pernah disimpan;
+ * fallback ke data lama bila migrasi belum dijalankan.
+ *
+ * @return array{
+ *   steps: list<array{key:string,label:string,done:bool}>,
+ *   next: string|null,
+ *   selesai: int, total: int,
+ *   wizard_selesai: int, wizard_total: int
+ * }
+ */
+function portalProgress(PDO $pdo, array $pendaftaran): array {
+    // Berkas yang sudah di-upload pendaftar ini
+    $stmt = $pdo->prepare('SELECT jenis FROM berkas_santri WHERE pendaftaran_id = ?');
+    $stmt->execute([(int) ($pendaftaran['id'] ?? 0)]);
+    $adaJenis = array_column($stmt->fetchAll(), 'jenis');
+
+    $wajib = ['kartu-keluarga', 'akta-lahir', 'foto', 'ktp-ortu'];
+    $wajibOk = count(array_intersect($wajib, $adaJenis)) === count($wajib);
+
+    $jalur = $pendaftaran['jalur'] ?? 'reguler';
+    $jalurBerkas = jalurBerkasUntuk($jalur);
+    $jalurBerkasOk = empty($jalurBerkas)
+        || count(array_intersect($jalurBerkas, $adaJenis)) === count($jalurBerkas);
+
+    // Akademik dianggap selesai kalau pernah disimpan (tahun_lulus pasti terisi)
+    // atau timestamp migrasi 025 sudah ter-set.
+    $akademikOk = !empty($pendaftaran['akademik_at'] ?? null)
+        || !empty($pendaftaran['tahun_lulus'] ?? null);
+
+    // Jalur dipilih eksplisit: timestamp migrasi 025, atau pilihan non-default.
+    $jalurDipilih = !empty($pendaftaran['jalur_at'] ?? null)
+        || $jalur !== 'reguler'
+        || !empty($pendaftaran['jalur_detail'] ?? null)
+        || (($pendaftaran['jalur_status'] ?? 'none') !== 'none');
+
+    $status = $pendaftaran['status'] ?? 'pending';
+    $steps = [
+        ['key' => 'akun',          'label' => 'Data Calon',  'done' => true],
+        ['key' => 'ortu',          'label' => 'Ortu & Akun', 'done' => true],
+        ['key' => 'akademik',      'label' => 'Akademik',    'done' => $akademikOk],
+        ['key' => 'jalur',         'label' => 'Pilih Jalur', 'done' => $jalurDipilih],
+        ['key' => 'berkas-wajib',  'label' => 'Berkas Wajib','done' => $wajibOk],
+        ['key' => 'berkas-jalur',  'label' => 'Berkas Jalur','done' => $jalurBerkasOk],
+        ['key' => 'finalisasi',    'label' => 'Kirim',       'done' => $status !== 'pending'],
+    ];
+
+    $next = null;
+    $selesai = 0;
+    foreach ($steps as $st) {
+        if (!$st['done'] && $next === null) $next = $st['key'];
+        if ($st['done']) $selesai++;
+    }
+
+    $wizardKeys = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi'];
+    $wizardSelesai = 0;
+    foreach ($steps as $st) {
+        if (in_array($st['key'], $wizardKeys, true) && $st['done']) $wizardSelesai++;
+    }
+
+    return [
+        'steps'          => $steps,
+        'next'           => $next,
+        'selesai'        => $selesai,
+        'total'          => count($steps),
+        'wizard_selesai' => $wizardSelesai,
+        'wizard_total'   => count($wizardKeys),
+    ];
+}
+
+/**
+ * URL awal portal santri — arahkan ke step pertama yang belum lengkap
+ * saat status pending, selain itu ke ringkasan. Dipakai setelah daftar
+ * (auto-login) dan setelah login ulang.
+ */
+function portalAwalUrl(): string {
+    if (!isCalonSantri()) return '/portal-santri';
+    $p = getCurrentPendaftaran();
+    if (!$p || ($p['status'] ?? '') !== 'pending') return '/portal-santri';
+    $prog = portalProgress(getDB(), $p);
+    return $prog['next'] ? '/portal-santri?step=' . $prog['next'] : '/portal-santri';
+}
+
+/**
  * Syarat & ketentuan per jalur sesuai juknis — tampil di panel kanan
  * halaman pilih jalur. Tiap item: list string syarat.
  *

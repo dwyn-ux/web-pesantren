@@ -271,11 +271,11 @@ $old = $_POST; // untuk repopulate form
     </div>
     <div style="background:#f7fcf9;border-left:3px solid #0d7a4a;padding:12px 16px;text-align:left;margin:16px 0;font-size:13px;color:#555;">
       <strong>Langkah selanjutnya:</strong><br>
-      1. Lengkapi data akademik &amp; pilih jalur pendaftaran<br>
-      2. Upload berkas yang diperlukan<br>
-      3. Tunggu verifikasi panitia
+      1. Lanjutkan ke Portal &mdash; isi data akademik &amp; pilih jalur<br>
+      2. Upload berkas wajib &amp; berkas jalur<br>
+      3. Kirim pendaftaran &amp; tunggu verifikasi panitia
     </div>
-    <a href="/portal-santri" class="btn-next" style="display:inline-block;padding:14px 28px;background:#0d7a4a;color:#fff;text-decoration:none;border-radius:3px;font-weight:600;margin-top:12px;">
+    <a href="<?= e(portalAwalUrl()) ?>" class="btn-next" style="display:inline-block;padding:14px 28px;background:#0d7a4a;color:#fff;text-decoration:none;border-radius:3px;font-weight:600;margin-top:12px;">
       Buka Portal Santri &rarr;
     </a>
     <div style="margin-top:16px;font-size:12px;color:#999;">

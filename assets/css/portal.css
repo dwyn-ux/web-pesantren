@@ -100,6 +100,16 @@
   color: white;
 }
 .portal-step.active .num { background: rgba(255, 255, 255, 0.2); color: white; }
+.portal-step.done {
+  border-color: var(--green-mid);
+  background: rgba(13, 122, 74, 0.06);
+  color: var(--green-deep);
+}
+.portal-step.done .num {
+  background: var(--green-deep);
+  color: white;
+}
+.portal-step.done:hover { border-color: var(--green-mid); }
 
 /* ── Elemen umum konten portal ───────────────────────────── */
 .portal-actions {

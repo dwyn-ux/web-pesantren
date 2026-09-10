@@ -11,8 +11,9 @@ if (isset($_GET['logout'])) {
 }
 
 // Kalau sudah login sebagai calon-santri, langsung ke portal
+// (ke step pertama yang belum lengkap kalau wizard belum tuntas)
 if (isCalonSantri() && getCurrentPendaftaran()) {
-    redirect('/portal-santri');
+    redirect(portalAwalUrl());
 }
 
 // ── Login handler ──────────────────────────────────────────
@@ -50,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_email'] = $user['email'];
                     $_SESSION['user_role']  = $user['role'];
                     $_SESSION['login_at']   = time();
-                    redirect('/portal-santri');
+                    redirect(portalAwalUrl());
                 }
             } else {
                 usleep(300000);

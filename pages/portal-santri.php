@@ -15,7 +15,15 @@ if (!$pendaftaran) {
 }
 $pendaftaranId = (int) $pendaftaran['id'];
 
-// ── Cek apakah status masih izinkan edit wizard ──
+// Kolom pendaftaran — fitur yang butuh migrasi 025 dicek defensif
+// (agama/kelas/ttd sudah memakai pola ini, lihat handler surat-ttd)
+try {
+    $kolomPendaftaran = array_column($pdo->query(
+        "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pendaftaran'"
+    )->fetchAll(PDO::FETCH_NUM), 0);
+} catch (PDOException $e) {
+    $kolomPendaftaran = [];
+}
 $statusSekarang = $pendaftaran['status'];
 $faseSelesai = in_array($statusSekarang, [
     'menunggu-verifikasi', 'tes-selesai', 'diterima', 'ditolak', 'daftar-ulang'
@@ -50,16 +58,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
             }
 
             if (empty($errors)) {
-                $upd = $pdo->prepare(
-                    'UPDATE pendaftaran
-                     SET tahun_lulus = ?, jumlah_hafalan = ?, motivasi = ?,
-                         tinggi_badan = ?, berat_badan = ?
-                     WHERE id = ?'
-                );
-                $upd->execute([
-                    $tahunLulus, $jumlahHafalan, $motivasi,
-                    $tinggiBadan, $beratBadan, $pendaftaranId
-                ]);
+                $setAk = 'tahun_lulus = ?, jumlah_hafalan = ?, motivasi = ?, tinggi_badan = ?, berat_badan = ?';
+                $parAk = [$tahunLulus, $jumlahHafalan, $motivasi, $tinggiBadan, $beratBadan];
+                if (in_array('akademik_at', $kolomPendaftaran, true)) {
+                    $setAk .= ', akademik_at = NOW()';
+                }
+                $upd = $pdo->prepare("UPDATE pendaftaran SET $setAk WHERE id = ?");
+                $parAk[] = $pendaftaranId;
+                $upd->execute($parAk);
                 $successMsg = 'Data akademik tersimpan.';
             }
         }
@@ -105,12 +111,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
 
             if (empty($errors)) {
                 $jalurStatus = in_array($jalur, jalurPerluVerifikasi(), true) ? 'pending' : 'none';
-                $upd = $pdo->prepare(
-                    'UPDATE pendaftaran
-                     SET jalur = ?, jalur_detail = ?, jalur_status = ?, jalur_potongan = NULL
-                     WHERE id = ?'
-                );
-                $upd->execute([$jalur, $jalurDetail, $jalurStatus, $pendaftaranId]);
+                $setJ = 'jalur = ?, jalur_detail = ?, jalur_status = ?, jalur_potongan = NULL';
+                $parJ = [$jalur, $jalurDetail, $jalurStatus];
+                if (in_array('jalur_at', $kolomPendaftaran, true)) {
+                    $setJ .= ', jalur_at = NOW()';
+                }
+                $upd = $pdo->prepare("UPDATE pendaftaran SET $setJ WHERE id = ?");
+                $parJ[] = $pendaftaranId;
+                $upd->execute($parJ);
                 // Simpan jalur non-alumni → lepas tandai voucher milik pendaftaran ini
                 if ($jalur !== 'alumni-sdmua') {
                     $lepas = $pdo->prepare(
@@ -190,6 +198,10 @@ $s = $pdo->prepare(
 );
 $s->execute([$pendaftaranId]);
 $pendaftaran = $s->fetch();
+
+// Progres wizard — untuk nav step, centang otomatis, dan banner lanjutkan
+$progres = portalProgress($pdo, $pendaftaran);
+$progresLabel = array_column($progres['steps'], 'label', 'key');
 
 // Ambil daftar berkas yang sudah di-upload
 $berkasStmt = $pdo->prepare(
@@ -613,6 +625,23 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
 
   <?php if ($stepSekarang === 'ringkasan'): ?>
     <?php
+    // Banner lanjutkan pendaftaran — status pending, wizard belum tuntas
+    if ($pendaftaran['status'] === 'pending' && $progres['next']):
+        $nextLbl = $progresLabel[$progres['next']] ?? $progres['next'];
+    ?>
+    <div class="portal-info-box" style="border-left:4px solid var(--green-deep);">
+      <h2>Lanjutkan Pendaftaran</h2>
+      <p>
+        Progres wizard: <strong><?= (int) $progres['wizard_selesai'] ?> / <?= (int) $progres['wizard_total'] ?></strong> selesai.
+        Langkah berikutnya: <strong><?= e($nextLbl) ?></strong>.
+      </p>
+      <div class="portal-actions" style="margin-top:12px;">
+        <a href="?step=<?= e($progres['next']) ?>" class="btn-primary">Lanjut: <?= e($nextLbl) ?> &rarr;</a>
+        <a href="?step=akademik" class="btn-outline">Lihat / Ubah Data &rarr;</a>
+      </div>
+    </div>
+    <?php endif; ?>
+    <?php
     // Ringkasan hasil pengisian — read-only untuk semua status
     $ringkasNama = $pendaftaran['nama_lengkap'];
     $ringkasJalurLbl = $labelJalur[$pendaftaran['jalur']] ?? $pendaftaran['jalur'];
@@ -684,26 +713,35 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
   <?php else: ?>
 
   <nav class="portal-steps" aria-label="Langkah portal">
-    <a href="?step=akademik" class="portal-step <?= $stepSekarang === 'akademik' ? 'active' : '' ?>">
-      <span class="num">3</span><span class="lbl">Akademik</span>
-    </a>
-    <a href="?step=jalur" class="portal-step <?= $stepSekarang === 'jalur' ? 'active' : '' ?>">
-      <span class="num">4</span><span class="lbl">Pilih Jalur</span>
-    </a>
-    <a href="?step=berkas-wajib" class="portal-step <?= $stepSekarang === 'berkas-wajib' ? 'active' : '' ?>">
-      <span class="num">5</span><span class="lbl">Berkas Wajib</span>
-    </a>
-    <a href="?step=berkas-jalur" class="portal-step <?= $stepSekarang === 'berkas-jalur' ? 'active' : '' ?>">
-      <span class="num">6</span><span class="lbl">Berkas Jalur</span>
-    </a>
-    <a href="?step=finalisasi" class="portal-step <?= $stepSekarang === 'finalisasi' ? 'active' : '' ?>">
-      <span class="num">✓</span><span class="lbl">Kirim</span>
-    </a>
+    <?php $stepNomor = 0; ?>
+    <?php foreach ($progres['steps'] as $st): ?>
+      <?php $stepNomor++; ?>
+      <?php
+        $stKls = ['portal-step'];
+        if ($stepSekarang === $st['key']) $stKls[] = 'active';
+        if ($st['done']) $stKls[] = 'done';
+        $stBisaKlik = in_array($st['key'], ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi'], true);
+        $stNum = $st['done'] ? '&#10003;' : (string) $stepNomor;
+      ?>
+      <?php if ($stBisaKlik): ?>
+        <a href="?step=<?= e($st['key']) ?>" class="<?= e(implode(' ', $stKls)) ?>">
+          <span class="num"><?= $stNum ?></span><span class="lbl"><?= e($st['label']) ?></span>
+        </a>
+      <?php else: ?>
+        <span class="<?= e(implode(' ', $stKls)) ?>" title="<?= e($st['label']) ?> (selesai)">
+          <span class="num"><?= $stNum ?></span><span class="lbl"><?= e($st['label']) ?></span>
+        </span>
+      <?php endif; ?>
+    <?php endforeach; ?>
   </nav>
 
   <?php if ($stepSekarang === 'akademik'): ?>
     <section class="portal-card">
       <h2>Data Akademik</h2>
+      <p class="portal-note">
+        Data ini melengkapi profil Anda: TB/BB untuk ukuran seragam, jumlah hafalan untuk tes tahfidz,
+        dan motivasi untuk pertimbangan panitia.
+      </p>
       <form method="post" novalidate>
         <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
         <input type="hidden" name="step" value="akademik">
@@ -1065,7 +1103,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
   <?php elseif ($stepSekarang === 'berkas-wajib'): ?>
     <section class="portal-card">
       <h2>Upload Berkas Wajib</h2>
-      <p class="portal-note">Upload 4 berkas di bawah ini. Gambar (JPG/PNG/WEBP) otomatis dikompres ke ≤1MB; PDF maks 5MB. Ijazah/SKL dilengkapi setelah diterima.</p>
+      <p class="portal-note">Upload 4 berkas di bawah ini. Gambar (JPG/PNG/WEBP) otomatis dikompres ke &le;1MB; PDF maks 5MB. Ijazah/SKL dilengkapi setelah diterima. Pastikan hasil scan/foto jelas, tegak, dan seluruh tepi dokumen terlihat.</p>
       <input type="hidden" id="csrfGlobal" value="<?= generateCsrfToken() ?>">
 
       <div class="berkas-list">
