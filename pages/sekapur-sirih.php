@@ -231,10 +231,10 @@ CSS;
             <p class="letter-p">Kepada para santri dan calon santri kami: ketahuilah bahwa setiap ayat yang kalian hafal adalah cahaya yang akan menerangi kalian di dunia dan di akhirat. Jangan pernah menyerah. Hafalan yang berat hari ini adalah mahkota yang akan kalian kenakan esok hari.</p>
 
             <div class="letter-closing">
-                <p class="sig-label">Wassalamu'alaikum Warahmatullahi Wabarakatuh,<br>Ciamis, Januari 2025</p>
+                <p class="sig-label">Wassalamu'alaikum Warahmatullahi Wabarakatuh,<br>Purworejo, Januari 2025</p>
                 <div class="sig-name">KH. Suroto Abu Nizam, M. Pd.</div>
                 <div class="sig-title">Mudir Pondok Pesantren Ash-Shiddiq</div>
-                <div class="sig-place">Ciamis, Jawa Barat</div>
+                <div class="sig-place">Purworejo, Jurangjero, Ngawen, Gunungkidul</div>
             </div>
         </div>
     </div>
