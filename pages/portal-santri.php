@@ -231,26 +231,35 @@ $simulasi = ($pendaftaran['gelombang_id'] && !empty($pendaftaran['jalur']))
                        $akashiJuara)
     : null;
 
-$stepSekarang = sanitizeString($_GET['step'] ?? 'akademik');
-$stepValid = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi', 'pembayaran', 'surat-ttd', 'berkas-pelengkap'];
-if (!in_array($stepSekarang, $stepValid, true)) $stepSekarang = 'akademik';
+$stepSekarang = sanitizeString($_GET['step'] ?? 'ringkasan');
+$stepValid = ['ringkasan', 'akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi', 'pembayaran', 'surat-ttd', 'berkas-pelengkap'];
+if (!in_array($stepSekarang, $stepValid, true)) $stepSekarang = 'ringkasan';
 
-// ── Kunci step wizard setelah fase selesai ──
-// Wizard (akademik→finalisasi) hanya untuk status 'pending'.
-// Yang diterima/daftar-ulang hanya boleh: pembayaran, surat-ttd, berkas-pelengkap.
-// Status kirim/verifikasi/tes/ditolak: tidak ada step yang bisa dibuka.
+// Status terbaru (POST finalisasi bisa mengubah status dalam request ini)
+$stFresh = $pdo->prepare('SELECT status FROM pendaftaran WHERE id = ?');
+$stFresh->execute([$pendaftaranId]);
+$pendaftaran['status'] = $stFresh->fetchColumn() ?: $pendaftaran['status'];
+$statusSekarang = $pendaftaran['status'];
+$faseSelesai = in_array($statusSekarang, [
+    'menunggu-verifikasi', 'tes-selesai', 'diterima', 'ditolak', 'daftar-ulang'
+], true);
+
+// ── Kunci step ──
+// Portal (=ringkasan) boleh dibuka semua status.
+// Wizard (akademik→finalisasi) hanya untuk 'pending'.
+// Pembayaran/surat-ttd/berkas-pelengkap hanya untuk 'diterima'/'daftar-ulang'.
 $stepWizard = ['akademik', 'jalur', 'berkas-wajib', 'berkas-jalur', 'finalisasi'];
 $stepLulus = ['pembayaran', 'surat-ttd', 'berkas-pelengkap'];
 if ($faseSelesai) {
-    if (in_array($pendaftaran['status'], ['diterima', 'daftar-ulang'], true)) {
-        if (!in_array($stepSekarang, $stepLulus, true)) {
-            redirect('/portal-santri?step=pembayaran');
+    if (in_array($statusSekarang, ['diterima', 'daftar-ulang'], true)) {
+        if (!in_array($stepSekarang, array_merge(['ringkasan'], $stepLulus), true)) {
+            redirect('/portal-santri?step=ringkasan');
         }
-    } elseif (in_array($stepSekarang, array_merge($stepWizard, $stepLulus), true)) {
-        redirect('/portal-santri');
+    } elseif ($stepSekarang !== 'ringkasan') {
+        redirect('/portal-santri?step=ringkasan');
     }
 } elseif (in_array($stepSekarang, $stepLulus, true)) {
-    redirect('/portal-santri?step=akademik');
+    redirect('/portal-santri?step=ringkasan');
 }
 
 // ── Klaim jalur alumni (voucher + NISN) ────────────────────
@@ -580,6 +589,48 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/portal.cs
   if (!empty($flashInline)):
   ?>
   <script data-flash type="application/json"><?= json_encode($flashInline, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?></script>
+  <?php endif; ?>
+
+  <?php if ($stepSekarang === 'ringkasan'): ?>
+    <?php
+    // Ringkasan hasil pengisian — read-only untuk semua status
+    $ringkasNama = $pendaftaran['nama_lengkap'];
+    $ringkasJalurLbl = $labelJalur[$pendaftaran['jalur']] ?? $pendaftaran['jalur'];
+    if (!empty($pendaftaran['jalur_detail'])) {
+        $ringkasJalurLbl .= ' (' . (($optsJalur[$pendaftaran['jalur']][$pendaftaran['jalur_detail']]['label'] ?? null) ?: $pendaftaran['jalur_detail']) . ')';
+    }
+    $ringkasWajibOk = count(array_intersect_key($berkasByJenis, $berkasWajibList));
+    $ringkasJalurOk = count(array_intersect_key($berkasByJenis, array_flip($jalurBerkas)));
+    ?>
+    <section class="portal-card">
+      <h2>Ringkasan Pendaftaran</h2>
+      <p class="portal-note">Status: <strong><?= e($statusLabel) ?></strong> &middot; Nomor: <strong><?= e($pendaftaran['nomor_daftar']) ?></strong></p>
+      <div class="ringkasan-box">
+        <h4>Data Anda</h4>
+        <ul>
+          <li>Nama: <strong><?= e($ringkasNama) ?></strong></li>
+          <li>Jenjang: <strong><?= e($labelJenjang[$pendaftaran['jenjang']] ?? $pendaftaran['jenjang']) ?></strong></li>
+          <li>Jalur: <strong><?= e($ringkasJalurLbl) ?></strong></li>
+          <li>Gelombang: <strong><?= e($pendaftaran['gelombang_label'] ?? '—') ?></strong></li>
+          <li>Berkas wajib: <strong><?= $ringkasWajibOk ?> / <?= count($berkasWajibList) ?></strong></li>
+          <?php if (!empty($jalurBerkas)): ?>
+            <li>Berkas jalur: <strong><?= $ringkasJalurOk ?> / <?= count($jalurBerkas) ?></strong></li>
+          <?php endif; ?>
+          <?php if ($simulasi): ?>
+            <li>Estimasi total: <strong>Rp <?= number_format((float) $simulasi['total'], 0, ',', '.') ?></strong></li>
+          <?php endif; ?>
+        </ul>
+      </div>
+      <div class="portal-actions">
+        <a href="<?= BASE_URL ?>/surat-kesanggupan" target="_blank" rel="noopener" class="btn-primary">⬇ Unduh Ringkasan (PDF)</a>
+        <?php if ($pendaftaran['status'] === 'pending'): ?>
+          <a href="?step=akademik" class="btn-outline">Lengkapi / Ubah Data &rarr;</a>
+        <?php endif; ?>
+        <?php if (in_array($pendaftaran['status'], ['diterima', 'daftar-ulang'], true)): ?>
+          <a href="?step=pembayaran" class="btn-outline">Ke Pembayaran &rarr;</a>
+        <?php endif; ?>
+      </div>
+    </section>
   <?php endif; ?>
 
   <?php if ($faseSelesai): ?>
