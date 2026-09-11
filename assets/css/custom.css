@@ -47,38 +47,54 @@ address { font-style: normal; }
 /* ── Navigasi ──────────────────────────────────────────────── */
 #mainNav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  padding: 0 5%; height: var(--nav-height);
-  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(12px, 4vw, 5%); height: var(--nav-height);
+  display: flex; align-items: center; gap: clamp(8px, 1.5vw, 24px);
   background: rgba(13,122,74,0.96);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 2px 30px rgba(0,0,0,0.12);
   transition: background var(--transition);
+  overflow: visible;
 }
 #mainNav.scrolled { background: rgba(13,122,74,1); }
 
-.nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+.nav-logo {
+  display: flex; align-items: center; gap: clamp(8px, 1vw, 12px);
+  text-decoration: none; flex: 0 0 auto; min-width: 0;
+}
 .nav-logo-image {
-  display: block; width: 48px; height: 48px; flex-shrink: 0;
-  object-fit: contain; object-position: center;
+  display: block; width: clamp(36px, 4vw, 48px); height: clamp(36px, 4vw, 48px);
+  flex-shrink: 0; object-fit: contain; object-position: center;
 }
 .nav-logo-icon {
-  width: 40px; height: 40px;
+  width: clamp(34px, 3.6vw, 40px); height: clamp(34px, 3.6vw, 40px);
   border: 1.5px solid var(--gold);
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Amiri', serif; font-size: 18px; color: var(--gold);
-  border-radius: var(--radius-sm);
-  flex-shrink: 0;
+  font-family: 'Amiri', serif; font-size: clamp(15px, 1.6vw, 18px);
+  color: var(--gold); border-radius: var(--radius-sm); flex-shrink: 0;
 }
-.nav-logo-text { display: flex; flex-direction: column; }
-.nav-logo-main { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px; color: var(--white); line-height: 1.1; }
-.nav-logo-sub  { font-size: 10px; color: rgba(255,255,255,0.5); letter-spacing: 2px; text-transform: uppercase; }
+.nav-logo-text { display: flex; flex-direction: column; min-width: 0; }
+.nav-logo-main {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
+  font-size: clamp(12px, 1.1vw, 15px); color: var(--white); line-height: 1.1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+}
+.nav-logo-sub {
+  font-size: clamp(8px, 0.8vw, 10px); color: rgba(255,255,255,0.5);
+  letter-spacing: 2px; text-transform: uppercase; white-space: nowrap;
+}
 
-.nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+.nav-links {
+  display: flex; align-items: center;
+  gap: clamp(6px, 0.8vw, 24px);
+  list-style: none; flex-wrap: wrap; justify-content: flex-end;
+  flex: 1 1 auto; min-width: 0; max-width: 100%;
+}
 .nav-links a {
   text-decoration: none; color: rgba(255,255,255,0.85);
-  font-size: 13px; font-weight: 500; letter-spacing: 0.5px;
-  position: relative; transition: color var(--transition);
+  font-size: clamp(11px, 0.9vw, 13px); font-weight: 500;
+  letter-spacing: 0.5px; position: relative; transition: color var(--transition);
+  white-space: nowrap; flex: 0 1 auto; padding: 4px 0;
 }
 .nav-links a::after {
   content: ''; position: absolute; bottom: -4px; left: 0; right: 0;
@@ -96,9 +112,16 @@ address { font-style: normal; }
   color: var(--text-dark) !important;
   font-weight: 600 !important;
   border-radius: var(--radius-sm);
+  white-space: nowrap;
 }
 .nav-cta::after { display: none !important; }
 .nav-cta:hover { background: var(--gold-light) !important; color: var(--text-dark) !important; }
+
+/* Tombol Login (outline) — jangan pernah memotong kata "Login" di viewport kecil */
+.nav-links .nav-login {
+  white-space: nowrap;
+  padding: 9px 16px !important;
+}
 
 /* ── Dropdown profil santri ─────────────────────────────────── */
 .nav-profile { position: relative; list-style: none; }
@@ -548,6 +571,25 @@ footer { background: #062e1c; padding: 60px 5% 28px; color: rgba(255,255,255,0.5
   section.page-section { padding: 60px 5%; }
 }
 
+/* Tablet: navbar masih tampil penuh, tapi spacing & font diperkecil
+   agar tidak overflow di lebar layar sedang (768px). */
+@media (max-width: 768px) {
+  #mainNav {
+    height: 64px;
+    padding: 0 clamp(10px, 3vw, 4%);
+    gap: clamp(6px, 1vw, 16px);
+  }
+  .nav-logo-image,
+  .nav-logo-icon { width: clamp(32px, 3.4vw, 40px); height: clamp(32px, 3.4vw, 40px); }
+  .nav-logo-main { font-size: clamp(11px, 1vw, 13px); max-width: 120px; }
+  .nav-logo-sub  { font-size: clamp(7px, 0.7vw, 9px); }
+  .nav-links { gap: clamp(4px, 0.6vw, 14px); }
+  .nav-links a { font-size: clamp(10px, 0.8vw, 12px); }
+  .nav-cta { padding: 7px 14px !important; font-size: 11px !important; }
+  .nav-profile-btn { width: 34px; height: 34px; }
+  .nav-profile-avatar { font-size: 13px; }
+}
+
 @media (max-width: 600px) {
   #mainNav .nav-links { display: none; }
   .nav-hamburger { display: flex; }
@@ -557,6 +599,13 @@ footer { background: #062e1c; padding: 60px 5% 28px; color: rgba(255,255,255,0.5
   section.page-section { padding: 48px 4%; }
   .btn-primary, .btn-gold, .btn-outline { padding: 12px 24px; font-size: 13px; }
   .flash-message { right: 8px; left: 8px; max-width: none; }
+}
+
+@media (max-width: 360px) {
+  #mainNav { height: 60px; }
+  .nav-logo-main { max-width: 90px; font-size: 10px; }
+  .nav-logo-sub  { font-size: 7px; }
+  .nav-hamburger span { width: 20px; }
 }
 
 /* ── Print ─────────────────────────────────────────────────── */

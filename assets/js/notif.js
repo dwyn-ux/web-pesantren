@@ -169,6 +169,8 @@
 
   function pasangBell() {
     if (document.getElementById('notifBell')) return;
+    // Bell notifikasi riwayat HANYA dipasang untuk admin
+    if (!document.body.classList.contains('admin-body')) return;
     var w = wrap();
     var bell = document.createElement('button');
     bell.id = 'notifBell';

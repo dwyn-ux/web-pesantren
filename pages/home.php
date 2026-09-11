@@ -23,6 +23,22 @@ try {
 $landingAlumni = [];
 $galeriDb = [];
 $mapSettings = ['map_latitude'=>'-7.325','map_longitude'=>'108.350','map_zoom'=>'15','kontak_alamat'=>'Ciamis, Jawa Barat'];
+// ── Timeline PSB (dari pengaturan; fallback ke juknis 2027/2028) ──
+$psbTimeline = [
+    'mulai'   => '2027-05-01',
+    'seleksi' => '2027-06-01',
+    'seleksi_selesai' => '2027-06-20',
+    'hasil'   => '2027-07-01',
+];
+try {
+    $tlStmt = $pdo->query("SELECT key_name, value FROM pengaturan WHERE key_name IN ('psb_tgl_mulai','psb_tgl_seleksi','psb_tgl_seleksi_selesai','psb_tgl_hasil')");
+    foreach ($tlStmt->fetchAll() as $tlRow) {
+        $tlMap = ['psb_tgl_mulai'=>'mulai','psb_tgl_seleksi'=>'seleksi','psb_tgl_seleksi_selesai'=>'seleksi_selesai','psb_tgl_hasil'=>'hasil'];
+        if (isset($tlMap[$tlRow['key_name']]) && $tlRow['value']) {
+            $psbTimeline[$tlMap[$tlRow['key_name']]] = $tlRow['value'];
+        }
+    }
+} catch (PDOException $e) {}
 try {
     $landingAlumni = $pdo->query("SELECT * FROM alumni WHERE status='verified' AND tampil_landing=1 ORDER BY updated_at DESC LIMIT 6")->fetchAll();
     $testimoni = [];
@@ -326,15 +342,15 @@ try {
         </div>
         <div class="daftar-period reveal">
             <div class="period-item">
-                <strong>Mei 2025</strong>
+                <strong><?= e(formatTanggal($psbTimeline['mulai'])) ?></strong>
                 <span>Buka Pendaftaran</span>
             </div>
             <div class="period-item">
-                <strong>Juni 2025</strong>
+                <strong><?= e(formatDatesRange($psbTimeline['seleksi'], $psbTimeline['seleksi_selesai'])) ?></strong>
                 <span>Seleksi &amp; Tes</span>
             </div>
             <div class="period-item">
-                <strong>Juli 2025</strong>
+                <strong><?= e(formatDates($psbTimeline['hasil'])) ?></strong>
                 <span>Pengumuman</span>
             </div>
         </div>

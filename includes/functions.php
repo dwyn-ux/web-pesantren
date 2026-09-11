@@ -267,13 +267,29 @@ function formatBytes(int $bytes, int $precision = 1): string {
 /**
  * Format tanggal ke format dd/mm/yyyy (contoh: 26/04/2026)
  */
-function formatTanggal(string $dateStr, bool $withTime = false): string {
+function formatDates(string $dateStr, bool $withTime = false): string {
     $ts     = strtotime($dateStr);
     $result = date('d/m/Y', $ts);
     if ($withTime) {
         $result .= ' · ' . date('H:i', $ts);
     }
     return $result;
+}
+
+/**
+ * Format satu tanggal atau rentang tanggal (dd/mm/yyyy – dd/mm/yyyy)
+ * Dipakai di timeline PSB home.php.
+ */
+function formatDatesRange(string $dateStr, ?string $dateEnd = null): string {
+    $start = formatDates($dateStr);
+    if ($dateEnd === null || $dateEnd === '') {
+        return $start;
+    }
+    $end = formatDates($dateEnd);
+    if ($start === $end) {
+        return $start;
+    }
+    return $start . ' – ' . $end;
 }
 
 /**
