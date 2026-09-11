@@ -277,6 +277,15 @@ function formatDates(string $dateStr, bool $withTime = false): string {
 }
 
 /**
+ * Alias formatTanggal — masih dipakai luas di pages/ dan admin/.
+ * (Commit 828d11d mengganti nama fungsi ini tanpa update semua pemanggil,
+ *  sehingga home/artikel/dokumentasi/admin fatal error 500.)
+ */
+function formatTanggal(string $dateStr, bool $withTime = false): string {
+    return formatDates($dateStr, $withTime);
+}
+
+/**
  * Format satu tanggal atau rentang tanggal (dd/mm/yyyy – dd/mm/yyyy)
  * Dipakai di timeline PSB home.php.
  */
