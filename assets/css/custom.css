@@ -87,7 +87,9 @@ address { font-style: normal; }
 .nav-links {
   display: flex; align-items: center;
   gap: clamp(6px, 0.8vw, 24px);
-  list-style: none; flex-wrap: wrap; justify-content: flex-end;
+  /* nowrap: item yang wrap ke baris kedua akan keluar dari box navbar
+     (tinggi nav fix) dan terlihat "kepotong" di bawah. */
+  list-style: none; flex-wrap: nowrap; justify-content: flex-end;
   flex: 1 1 auto; min-width: 0; max-width: 100%;
 }
 .nav-links a {
@@ -569,6 +571,17 @@ footer { background: #062e1c; padding: 60px 5% 28px; color: rgba(255,255,255,0.5
 @media (max-width: 900px) {
   .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
   section.page-section { padding: 60px 5%; }
+}
+
+/* Window tidak fullscreen (769-1240px): navbar wajib muat satu baris.
+   Link sekunder disembunyikan (masih ada di menu mobile & footer) agar
+   tombol "Daftar Sekarang" tidak wrap/kepotong di bawah kotak navbar.
+   Pakai specificity #mainNav agar mengalahkan override di theme.css. */
+@media (min-width: 769px) and (max-width: 1240px) {
+  #mainNav .nav-links { gap: clamp(6px, 1vw, 16px); }
+  #mainNav .nav-links a { font-size: clamp(10px, 0.9vw, 12px); }
+  #mainNav .nav-secondary,
+  #mainNav .nav-links .nav-login { display: none; }
 }
 
 /* Tablet: navbar masih tampil penuh, tapi spacing & font diperkecil

@@ -39,11 +39,13 @@ if (!empty($_SESSION['santri_id'])) {
 $navLinks = [
     'home'          => ['url' => BASE_URL . '/',                    'label' => 'Beranda'],
     'profil'        => ['url' => BASE_URL . '/profil',              'label' => 'Profil'],
-    'sekapur-sirih' => ['url' => BASE_URL . '/sekapur-sirih',       'label' => 'Sekapur Sirih'],
+    // nav-secondary: link yang boleh disembunyikan di window tidak fullscreen
+    // (769-1240px) agar tombol "Daftar Sekarang" tidak kepotong di navbar.
+    'sekapur-sirih' => ['url' => BASE_URL . '/sekapur-sirih',       'label' => 'Sekapur Sirih', 'nav-secondary' => true],
     'artikel'       => ['url' => BASE_URL . '/artikel',             'label' => 'Artikel'],
     'galeri'        => ['url' => BASE_URL . '/galeri',              'label' => 'Galeri'],
-    'dokumentasi'   => ['url' => BASE_URL . '/dokumentasi',         'label' => 'Dokumentasi'],
-    'alumni'        => ['url' => BASE_URL . '/alumni',              'label' => 'Alumni'],
+    'dokumentasi'   => ['url' => BASE_URL . '/dokumentasi',         'label' => 'Dokumentasi', 'nav-secondary' => true],
+    'alumni'        => ['url' => BASE_URL . '/alumni',              'label' => 'Alumni', 'nav-secondary' => true],
     'psb'           => ['url' => BASE_URL . '/psb',                 'label' => 'PSB'],
 ];
 ?>
@@ -119,7 +121,7 @@ $navLinks = [
     <!-- Desktop Nav -->
     <ul class="nav-links" role="list">
         <?php foreach ($navLinks as $key => $link): ?>
-        <li>
+        <li <?= !empty($link['nav-secondary']) ? 'class="nav-secondary"' : '' ?>>
             <a href="<?= e($link['url']) ?>"
                <?= $activePage === $key ? 'class="active" aria-current="page"' : '' ?>>
                 <?= e($link['label']) ?>

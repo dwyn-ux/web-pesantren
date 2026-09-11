@@ -63,7 +63,7 @@ if (IS_DEBUG) {
 date_default_timezone_set('Asia/Jakarta');
 
 // Versi asset untuk cache busting (update saat deploy)
-define('ASSET_VERSION', '1.6.9');
+define('ASSET_VERSION', '1.7.0');
 
 // Notifikasi Telegram (token rahasia — hanya di .env, jangan commit)
 define('TELEGRAM_BOT_TOKEN', $_ENV['TELEGRAM_BOT_TOKEN'] ?? '');
