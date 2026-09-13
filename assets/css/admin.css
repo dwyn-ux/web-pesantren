@@ -96,6 +96,29 @@ body.admin-body {
 .sidebar-logout { color: rgba(255,100,100,0.7); }
 .sidebar-logout:hover { background: rgba(255,100,100,0.1); color: #ff6464; }
 
+/* ── SIDEBAR GROUP (collapsible submenu) ──────────────────────── */
+.sidebar-group { display: flex; flex-direction: column; gap: 4px; }
+.sidebar-group-toggle {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; padding: 10px 12px;
+    border: none; border-radius: 6px; cursor: pointer;
+    background: transparent; color: rgba(255,255,255,0.65);
+    font-family: inherit; font-size: 14px; font-weight: 500; text-align: left;
+    transition: background 0.2s, color 0.2s;
+}
+.sidebar-group-toggle:hover { background: rgba(255,255,255,0.08); color: white; }
+.sidebar-group-toggle.active-parent { color: white; font-weight: 600; }
+.sidebar-chevron { margin-left: auto; font-size: 12px; opacity: 0.6; transition: transform 0.25s; }
+.sidebar-group.open .sidebar-chevron { transform: rotate(180deg); }
+.sidebar-submenu {
+    display: grid; grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease;
+}
+.sidebar-submenu > * { overflow: hidden; }
+.sidebar-group.open .sidebar-submenu { grid-template-rows: 1fr; }
+.sidebar-submenu .sidebar-sublink { padding-left: 16px; font-size: 13px; }
+.sidebar-submenu .sidebar-sublink.active { border-left: 2px solid var(--gold); border-radius: 0 6px 6px 0; }
+
 .sidebar-footer {
     padding: 12px;
     border-top: 1px solid rgba(255,255,255,0.08);

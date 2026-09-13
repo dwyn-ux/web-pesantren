@@ -36,35 +36,62 @@
 
     <nav class="sidebar-nav" aria-label="Menu admin">
         <?php
-        $adminNav = [
-            'admin'           => ['icon' => '⊞', 'label' => 'Dashboard'],
-            'admin/verifikasi-berkas' => ['icon' => '✓', 'label' => 'Verifikasi PSB'],
-            'admin/input-tes' => ['icon' => '✎', 'label' => 'Input Nilai Tes'],
-            'admin/cicilan-verifikasi' => ['icon' => '💰', 'label' => 'Cicilan'],
-            'admin/daftar-ulang' => ['icon' => '🎓', 'label' => 'Daftar Ulang'],
-            'admin/kelola-gelombang' => ['icon' => '⏱', 'label' => 'Gelombang'],
-            'admin/kelola-template' => ['icon' => '📄', 'label' => 'Template'],
-            'admin/voucher-alumni' => ['icon' => '🎟', 'label' => 'Voucher Alumni'],
-            'admin/voucher-akashi' => ['icon' => '🏆', 'label' => 'Voucher Akashi'],
-            'admin/artikel'   => ['icon' => '✎', 'label' => 'Artikel'],
-            'admin/foto'      => ['icon' => '▧', 'label' => 'Galeri Foto'],
-            'admin/dokumentasi' => ['icon' => '▣', 'label' => 'Dokumentasi'],
-            'admin/testimoni' => ['icon' => '”', 'label' => 'Testimoni'],
-            'admin/alumni'    => ['icon' => '♙', 'label' => 'Data Alumni'],
-            'admin/pengaturan' => ['icon' => '⚙', 'label' => 'Pengaturan'],
-            'admin/pengurus' => ['icon' => '♟', 'label' => 'Pengurus'],
-            'admin/psb'            => ['icon' => '◎', 'label' => 'Data PSB'],
-            'admin/jalur-potongan'=> ['icon' => '✂', 'label' => 'Potongan Jalur'],
-            'admin/users'          => ['icon' => '⊙', 'label' => 'Pengguna'],
+        $adminDashboard = ['key' => 'admin', 'icon' => '⊞', 'label' => 'Dashboard'];
+        $adminNavGroups = [
+            ['label' => 'PSB', 'icon' => '🎓', 'items' => [
+                'admin/verifikasi-berkas' => ['icon' => '✓', 'label' => 'Verifikasi PSB'],
+                'admin/input-tes' => ['icon' => '✎', 'label' => 'Input Nilai Tes'],
+                'admin/cicilan-verifikasi' => ['icon' => '💰', 'label' => 'Cicilan'],
+                'admin/daftar-ulang' => ['icon' => '🎓', 'label' => 'Daftar Ulang'],
+                'admin/kelola-gelombang' => ['icon' => '⏱', 'label' => 'Gelombang'],
+                'admin/kelola-template' => ['icon' => '📄', 'label' => 'Template'],
+                'admin/voucher-alumni' => ['icon' => '🎟', 'label' => 'Voucher Alumni'],
+                'admin/voucher-akashi' => ['icon' => '🏆', 'label' => 'Voucher Akashi'],
+                'admin/psb' => ['icon' => '◎', 'label' => 'Data PSB'],
+                'admin/jalur-potongan' => ['icon' => '✂', 'label' => 'Potongan Jalur'],
+            ]],
+            ['label' => 'Konten', 'icon' => '📝', 'items' => [
+                'admin/artikel' => ['icon' => '✎', 'label' => 'Artikel'],
+                'admin/foto' => ['icon' => '▧', 'label' => 'Galeri Foto'],
+                'admin/dokumentasi' => ['icon' => '▣', 'label' => 'Dokumentasi'],
+                'admin/testimoni' => ['icon' => '”', 'label' => 'Testimoni'],
+                'admin/alumni' => ['icon' => '♙', 'label' => 'Data Alumni'],
+                'admin/pengurus' => ['icon' => '♟', 'label' => 'Pengurus'],
+            ]],
+            ['label' => 'Sistem', 'icon' => '⚙', 'items' => [
+                'admin/pengaturan' => ['icon' => '🔧', 'label' => 'Pengaturan'],
+                'admin/users' => ['icon' => '⊙', 'label' => 'Pengguna'],
+            ]],
         ];
-        foreach ($adminNav as $key => $item):
-            $isActive = ($adminPage ?? '') === $key;
+        $currentPage = $adminPage ?? '';
         ?>
-        <a href="<?= e(BASE_URL . '/' . $key) ?>"
-           class="sidebar-link<?= $isActive ? ' active' : '' ?>">
-            <span class="sidebar-link-icon" aria-hidden="true"><?= $item['icon'] ?></span>
-            <span><?= e($item['label']) ?></span>
+        <a href="<?= e(BASE_URL . '/' . $adminDashboard['key']) ?>"
+           class="sidebar-link<?= $currentPage === $adminDashboard['key'] ? ' active' : '' ?>">
+            <span class="sidebar-link-icon" aria-hidden="true"><?= $adminDashboard['icon'] ?></span>
+            <span><?= e($adminDashboard['label']) ?></span>
         </a>
+        <?php foreach ($adminNavGroups as $gi => $group):
+            $groupOpen = in_array($currentPage, array_keys($group['items']), true);
+        ?>
+        <div class="sidebar-group<?= $groupOpen ? ' open' : '' ?>" data-group="<?= $gi ?>">
+            <button type="button" class="sidebar-group-toggle<?= $groupOpen ? ' active-parent' : '' ?>"
+                    aria-expanded="<?= $groupOpen ? 'true' : 'false' ?>">
+                <span class="sidebar-link-icon" aria-hidden="true"><?= $group['icon'] ?></span>
+                <span><?= e($group['label']) ?></span>
+                <span class="sidebar-chevron" aria-hidden="true">▾</span>
+            </button>
+            <div class="sidebar-submenu">
+                <?php foreach ($group['items'] as $key => $item):
+                    $isActive = $currentPage === $key;
+                ?>
+                <a href="<?= e(BASE_URL . '/' . $key) ?>"
+                   class="sidebar-link sidebar-sublink<?= $isActive ? ' active' : '' ?>">
+                    <span class="sidebar-link-icon" aria-hidden="true"><?= $item['icon'] ?></span>
+                    <span><?= e($item['label']) ?></span>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
         <?php endforeach; ?>
     </nav>
 
