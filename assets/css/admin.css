@@ -474,6 +474,35 @@ body.admin-body {
 .aksi-group { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
 .aksi-group .inline { display: inline; }
 
+/* ── VOUCHER ALUMNI GROUP ─────────────────────────────────────── */
+.voucher-group {
+    border: 1px solid var(--cream-dark); border-radius: 8px;
+    margin: 0 20px 16px; background: #fff; overflow: hidden;
+}
+.admin-table-wrap > .voucher-group:last-child { margin-bottom: 20px; }
+.voucher-group > summary {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 14px 16px; cursor: pointer; list-style: none;
+    background: #f8faf9; font-size: 14px;
+}
+.voucher-group > summary::-webkit-details-marker { display: none; }
+.voucher-group > summary::before {
+    content: '▸'; color: var(--green-mid); font-size: 12px;
+    transition: transform 0.2s;
+}
+.voucher-group[open] > summary::before { transform: rotate(90deg); }
+.voucher-group > summary code { font-size: 14px; font-weight: 700; }
+.voucher-group-body {
+    padding: 16px; border-top: 1px solid var(--cream-dark);
+    display: flex; flex-direction: column; gap: 14px;
+}
+.voucher-group-actions { display: flex; justify-content: flex-end; }
+.voucher-group-body .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 768px) {
+    .voucher-group { margin: 0 12px 12px; }
+    .voucher-group-body .form-row { grid-template-columns: 1fr; }
+}
+
 /* ── MODAL ───────────────────────────────────────────────────── */
 .modal-backdrop {
     position: fixed; inset: 0; background: rgba(0,0,0,0.5);

@@ -283,18 +283,24 @@ include __DIR__ . '/includes/header.php';
     <div class="table-empty">Belum ada voucher. Buat lewat form di atas.</div>
     <?php else: ?>
     <?php foreach ($groups as $g): ?>
-    <details <?= count($groups) === 1 ? 'open' : '' ?>>
+    <details class="voucher-group" <?= count($groups) === 1 ? 'open' : '' ?>>
         <summary>
             <code><?= e($g['kode']) ?></code>
             <span class="badge badge-muted"><?= count($g['list']) ?> NISN</span>
             <?php if ($g['terpakai'] > 0): ?>
             <span class="badge badge-success"><?= $g['terpakai'] ?> terpakai</span>
             <?php endif; ?>
-            <span class="muted">Berlaku s/d <?= e($g['expire_at'] ?? '—') ?></span>
+            <?php if (!empty($g['expire_at'])): ?>
+            <span class="muted">Berlaku s/d <?= e(formatDates($g['expire_at'])) ?></span>
+            <?php else: ?>
+            <span class="muted">Tanpa kedaluwarsa</span>
+            <?php endif; ?>
             <?php if (!empty($g['deskripsi'])): ?>
             <span class="muted">— <?= e($g['deskripsi']) ?></span>
             <?php endif; ?>
         </summary>
+        <div class="voucher-group-body">
+        <div class="voucher-group-actions">
         <form method="post"
               onsubmit="return confirm('Hapus seluruh kode <?= e($g['kode']) ?>? Data terpakai dipertahankan.')">
             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
@@ -302,6 +308,7 @@ include __DIR__ . '/includes/header.php';
             <input type="hidden" name="kode" value="<?= e($g['kode']) ?>">
             <button type="submit" class="btn-sm btn-sm-danger">Hapus Kode</button>
         </form>
+        </div>
 
         <div class="form-row">
             <form method="post" class="admin-form" style="background:#faf9f6;padding:14px;border-radius:6px;">
@@ -376,6 +383,7 @@ include __DIR__ . '/includes/header.php';
             <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
         </div>
     </details>
     <?php endforeach; ?>
