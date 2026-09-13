@@ -302,6 +302,42 @@ function formatDatesRange(string $dateStr, ?string $dateEnd = null): string {
 }
 
 /**
+ * Format tanggal dengan nama bulan Indonesia (contoh: 1 Mei 2027).
+ * Dipakai di timeline PSB home.php.
+ */
+function formatTanggalId(string $dateStr): string {
+    static $bulan = [
+        1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    ];
+    $ts = strtotime($dateStr);
+    if ($ts === false) return $dateStr;
+    return (int) date('j', $ts) . ' ' . $bulan[(int) date('n', $ts)] . ' ' . date('Y', $ts);
+}
+
+/**
+ * Rentang tanggal nama bulan Indonesia.
+ * Sebulan sama: "1 – 20 Juni 2027". Beda bulan: "28 Juni – 3 Juli 2027".
+ */
+function formatTanggalIdRange(string $dateStr, ?string $dateEnd = null): string {
+    if ($dateEnd === null || $dateEnd === '') return formatTanggalId($dateStr);
+    $ts1 = strtotime($dateStr);
+    $ts2 = strtotime($dateEnd);
+    if ($ts1 === false || $ts2 === false) return $dateStr;
+    if (date('Y-m', $ts1) === date('Y-m', $ts2)) {
+        if (date('j', $ts1) === date('j', $ts2)) return formatTanggalId($dateStr);
+        return (int) date('j', $ts1) . ' – ' . formatTanggalId($dateEnd);
+    }
+    static $bulan = [
+        1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    ];
+    $awal = (int) date('j', $ts1) . ' ' . $bulan[(int) date('n', $ts1)];
+    if (date('Y', $ts1) !== date('Y', $ts2)) $awal .= ' ' . date('Y', $ts1);
+    return $awal . ' – ' . formatTanggalId($dateEnd);
+}
+
+/**
  * Buat slug URL-friendly dari string
  */
 function slugify(string $text): string {

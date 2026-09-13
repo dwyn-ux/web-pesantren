@@ -342,15 +342,15 @@ try {
         </div>
         <div class="daftar-period reveal">
             <div class="period-item">
-                <strong><?= e(formatTanggal($psbTimeline['mulai'])) ?></strong>
+                <strong><?= e(formatTanggalId($psbTimeline['mulai'])) ?></strong>
                 <span>Buka Pendaftaran</span>
             </div>
             <div class="period-item">
-                <strong><?= e(formatDatesRange($psbTimeline['seleksi'], $psbTimeline['seleksi_selesai'])) ?></strong>
+                <strong><?= e(formatTanggalIdRange($psbTimeline['seleksi'], $psbTimeline['seleksi_selesai'])) ?></strong>
                 <span>Seleksi &amp; Tes</span>
             </div>
             <div class="period-item">
-                <strong><?= e(formatDates($psbTimeline['hasil'])) ?></strong>
+                <strong><?= e(formatTanggalId($psbTimeline['hasil'])) ?></strong>
                 <span>Pengumuman</span>
             </div>
         </div>
