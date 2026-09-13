@@ -461,6 +461,7 @@ body.admin-body {
     z-index: 999; display: flex; align-items: center;
     justify-content: center; padding: 20px;
 }
+.modal-backdrop[hidden] { display: none !important; }
 .modal-card { width: 100%; max-width: 440px; margin-bottom: 0; }
 .modal-title-bar {
     display: flex; justify-content: space-between;
