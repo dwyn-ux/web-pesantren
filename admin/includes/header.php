@@ -52,6 +52,7 @@
             'admin/testimoni' => ['icon' => '”', 'label' => 'Testimoni'],
             'admin/alumni'    => ['icon' => '♙', 'label' => 'Data Alumni'],
             'admin/pengaturan' => ['icon' => '⚙', 'label' => 'Pengaturan'],
+            'admin/pengurus' => ['icon' => '♟', 'label' => 'Pengurus'],
             'admin/psb'            => ['icon' => '◎', 'label' => 'Data PSB'],
             'admin/jalur-potongan'=> ['icon' => '✂', 'label' => 'Potongan Jalur'],
             'admin/users'          => ['icon' => '⊙', 'label' => 'Pengguna'],

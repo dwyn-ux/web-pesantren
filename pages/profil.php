@@ -231,44 +231,93 @@ $sejarah = [
 <div class="struktur-section" id="struktur">
     <div class="section-tag" aria-hidden="true"><span></span><span class="section-tag-text">Organisasi</span><span></span></div>
     <h2 class="section-title">Struktur Organisasi</h2>
+    <?php
+    // Data pengurus dari database (Admin → Pengurus); fallback ke daftar baku bila DB kosong/belum siap
+    $pengurusFallback = [
+        ['nama' => 'KH. Suroto Abu Nizam, M.Pd.',          'jabatan' => 'Mudir / Pimpinan Pesantren', 'level' => 'mudir',       'foto' => ''],
+        ['nama' => 'Nur Wahyudi, S.Pd.',                   'jabatan' => 'Wakil Mudir',                'level' => 'wakil',       'foto' => ''],
+        ['nama' => 'Fahmi Dwi Payana, S.H.',               'jabatan' => 'Sekretaris',                 'level' => 'sekretariat', 'foto' => ''],
+        ['nama' => 'Nurwidi Sasongko, S.Pd.',              'jabatan' => 'Bendahara',                  'level' => 'sekretariat', 'foto' => ''],
+        ['nama' => 'Rahmat Yulianto, S.H.',                'jabatan' => 'Kesantrian',                 'level' => 'unit',        'foto' => ''],
+        ['nama' => 'Rohmad Sigid Affandi, S.H.',           'jabatan' => 'Sarpras',                    'level' => 'unit',        'foto' => ''],
+        ['nama' => 'Ina Rusiana, S.Pd., Gr.',              'jabatan' => 'Kepala SMP',                 'level' => 'unit',        'foto' => ''],
+        ['nama' => 'Ahmad Nurdin Kholilis, S.Th.I., M.Pd.','jabatan' => 'Kepala SMA',                 'level' => 'unit',        'foto' => ''],
+        ['nama' => 'Muhammad Abdullah',                    'jabatan' => 'Humas',                      'level' => 'unit',        'foto' => ''],
+    ];
+    $pengurusByLevel = ['mudir' => [], 'wakil' => [], 'sekretariat' => [], 'unit' => []];
+    try {
+        $pengurusRows = getDB()->query("SELECT nama, jabatan, level, foto FROM pengurus WHERE is_aktif=1 ORDER BY urutan ASC, id ASC")->fetchAll();
+        foreach ($pengurusRows as $pr) {
+            $lv = $pr['level'] ?? 'unit';
+            if (!isset($pengurusByLevel[$lv])) $lv = 'unit';
+            $pengurusByLevel[$lv][] = $pr;
+        }
+    } catch (PDOException $e) {
+        // DB belum siap — pakai fallback di bawah
+    }
+    $pengurusKosong = empty($pengurusByLevel['mudir']) && empty($pengurusByLevel['wakil']) && empty($pengurusByLevel['sekretariat']) && empty($pengurusByLevel['unit']);
+    if ($pengurusKosong) {
+        foreach ($pengurusFallback as $pf) $pengurusByLevel[$pf['level']][] = $pf;
+    }
+    if (!function_exists('pengurusAvatarHtml')) {
+        function pengurusAvatarHtml(array $p): string {
+            $foto = basename((string) ($p['foto'] ?? ''));
+            if ($foto !== '' && is_file(ROOT_PATH . '/uploads/pengurus/' . $foto)) {
+                return '<img src="' . e(BASE_URL . '/uploads/pengurus/' . $foto) . '" alt="' . e(($p['nama'] ?? '') . ' — ' . ($p['jabatan'] ?? '')) . '" loading="lazy">';
+            }
+            $init = mb_strtoupper(mb_substr(trim((string) ($p['nama'] ?? '')), 0, 1, 'UTF-8'), 'UTF-8');
+            return e($init !== '' ? $init : '•');
+        }
+    }
+    ?>
     <div class="org-chart reveal" role="img" aria-label="Bagan struktur organisasi pesantren">
+        <?php if (!empty($pengurusByLevel['mudir'])): ?>
         <div class="org-level">
+            <?php foreach ($pengurusByLevel['mudir'] as $p): ?>
             <div class="org-card head">
-                <div class="org-avatar">
-                    <?= imgOrPlaceholder('pengajar/kh-ahmad-fauzi.jpg', 'KH. Suroto Abu Nizam, M. Pd.', 'ف') ?>
-                </div>
-                <div class="org-name">KH. Suroto Abu Nizam, M. Pd.</div>
-                <div class="org-pos">Mudir / Pimpinan Pesantren</div>
+                <div class="org-avatar"><?= pengurusAvatarHtml($p) ?></div>
+                <div class="org-name"><?= e($p['nama']) ?></div>
+                <div class="org-pos"><?= e($p['jabatan']) ?></div>
             </div>
+            <?php endforeach; ?>
         </div>
+        <?php endif; ?>
+        <?php if (!empty($pengurusByLevel['wakil'])): ?>
         <div class="org-connector-v" aria-hidden="true"></div>
-        <div class="org-level" style="width:100%;justify-content:center;gap:60px;">
-            <?php
-            $level2 = [
-                ['init'=>'ا','file'=>'pengajar/usth-ina-rusiana.jpg',    'name'=>'Usth. Ina Rusiana, S. Pd.',    'pos'=>'Kepala SMP'],
-                ['init'=>'ن','file'=>'pengajar/ust-nurwidi-sasongko.jpg','name'=>'USt. Nurwidi Sasongko, S. Pd.','pos'=>'Koordinator Tahfidz'],
-                ['init'=>'و','file'=>'pengajar/ust-nur-wahyudi.jpg',     'name'=>'USt. Nur Wahyudi, S. Pd.',     'pos'=>'Kepala SMA'],
-            ];
-            foreach ($level2 as $l):
-            ?>
+        <div class="org-level" style="width:100%;justify-content:center;gap:20px;flex-wrap:wrap;">
+            <?php foreach ($pengurusByLevel['wakil'] as $p): ?>
             <div class="org-card">
-                <div class="org-avatar">
-                    <?= imgOrPlaceholder($l['file'], $l['name'], e($l['init'])) ?>
-                </div>
-                <div class="org-name"><?= e($l['name']) ?></div>
-                <div class="org-pos"><?= e($l['pos']) ?></div>
+                <div class="org-avatar"><?= pengurusAvatarHtml($p) ?></div>
+                <div class="org-name"><?= e($p['nama']) ?></div>
+                <div class="org-pos"><?= e($p['jabatan']) ?></div>
             </div>
             <?php endforeach; ?>
         </div>
+        <?php endif; ?>
+        <?php if (!empty($pengurusByLevel['sekretariat'])): ?>
         <div class="org-connector-v" aria-hidden="true"></div>
-        <div class="org-level" style="gap:24px;flex-wrap:wrap;">
-            <?php foreach (['Kesiswaan','Kurikulum','Sarana & Prasarana','Humas & PSB'] as $bid): ?>
-            <div class="org-card" style="min-width:140px;border-top-color:var(--cream-dark)">
-                <div class="org-pos" style="margin-bottom:4px">Bidang</div>
-                <div class="org-name" style="font-size:14px"><?= e($bid) ?></div>
+        <div class="org-level" style="width:100%;justify-content:center;gap:20px;flex-wrap:wrap;">
+            <?php foreach ($pengurusByLevel['sekretariat'] as $p): ?>
+            <div class="org-card">
+                <div class="org-avatar"><?= pengurusAvatarHtml($p) ?></div>
+                <div class="org-name"><?= e($p['nama']) ?></div>
+                <div class="org-pos"><?= e($p['jabatan']) ?></div>
             </div>
             <?php endforeach; ?>
         </div>
+        <?php endif; ?>
+        <?php if (!empty($pengurusByLevel['unit'])): ?>
+        <div class="org-connector-v" aria-hidden="true"></div>
+        <div class="org-level" style="width:100%;justify-content:center;gap:20px;flex-wrap:wrap;">
+            <?php foreach ($pengurusByLevel['unit'] as $p): ?>
+            <div class="org-card" style="min-width:160px;">
+                <div class="org-avatar"><?= pengurusAvatarHtml($p) ?></div>
+                <div class="org-name"><?= e($p['nama']) ?></div>
+                <div class="org-pos"><?= e($p['jabatan']) ?></div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
