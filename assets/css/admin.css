@@ -110,12 +110,8 @@ body.admin-body {
 .sidebar-group-toggle.active-parent { color: white; font-weight: 600; }
 .sidebar-chevron { margin-left: auto; font-size: 12px; opacity: 0.6; transition: transform 0.25s; }
 .sidebar-group.open .sidebar-chevron { transform: rotate(180deg); }
-.sidebar-submenu {
-    display: grid; grid-template-rows: 0fr;
-    transition: grid-template-rows 0.25s ease;
-}
-.sidebar-submenu > * { overflow: hidden; }
-.sidebar-group.open .sidebar-submenu { grid-template-rows: 1fr; }
+.sidebar-submenu { display: none; flex-direction: column; gap: 4px; }
+.sidebar-group.open .sidebar-submenu { display: flex; }
 .sidebar-submenu .sidebar-sublink { padding-left: 16px; font-size: 13px; }
 .sidebar-submenu .sidebar-sublink.active { border-left: 2px solid var(--gold); border-radius: 0 6px 6px 0; }
 
