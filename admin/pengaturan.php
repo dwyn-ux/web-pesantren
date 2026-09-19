@@ -18,21 +18,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/admin/pengaturan');
     }
 
-    // ── Upload logo (opsional) → logo.png / logo.svg ─────────
+    // ── Upload logo (opsional) → logo.png (SVG ditolak: vektor inline XSS) ──
     if (!empty($_FILES['logo']['name'])) {
-        $logoErr = validateUpload($_FILES['logo'], ['png', 'jpg', 'jpeg', 'webp', 'svg'], ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'], 2097152);
+        $logoErr = validateUpload($_FILES['logo'], ['png', 'jpg', 'jpeg', 'webp'], ['image/png', 'image/jpeg', 'image/webp'], 2097152);
         if ($logoErr) {
             setFlash('error', 'Logo: ' . implode(' ', $logoErr));
             redirect('/admin/pengaturan');
         }
-        $ext  = strtolower(pathinfo($_FILES['logo']['name'], PATHINFO_EXTENSION));
         $base = ROOT_PATH . '/assets/img/logo';
-        if ($ext === 'svg') {
-            if (!move_uploaded_file($_FILES['logo']['tmp_name'], $base . '.svg')) {
-                setFlash('error', 'Gagal menyimpan logo.');
-                redirect('/admin/pengaturan');
-            }
-        } else {
+        // Hapus logo.svg lama agar tidak jadi vektor XSS persisten
+        if (is_file($base . '.svg')) @unlink($base . '.svg');
+        {
             $src = @imagecreatefromstring((string) file_get_contents($_FILES['logo']['tmp_name']));
             if (!$src) {
                 setFlash('error', 'File gambar tidak valid.');
@@ -185,8 +181,8 @@ require __DIR__ . '/includes/header.php';
     <p class="muted">Logo saat ini:</p>
     <img src="<?= BASE_URL ?>/assets/img/<?= $logoPreview ?>" alt="Logo" style="height:64px;width:auto;background:#fff;padding:8px;border:1px solid var(--cream-dark);border-radius:8px;margin-bottom:14px;">
     <?php endif; ?>
-    <div class="form-group"><label>Upload logo baru (PNG/JPG/WEBP/SVG, maks 2 MB)</label>
-        <input class="form-control" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp,.svg">
+    <div class="form-group"><label>Upload logo baru (PNG/JPG/WEBP, maks 2 MB)</label>
+        <input class="form-control" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp">
     </div>
     <p class="muted">Logo otomatis dipakai sebagai favicon website. Disarankan rasio kotak (mis. 512x512).</p>
 </div>

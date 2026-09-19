@@ -19,9 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'status'      => sanitizeString($_POST['status']    ?? 'draft'),
     ];
 
-    // Sanitasi isi artikel — strip tag berbahaya, izinkan subset aman
-    $allowedTags = '<p><br><strong><em><u><h2><h3><h4><ul><ol><li><blockquote><a><img>';
-    $data['isi'] = strip_tags($data['isi'], $allowedTags);
+    // Sanitasi isi artikel — cegah stored XSS
+    $data['isi'] = sanitizeRichHtml($data['isi']);
 
     $validKategori = ['tahfidz','akhlak','kajian','kegiatan','psb-info','alumni'];
     $validStatus   = ['draft', 'published'];

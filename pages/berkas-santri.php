@@ -65,8 +65,14 @@ if (!$isOwner && !isAdmin()) {
     exit('Anda tidak memiliki akses.');
 }
 
-$path = __DIR__ . '/../uploads/' . $berkas['nama_file'];
-if (!is_file($path)) {
+$rel = (string) ($berkas['nama_file'] ?? '');
+if ($rel === '' || str_contains($rel, '..') || !str_starts_with($rel, 'santri/')) {
+    http_response_code(404);
+    exit('Berkas tidak ditemukan.');
+}
+$path = realpath(__DIR__ . '/../uploads/' . $rel);
+$base = realpath(__DIR__ . '/../uploads');
+if ($path === false || !str_starts_with($path, $base . DIRECTORY_SEPARATOR) || !is_file($path)) {
     http_response_code(404);
     exit('File tidak ada di disk.');
 }

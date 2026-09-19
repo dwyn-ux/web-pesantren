@@ -28,7 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Format email tidak valid.';
     } else {
-        try {
+        $rateKey = 'login-santri-' . md5(($_SERVER['REMOTE_ADDR'] ?? 'x') . '|' . $email);
+        if (function_exists('checkLoginRateLimit') && !checkLoginRateLimit($rateKey)) {
+            $error = 'Terlalu banyak percobaan. Coba lagi 15 menit.';
+        } else try {
             $pdo = getDB();
             $stmt = $pdo->prepare(
                 "SELECT id, name, email, password, role, is_active
@@ -37,7 +40,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$email]);
             $user = $stmt->fetch();
 
-            if ($user && password_verify($pass, $user['password']) && $user['is_active']) {
+            $ok = $user && $user['is_active'] && password_verify($pass, $user['password']);
+            if (function_exists('recordLoginAttempt')) recordLoginAttempt($rateKey, (bool) $ok);
+            if ($ok) {
                 $cekPendaftaran = $pdo->prepare("SELECT id FROM pendaftaran WHERE user_id = ? LIMIT 1");
                 $cekPendaftaran->execute([$user['id']]);
                 $pendaftaranRow = $cekPendaftaran->fetch();

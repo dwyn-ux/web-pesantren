@@ -24,20 +24,22 @@ if (file_exists($envFile)) {
 
 // Konstanta aplikasi
 define('APP_NAME',  $_ENV['APP_NAME']  ?? 'Pondok Pesantren Ash-Shiddiq');
-// BASE_URL mengikuti host request aktif (aman dari pindah host localhost↔production
-// yang bikin session hilang). APP_URL dipakai kalau host cocok / saat CLI.
+// BASE_URL dikunci ke APP_URL (cegah Host header injection).
+// Host request hanya diizinkan jika masuk whitelist eksplisit.
 function detectBaseUrl(): string {
     $configured = rtrim($_ENV['APP_URL'] ?? 'https://ponpesashiddiq.or.id', '/');
+    if ($configured === '') $configured = 'https://ponpesashiddiq.or.id';
+    $cfgHost = strtolower((string) parse_url($configured, PHP_URL_HOST));
     $host = strtolower(trim($_SERVER['HTTP_HOST'] ?? ''));
-    if ($host === '' || !preg_match('/^[a-z0-9.-]+(?::\d+)?$/', $host)) {
-        return $configured !== '' ? $configured : 'http://localhost';
+    $hostBare = preg_replace('/:\d+$/', '', $host);
+    $allowed = array_filter([$cfgHost, 'localhost', '127.0.0.1']);
+    if ($hostBare !== '' && in_array($hostBare, $allowed, true)
+        && preg_match('/^[a-z0-9.-]+(?::\d+)?$/', $host)) {
+        if ($hostBare === $cfgHost) return $configured;
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        return $scheme . '://' . $host;
     }
-    $cfgHost = $configured !== '' ? strtolower((string) parse_url($configured, PHP_URL_HOST)) : '';
-    if ($cfgHost !== '' && $host === $cfgHost) {
-        return $configured;
-    }
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    return $scheme . '://' . $host;
+    return $configured;
 }
 define('BASE_URL', detectBaseUrl());
 define('APP_ENV',   $_ENV['APP_ENV']   ?? 'production');

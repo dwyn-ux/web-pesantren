@@ -20,6 +20,23 @@ function eUrl(string $url): string {
 }
 
 /**
+ * Sanitasi HTML kaya (artikel/template) cegah stored XSS.
+ * - Buang tag berbahaya (script/iframe/object/embed/form/dll)
+ * - Buang atribut event handler (on*) & javascript:/data: URL
+ */
+function sanitizeRichHtml(string $html, string $allowedTags = '<p><br><strong><em><u><h2><h3><h4><ul><ol><li><blockquote><a><img>'): string {
+    $html = strip_tags($html, $allowedTags);
+    // Buang tag berbahaya yang lolos via allowed list kustom
+    $html = preg_replace('#</?(script|iframe|object|embed|form|input|button|select|textarea|style|link|meta|base|frame|frameset)[^>]*>#i', '', $html);
+    // Buang atribut on*="..."
+    $html = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
+    // Netralkan javascript:/data:text/html/vbscript: di href/src
+    $html = preg_replace('/(href|src|xlink:href)\s*=\s*("|\')\s*javascript:[^"\']*("|\')/i', '$1="#"', $html);
+    $html = preg_replace('/(href|src)\s*=\s*("|\')\s*data:text\/html[^"\']*("|\')/i', '$1="#"', $html);
+    return $html;
+}
+
+/**
  * Icon SVG inline untuk notifikasi (success/error/info/warning).
  * Kembalikan string SVG aman tanpa dependensi eksternal.
  */

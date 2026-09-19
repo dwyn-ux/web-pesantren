@@ -164,9 +164,6 @@ jsonResponse([
     'article' => [
         'judul'     => sanitizeString($article['judul'] ?? $topic),
         'ringkasan' => sanitizeString($article['ringkasan'] ?? ''),
-        'isi'       => strip_tags(
-            $article['isi'],
-            '<p><br><strong><em><h2><h3><h4><ul><ol><li><blockquote>'
-        ),
+        'isi'       => sanitizeRichHtml($article['isi']),
     ],
 ]);

@@ -24,10 +24,70 @@ if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
 session_name('ASHIDDIQ_SESS');
 session_start();
 
-// Regenerate session ID secara berkala untuk mencegah session fixation
-if (!isset($_SESSION['_initiated'])) {
+// Timeout absolut 2 jam + idle 30 menit
+$now = time();
+if (!empty($_SESSION['login_at'])) {
+    if (($now - (int) $_SESSION['login_at']) > 7200
+        || (!empty($_SESSION['last_activity']) && ($now - (int) $_SESSION['last_activity']) > 1800)) {
+        $_SESSION = [];
+        session_destroy();
+        session_start();
+    }
+}
+$_SESSION['last_activity'] = $now;
+
+// Regenerate session ID berkala (15 menit) cegah fixation
+if (empty($_SESSION['_initiated']) || empty($_SESSION['_regenerated_at'])
+    || ($now - (int) $_SESSION['_regenerated_at']) > 900) {
     session_regenerate_id(true);
     $_SESSION['_initiated'] = true;
+    $_SESSION['_regenerated_at'] = $now;
+}
+
+/**
+ * Rate-limit login per IP+email (file-based, aman shared hosting).
+ * False = masih diblokir, true = boleh coba. Panggil SEBELUM cek password.
+ */
+function checkLoginRateLimit(string $key, int $maxAttempts = 5, int $lockSeconds = 900): bool {
+    if (!defined('CACHE_PATH')) return true;
+    $now = time();
+    $dir = CACHE_PATH . '/ratelimit';
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $file = $dir . '/' . preg_replace('/[^a-z0-9_-]/i', '_', $key) . '.json';
+    $data = ['count' => 0, 'locked_until' => 0];
+    if (is_file($file)) {
+        $raw = @file_get_contents($file);
+        $j = $raw ? json_decode($raw, true) : null;
+        if (is_array($j)) $data = array_merge($data, $j);
+    }
+    if ($data['locked_until'] > $now) return false;
+    // Reset window jika lock kedaluwarsa
+    if ($data['locked_until'] > 0 && $data['locked_until'] <= $now) {
+        $data = ['count' => 0, 'locked_until' => 0];
+        @file_put_contents($file, json_encode($data), LOCK_EX);
+    }
+    return true;
+}
+
+function recordLoginAttempt(string $key, bool $success, int $maxAttempts = 5, int $lockSeconds = 900): void {
+    if (!defined('CACHE_PATH')) return;
+    $dir = CACHE_PATH . '/ratelimit';
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $file = $dir . '/' . preg_replace('/[^a-z0-9_-]/i', '_', $key) . '.json';
+    $data = ['count' => 0, 'locked_until' => 0];
+    if (is_file($file)) {
+        $j = json_decode((string) @file_get_contents($file), true);
+        if (is_array($j)) $data = array_merge($data, $j);
+    }
+    if ($success) {
+        @unlink($file);
+        return;
+    }
+    $data['count']++;
+    if ($data['count'] >= $maxAttempts) {
+        $data['locked_until'] = time() + $lockSeconds;
+    }
+    @file_put_contents($file, json_encode($data), LOCK_EX);
 }
 
 /**

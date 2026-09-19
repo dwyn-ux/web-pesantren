@@ -15,13 +15,18 @@ ServerSignature Off
 </IfModule>
 
 # ── Proteksi File Sensitif ───────────────────────────────────
-<FilesMatch "\.(env|sql|log|sh|git|htpasswd|ini|bak|swp|tmp)$">
+<FilesMatch "(?i)\.(env|sql|log|sh|git|htpasswd|ini|bak|swp|tmp|md)$">
     Require all denied
 </FilesMatch>
 
-<FilesMatch "^(CLAUDE\.md|composer\.(json|lock)|package(-lock)?\.json)$">
+<FilesMatch "^(CLAUDE\.md|composer\.(json|lock)|package(-lock)?\.json|setup-admin\.php)$">
     Require all denied
 </FilesMatch>
+
+# setup-admin.php tidak boleh ada di production sama sekali
+<Files "setup-admin.php">
+    Require all denied
+</Files>
 
 # ── Proteksi Folder Internal ─────────────────────────────────
 <IfModule mod_rewrite.c>

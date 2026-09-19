@@ -27,11 +27,18 @@ if (!$berkas) {
     exit('Berkas tidak ditemukan.');
 }
 
-$path = UPLOADS_PATH . '/' . $berkas['nama_file'];
-if (!is_file($path)) {
+$rel = (string) ($berkas['nama_file'] ?? '');
+if ($rel === '' || str_contains($rel, '..') || !str_starts_with($rel, 'santri/')) {
+    http_response_code(404);
+    exit('Berkas tidak ditemukan.');
+}
+$path = UPLOADS_PATH . '/' . $rel;
+$real = realpath($path);
+if ($real === false || !str_starts_with($real, realpath(UPLOADS_PATH) . DIRECTORY_SEPARATOR) || !is_file($real)) {
     http_response_code(404);
     exit('File tidak ada di disk.');
 }
+$path = $real;
 
 while (ob_get_level()) ob_end_clean();
 header('Content-Type: ' . ($berkas['mime_type'] ?: 'application/octet-stream'));

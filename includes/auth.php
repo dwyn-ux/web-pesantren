@@ -49,6 +49,11 @@ function attemptLogin(string $email, string $password): array {
         return ['success' => false, 'message' => 'Format email tidak valid.'];
     }
 
+    $rateKey = 'login-' . md5(($_SERVER['REMOTE_ADDR'] ?? 'x') . '|' . $email);
+    if (function_exists('checkLoginRateLimit') && !checkLoginRateLimit($rateKey)) {
+        return ['success' => false, 'message' => 'Terlalu banyak percobaan. Coba lagi 15 menit.'];
+    }
+
     try {
         $pdo  = getDB();
         $stmt = $pdo->prepare("SELECT id, name, email, password, role, is_active FROM users WHERE email = ? LIMIT 1");
@@ -56,8 +61,8 @@ function attemptLogin(string $email, string $password): array {
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($password, $user['password'])) {
-            // Delay untuk mengurangi brute force
-            usleep(300000); // 0.3 detik
+            if (function_exists('recordLoginAttempt')) recordLoginAttempt($rateKey, false);
+            usleep(300000);
             return ['success' => false, 'message' => 'Email atau password salah.'];
         }
 
@@ -65,6 +70,7 @@ function attemptLogin(string $email, string $password): array {
             return ['success' => false, 'message' => 'Akun Anda belum diaktifkan. Hubungi administrator.'];
         }
 
+        if (function_exists('recordLoginAttempt')) recordLoginAttempt($rateKey, true);
         // Set session
         session_regenerate_id(true);
         $_SESSION['user_id']    = $user['id'];

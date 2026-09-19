@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrf();
     $id = sanitizeInt($_POST['id'] ?? 0);
     $judul = sanitizeString($_POST['judul'] ?? '');
-    $isi = $_POST['isi_html'] ?? ''; // raw HTML, akan di-render apa adanya
+    $isi = sanitizeRichHtml($_POST['isi_html'] ?? '', '<p><br><strong><em><u><h2><h3><h4><div><table><thead><tbody><tr><th><td><ul><ol><li><blockquote><a><img><span>');
     $isActive = isset($_POST['is_active']) ? 1 : 0;
 
     if ($id > 0) {

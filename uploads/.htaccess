@@ -8,14 +8,17 @@
 
 # Larang eksekusi via mod_cgi / mod_perl / dll
 Options -ExecCGI
-RemoveHandler .php .php3 .php4 .php5 .phtml .cgi .pl .py .rb
+RemoveHandler .php .php3 .php4 .php5 .phtml .phar .cgi .pl .py .rb
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
 
-# Hanya izinkan akses ke gambar
-<FilesMatch "\.(jpg|jpeg|png|webp|gif|svg)$">
+# Hanya izinkan akses ke gambar raster (SVG ditolak: vektor inline XSS)
+<FilesMatch "\.(jpg|jpeg|png|webp|gif)$">
     Require all granted
 </FilesMatch>
 
 # Semua file lain ditolak
-<FilesMatch "^(?!.*\.(jpg|jpeg|png|webp|gif|svg)$)">
+<FilesMatch "^(?!.*\.(jpg|jpeg|png|webp|gif)$)">
     Require all denied
 </FilesMatch>
