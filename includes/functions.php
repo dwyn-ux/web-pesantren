@@ -1212,39 +1212,54 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
         ]);
     };
 
-    foreach (['pendaftaran', 'infak'] as $jenis) {
-        foreach ($tarif[$jenis] as $t) $add($t);
-    }
+    // Pilih SATU baris tarif untuk jenis sekali-bayar (pendaftaran/
+    // administrasi/wakaf): utamakan baris milik gelombang pendaftar,
+    // fallback ke baris global (gelombang_id NULL). Tanpa ini, semua
+    // varian Indent/G1/G2/G3 ikut masuk tagihan.
+    $pilihSatu = function (array $rows) use ($gelombangId): ?array {
+        $global = null;
+        foreach ($rows as $r) {
+            $g = (int) ($r['gelombang_id'] ?? 0);
+            if ($g === $gelombangId) return $r;
+            if ($g === 0 && $global === null) $global = $r;
+        }
+        return $global;
+    };
+
+    // Biaya pendaftaran: satu baris sesuai gelombang pendaftar.
+    if ($tp = $pilihSatu($tarif['pendaftaran'] ?? [])) $add($tp);
+    foreach ($tarif['infak'] ?? [] as $t) $add($t);
 
     foreach (['administrasi', 'wakaf'] as $jenis) {
-        foreach ($tarif[$jenis] as $t) {
-            if (!$t['gratis'] && $jenis === 'administrasi') {
-                if ($jalur === 'kaderisasi') {
-                    // ADM Awal khusus kader: tarif tetap dari jalur_potongan_admin (atau fallback seed).
-                    $t['harga_diskon'] = $kaderTarif['adm'];
-                } elseif ($jalur === 'dhuafa' && $jalurSetujui) {
-                    // Dhuafa disetujui: kalau admin mengatur admin_dhuafa_bebas=1, ADM bebas 100%.
-                    $adh = $adminJalur['dhuafa'] ?? [];
-                    if (!empty($adh['dhuafa_bebas'])) {
-                        $t['gratis'] = 1;
-                    } else {
-                        // Jika tidak bebas, pakai persen potongan per santri.
-                        if ($persenPotongan > 0) {
-                            $dasar  = (float) $t['harga_asli'];
-                            $potong = round($dasar * $persenPotongan / 100);
-                            $t['harga_diskon'] = max(0, $dasar - $potong);
-                        }
+        // Satu baris sesuai gelombang pendaftar (bukan semua varian Indent/G1/G2/G3).
+        $t = $pilihSatu($tarif[$jenis] ?? []);
+        if ($t === null) continue;
+        if (!$t['gratis'] && $jenis === 'administrasi') {
+            if ($jalur === 'kaderisasi') {
+                // ADM Awal khusus kader: tarif tetap dari jalur_potongan_admin (atau fallback seed).
+                $t['harga_diskon'] = $kaderTarif['adm'];
+            } elseif ($jalur === 'dhuafa' && $jalurSetujui) {
+                // Dhuafa disetujui: kalau admin mengatur admin_dhuafa_bebas=1, ADM bebas 100%.
+                $adh = $adminJalur['dhuafa'] ?? [];
+                if (!empty($adh['dhuafa_bebas'])) {
+                    $t['gratis'] = 1;
+                } else {
+                    // Jika tidak bebas, pakai persen potongan per santri.
+                    if ($persenPotongan > 0) {
+                        $dasar  = (float) $t['harga_asli'];
+                        $potong = round($dasar * $persenPotongan / 100);
+                        $t['harga_diskon'] = max(0, $dasar - $potong);
                     }
-                } elseif ($persenPotongan > 0) {
-                    // Jalur potongan ADM Awal: nominal dipotong
-                    // (jadikan harga_diskon agar tampil coret di UI).
-                    $dasar   = (float) $t['harga_asli'];
-                    $potong  = round($dasar * $persenPotongan / 100);
-                    $t['harga_diskon'] = max(0, $dasar - $potong);
                 }
+            } elseif ($persenPotongan > 0) {
+                // Jalur potongan ADM Awal: nominal dipotong
+                // (jadikan harga_diskon agar tampil coret di UI).
+                $dasar   = (float) $t['harga_asli'];
+                $potong  = round($dasar * $persenPotongan / 100);
+                $t['harga_diskon'] = max(0, $dasar - $potong);
             }
-            $add($t);
         }
+        $add($t);
     }
 
     foreach ($tarif['syahriyah'] as $t) {
@@ -1452,7 +1467,9 @@ function getTarifByGelombang(PDO $pdo, int $gelombangId, ?string $gender = null)
         $sql .= " AND (gender = 'all' OR gender = :gd)";
         $params[':gd'] = $gender;
     }
-    $sql .= " ORDER BY jenis, urutan";
+    // Baris khusus gelombang didahulukan agar pemanggil yang memakai
+    // baris pertama (simulasi) selalu memakai tarif gelombang yang benar.
+    $sql .= " ORDER BY (gelombang_id IS NULL), jenis, urutan";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     return $stmt->fetchAll();

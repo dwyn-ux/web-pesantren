@@ -3,6 +3,27 @@ require_once __DIR__ . '/bootstrap.php';
 requireAdmin();
 $pdo = getDB();
 
+// Peta gelombang untuk label + validasi tarif per tahap.
+// Kunci: id gelombang, nilai: label. Tanpa ini, simpan pengaturan
+// akan menghapus mapping gelombang tarif (bug: semua varian
+// Indent/G1/G2/G3 masuk tagihan).
+$gelombangMap = [];
+foreach (getAllGelombang($pdo, false) as $g) {
+    $gelombangMap[(int) $g['id']] = $g['label'];
+}
+
+// Render <select> tahap untuk satu baris tarif (pendaftaran/administrasi/wakaf).
+// Nilai "" = berlaku semua tahap (baris global).
+$opsiGelombang = function (string $name, $terpilih) use ($gelombangMap): string {
+    $html = '<div class="form-group"><label>Tahap</label><select class="form-control" name="' . $name . '">';
+    $html .= '<option value="">Semua tahap</option>';
+    foreach ($gelombangMap as $gid => $glabel) {
+        $sel = ((string) ($terpilih ?? '') !== '' && (int) $terpilih === $gid) ? ' selected' : '';
+        $html .= '<option value="' . $gid . '"' . $sel . '>' . e($glabel) . '</option>';
+    }
+    return $html . '</select></div>';
+};
+
 $keys = ['rekening_pembayaran', 'telegram_chat_ids', 'kontak_alamat', 'kop_alamat', 'kontak_whatsapp', 'kontak_email', 'kontak_telepon', 'map_latitude', 'map_longitude', 'map_zoom'];
 
 // ── Proses simpan ────────────────────────────────────────────
@@ -70,16 +91,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ->execute([$k, $v, $k]);
     }
 
-    // Helper: ganti seluruh baris tarif untuk satu jenis
-    $replaceTarif = function (string $jenis, array $rows) use ($pdo): void {
+    // Helper: ganti seluruh baris tarif untuk satu jenis.
+    // gelombang_id dipertahankan (NULL = berlaku semua tahap) agar
+    // tarif per gelombang (Indent/G1/G2/G3) tidak hilang saat simpan.
+    $replaceTarif = function (string $jenis, array $rows) use ($pdo, $gelombangMap): void {
         $pdo->prepare('DELETE FROM pembiayaan_tarif WHERE jenis=?')->execute([$jenis]);
         $ins = $pdo->prepare(
-            'INSERT INTO pembiayaan_tarif (jenis, nama, harga_asli, harga_diskon, gratis, gender, urutan) VALUES (?,?,?,?,?,?,?)'
+            'INSERT INTO pembiayaan_tarif (jenis, gelombang_id, nama, harga_asli, harga_diskon, gratis, gender, urutan) VALUES (?,?,?,?,?,?,?,?)'
         );
         $urutan = 0;
         foreach ($rows as $r) {
+            $gid = isset($r['gelombang_id']) && (string) $r['gelombang_id'] !== '' ? (int) $r['gelombang_id'] : null;
+            // Tolak id gelombang yang tidak dikenal (cegah baris yatim).
+            if ($gid !== null && !isset($gelombangMap[$gid])) $gid = null;
             $ins->execute([
                 $jenis,
+                $gid,
                 $r['nama'] ?? null,
                 max(0, (float) ($r['harga_asli'] ?? 0)),
                 ($r['harga_diskon'] ?? '') !== '' ? max(0, (float) $r['harga_diskon']) : null,
@@ -90,13 +117,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     };
 
-    // Pendaftaran
-    $replaceTarif('pendaftaran', [[
-        'nama' => null,
-        'harga_asli' => $_POST['pendaftaran_harga_asli'] ?? 0,
-        'harga_diskon' => $_POST['pendaftaran_harga_diskon'] ?? '',
-        'gratis' => !empty($_POST['pendaftaran_gratis']),
-    ]]);
+    // Pendaftaran (per gelombang: Indent/G1/G2/G3 bisa beda nominal)
+    $pendaftaranRows = [];
+    foreach (($_POST['pendaftaran_nama'] ?? []) as $i => $nama) {
+        $harga = trim((string) ($_POST['pendaftaran_harga_asli'][$i] ?? ''));
+        if (trim((string) $nama) === '' && $harga === '') continue;
+        $pendaftaranRows[] = [
+            'nama' => trim((string) $nama) !== '' ? sanitizeString((string) $nama) : null,
+            'harga_asli' => $harga,
+            'harga_diskon' => $_POST['pendaftaran_harga_diskon'][$i] ?? '',
+            'gratis' => !empty($_POST['pendaftaran_gratis'][$i]),
+            'gelombang_id' => $_POST['pendaftaran_gelombang_id'][$i] ?? null,
+        ];
+    }
+    $replaceTarif('pendaftaran', $pendaftaranRows);
 
     // Administrasi (beberapa model)
     $adminRows = [];
@@ -106,6 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'nama' => sanitizeString($nama),
             'harga_asli' => $_POST['administrasi_harga_asli'][$i] ?? 0,
             'harga_diskon' => $_POST['administrasi_harga_diskon'][$i] ?? '',
+            'gelombang_id' => $_POST['administrasi_gelombang_id'][$i] ?? null,
         ];
     }
     $replaceTarif('administrasi', $adminRows);
@@ -118,6 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'nama' => sanitizeString($nama),
             'harga_asli' => $_POST['wakaf_harga_asli'][$i] ?? 0,
             'harga_diskon' => $_POST['wakaf_harga_diskon'][$i] ?? '',
+            'gelombang_id' => $_POST['wakaf_gelombang_id'][$i] ?? null,
         ];
     }
     $replaceTarif('wakaf', $wakafRows);
@@ -159,7 +195,7 @@ $s->execute($keys);
 foreach ($s->fetchAll() as $r) $data[$r['key_name']] = $r['value'];
 
 $tarif = getPembiayaanTarif($pdo);
-$pendaftaran = $tarif['pendaftaran'][0] ?? [];
+$pendaftaranRows = $tarif['pendaftaran'];
 $administrasi = $tarif['administrasi'];
 $wakaf = $tarif['wakaf'];
 $syahriyah = $tarif['syahriyah'];
@@ -189,22 +225,32 @@ require __DIR__ . '/includes/header.php';
 
 <div class="admin-form-card">
     <h2 class="admin-form-title">Pembiayaan — Biaya Pendaftaran</h2>
-    <div class="form-row">
-        <div class="form-group"><label>Harga asli</label><input class="form-control" type="number" min="0" name="pendaftaran_harga_asli" value="<?= e($pendaftaran['harga_asli'] ?? '2500000') ?>"></div>
-        <div class="form-group"><label>Harga diskon (opsional, tampil coret)</label><input class="form-control" type="number" min="0" name="pendaftaran_harga_diskon" value="<?= isset($pendaftaran['harga_diskon']) ? e($pendaftaran['harga_diskon']) : '' ?>" placeholder="Kosongkan jika tanpa diskon"></div>
-        <div class="form-group"><label><input type="checkbox" name="pendaftaran_gratis" value="1" <?= !empty($pendaftaran['gratis']) ? 'checked' : '' ?>>Gratiskan (tidak perlu bayar)</label></div>
+    <p class="muted">Satu baris per tahap (Indent/G1/G2/G3) — pilih Tahap tiap baris. Baris "Semua tahap" berlaku untuk semua gelombang.</p>
+    <div id="pendaftaran-rows">
+        <?php foreach ($pendaftaranRows as $t): ?>
+            <div class="form-row">
+                <?= $opsiGelombang('pendaftaran_gelombang_id[]', $t['gelombang_id'] ?? null) ?>
+                <div class="form-group"><label>Nama</label><input class="form-control" name="pendaftaran_nama[]" placeholder="Nama biaya" value="<?= e($t['nama'] ?? '') ?>"></div>
+                <div class="form-group"><label>Harga asli</label><input class="form-control" type="number" min="0" name="pendaftaran_harga_asli[]" value="<?= e($t['harga_asli'] ?? '0') ?>"></div>
+                <div class="form-group"><label>Harga diskon (opsional)</label><input class="form-control" type="number" min="0" name="pendaftaran_harga_diskon[]" value="<?= isset($t['harga_diskon']) ? e($t['harga_diskon']) : '' ?>" placeholder="Kosongkan jika tanpa diskon"></div>
+                <div class="form-group"><label>Gratis?</label><select class="form-control" name="pendaftaran_gratis[]"><option value="0">Bayar</option><option value="1" <?= !empty($t['gratis']) ? 'selected' : '' ?>>Gratis</option></select></div>
+                <button type="button" class="btn-sm btn-sm-danger" onclick="this.parentElement.remove()">Hapus</button>
+            </div>
+        <?php endforeach; ?>
     </div>
+    <button type="button" class="btn-sm btn-sm-secondary" onclick="addRow('pendaftaran')">+ Tambah baris</button>
     <p class="muted">Jika gratis dicentang, santri baru otomatis tercentang tanpa membayar.</p>
 </div>
 
 <div class="admin-form-card">
     <h2 class="admin-form-title">Pembiayaan — Administrasi Awal (Kesanggupan)</h2>
-    <p class="muted">Hanya mencatat kesanggupan santri, bukan pembayaran. Santri memilih satu model administrasi dan satu pilihan wakaf.</p>
+    <p class="muted">Satu baris per tahap (Indent/G1/G2/G3) — pilih Tahap tiap baris agar tagihan sesuai gelombang pendaftar. Baris "Semua tahap" berlaku untuk semua gelombang.</p>
 
     <h3>Administrasi (beberapa model)</h3>
     <div id="administrasi-rows">
         <?php foreach ($administrasi as $t): ?>
             <div class="form-row">
+                <?= $opsiGelombang('administrasi_gelombang_id[]', $t['gelombang_id'] ?? null) ?>
                 <div class="form-group"><input class="form-control" name="administrasi_nama[]" placeholder="Nama model" value="<?= e($t['nama']) ?>" required></div>
                 <div class="form-group"><input class="form-control" type="number" min="0" name="administrasi_harga_asli[]" placeholder="Harga asli" value="<?= e($t['harga_asli']) ?>" required></div>
                 <div class="form-group"><input class="form-control" type="number" min="0" name="administrasi_harga_diskon[]" placeholder="Harga diskon (opsional)" value="<?= isset($t['harga_diskon']) ? e($t['harga_diskon']) : '' ?>"></div>
@@ -218,6 +264,7 @@ require __DIR__ . '/includes/header.php';
     <div id="wakaf-rows">
         <?php foreach ($wakaf as $t): ?>
             <div class="form-row">
+                <?= $opsiGelombang('wakaf_gelombang_id[]', $t['gelombang_id'] ?? null) ?>
                 <div class="form-group"><input class="form-control" name="wakaf_nama[]" placeholder="Nama pilihan" value="<?= e($t['nama']) ?>" required></div>
                 <div class="form-group"><input class="form-control" type="number" min="0" name="wakaf_harga_asli[]" placeholder="Harga asli" value="<?= e($t['harga_asli']) ?>" required></div>
                 <div class="form-group"><input class="form-control" type="number" min="0" name="wakaf_harga_diskon[]" placeholder="Harga diskon (opsional)" value="<?= isset($t['harga_diskon']) ? e($t['harga_diskon']) : '' ?>"></div>
@@ -293,14 +340,33 @@ require __DIR__ . '/includes/header.php';
 </form>
 
 <script>
+var GELOMBANG_MAP = <?= json_encode($gelombangMap, JSON_UNESCAPED_UNICODE) ?>;
+function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+}
+function gelombangSelectHtml(kind) {
+    if (kind !== 'pendaftaran' && kind !== 'administrasi' && kind !== 'wakaf') return '';
+    var html = '<div class="form-group"><label>Tahap</label><select class="form-control" name="' + kind + '_gelombang_id[]">';
+    html += '<option value="">Semua tahap</option>';
+    for (var gid in GELOMBANG_MAP) {
+        if (Object.prototype.hasOwnProperty.call(GELOMBANG_MAP, gid)) {
+            html += '<option value="' + gid + '">' + escHtml(GELOMBANG_MAP[gid]) + '</option>';
+        }
+    }
+    return html + '</select></div>';
+}
 function addRow(kind) {
     var wrap = document.getElementById(kind + '-rows');
     var div = document.createElement('div');
     div.className = 'form-row';
     div.innerHTML = ''
+        + gelombangSelectHtml(kind)
         + '<div class="form-group"><input class="form-control" name="' + kind + '_nama[]" placeholder="Nama model" required></div>'
         + '<div class="form-group"><input class="form-control" type="number" min="0" name="' + kind + '_harga_asli[]" placeholder="Harga asli" required></div>'
         + '<div class="form-group"><input class="form-control" type="number" min="0" name="' + kind + '_harga_diskon[]" placeholder="Harga diskon (opsional)"></div>'
+        + (kind === 'pendaftaran' ? '<div class="form-group"><label>Gratis?</label><select class="form-control" name="pendaftaran_gratis[]"><option value="0">Bayar</option><option value="1">Gratis</option></select></div>' : '')
         + '<button type="button" class="btn-sm btn-sm-danger" onclick="this.parentElement.remove()">Hapus</button>';
     wrap.appendChild(div);
 }
