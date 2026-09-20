@@ -46,6 +46,9 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
         ['url' => '/profil',        'freq' => 'monthly', 'priority' => '0.8'],
         ['url' => '/sekapur-sirih', 'freq' => 'monthly', 'priority' => '0.7'],
         ['url' => '/artikel',       'freq' => 'daily',   'priority' => '0.8'],
+        ['url' => '/galeri',        'freq' => 'weekly',  'priority' => '0.7'],
+        ['url' => '/dokumentasi',   'freq' => 'weekly',  'priority' => '0.7'],
+        ['url' => '/alumni',        'freq' => 'monthly', 'priority' => '0.7'],
         ['url' => '/psb',           'freq' => 'weekly',  'priority' => '0.9'],
     ];
     foreach ($staticPages as $p):
@@ -58,10 +61,10 @@ echo '<?xml version="1.0" encoding="UTF-8"?>';
     </url>
     <?php endforeach; ?>
 
-    <!-- Artikel -->
+    <!-- Artikel (URL kanonis: /artikel/{slug} sesuai router index.php) -->
     <?php foreach ($artikels as $artikel): ?>
     <url>
-        <loc><?= BASE_URL ?>/artikel-detail?slug=<?= e($artikel['slug']) ?></loc>
+        <loc><?= BASE_URL ?>/artikel/<?= e($artikel['slug']) ?></loc>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
         <lastmod><?= date('Y-m-d', strtotime($artikel['updated_at'])) ?></lastmod>
