@@ -1,24 +1,21 @@
 # Blokir semua akses langsung ke folder uploads
 # File upload hanya boleh diakses via controller PHP
 
-# Larang eksekusi script apapun di folder ini
-<FilesMatch "\.php$">
+# Larang eksekusi script apapun di folder ini (kompatibel Apache 2.4 + LiteSpeed + PHP-FPM)
+<FilesMatch "\.(php|php3|php4|php5|phtml|phar|cgi|pl|py|rb|sh)$">
     Require all denied
 </FilesMatch>
 
 # Larang eksekusi via mod_cgi / mod_perl / dll
 Options -ExecCGI
 RemoveHandler .php .php3 .php4 .php5 .phtml .phar .cgi .pl .py .rb
-<IfModule mod_php.c>
-  php_flag engine off
-</IfModule>
 
 # Hanya izinkan akses ke gambar raster (SVG ditolak: vektor inline XSS)
 <FilesMatch "\.(jpg|jpeg|png|webp|gif)$">
     Require all granted
 </FilesMatch>
 
-# Semua file lain ditolak
-<FilesMatch "^(?!.*\.(jpg|jpeg|png|webp|gif)$)">
+# Tolak file dotfile & dokumen sensitif
+<FilesMatch "(^\.|^~|\.(env|sql|log|htaccess|htpasswd|ini|bak|swp|tmp)$)">
     Require all denied
 </FilesMatch>

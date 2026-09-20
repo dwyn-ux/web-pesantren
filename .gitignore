@@ -2,6 +2,12 @@ node_modules/
 .env
 uploads/*
 !uploads/.htaccess
+cache/*
+!cache/.htaccess
+!cache/.gitkeep
+logs/*
+!logs/.htaccess
+!logs/.gitkeep
 *.log
 .DS_Store
 Thumbs.db

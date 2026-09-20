@@ -26,13 +26,20 @@ $logoFile = getLogoFile();
 $santriNavName = '';
 $santriNavFoto = false;
 if (!empty($_SESSION['santri_id'])) {
-    $santriId = (int) $_SESSION['santri_id'];
-    $sn = getDB()->prepare('SELECT nama_lengkap FROM pendaftaran WHERE id=?');
-    $sn->execute([$santriId]);
-    $santriNavName = (string) ($sn->fetchColumn() ?: 'Santri');
-    $sf = getDB()->prepare("SELECT 1 FROM berkas_santri WHERE pendaftaran_id=? AND jenis='foto' LIMIT 1");
-    $sf->execute([$santriId]);
-    $santriNavFoto = (bool) $sf->fetchColumn();
+    try {
+        $santriId = (int) $_SESSION['santri_id'];
+        $sn = getDB()->prepare('SELECT nama_lengkap FROM pendaftaran WHERE id=?');
+        $sn->execute([$santriId]);
+        $santriNavName = (string) ($sn->fetchColumn() ?: 'Santri');
+        $sf = getDB()->prepare("SELECT 1 FROM berkas_santri WHERE pendaftaran_id=? AND jenis='foto' LIMIT 1");
+        $sf->execute([$santriId]);
+        $santriNavFoto = (bool) $sf->fetchColumn();
+    } catch (Throwable $e) {
+        // DB belum siap — navbar tetap tampil tanpa data santri
+        error_log('Header santri nav DB error: ' . $e->getMessage());
+        $santriNavName = '';
+        $santriNavFoto = false;
+    }
 }
 
 // Daftar nav links

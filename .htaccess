@@ -15,7 +15,7 @@ ServerSignature Off
 </IfModule>
 
 # ── Proteksi File Sensitif ───────────────────────────────────
-<FilesMatch "(?i)\.(env|sql|log|sh|git|htpasswd|ini|bak|swp|tmp|md)$">
+<FilesMatch "\.(env|sql|log|sh|git|htpasswd|ini|bak|swp|tmp|md)$">
     Require all denied
 </FilesMatch>
 

@@ -50,6 +50,30 @@ define('UPLOADS_PATH', ROOT_PATH . '/uploads');
 define('UPLOADS_URL',  BASE_URL . '/uploads');
 define('CACHE_PATH',   ROOT_PATH . '/cache');
 
+// Pastikan folder logs & cache ada (hindari 500 saat error_log / ratelimit tulis file)
+foreach ([ROOT_PATH . '/logs', ROOT_PATH . '/cache'] as $needDir) {
+    if (!is_dir($needDir)) @mkdir($needDir, 0755, true);
+}
+
+// Polyfill PHP 8 untuk hosting yang masih PHP 7.4 (hindari fatal undefined function → 500)
+if (!function_exists('str_starts_with')) {
+    function str_starts_with(string $haystack, string $needle): bool {
+        return $needle === '' || strncmp($haystack, $needle, strlen($needle)) === 0;
+    }
+}
+if (!function_exists('str_ends_with')) {
+    function str_ends_with(string $haystack, string $needle): bool {
+        if ($needle === '') return true;
+        $len = strlen($needle);
+        return substr($haystack, -$len) === $needle;
+    }
+}
+if (!function_exists('str_contains')) {
+    function str_contains(string $haystack, string $needle): bool {
+        return $needle === '' || strpos($haystack, $needle) !== false;
+    }
+}
+
 // Konfigurasi error reporting
 if (IS_DEBUG) {
     error_reporting(E_ALL);

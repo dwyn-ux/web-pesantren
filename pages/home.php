@@ -10,6 +10,7 @@ $extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/home.css?
 // Ambil info status PSB dari database
 $psbStatus = 'buka';
 $psbTahun  = '2025/2026';
+$pdo = null;
 try {
     $pdo  = getDB();
     $stmt = $pdo->query("SELECT key_name, value FROM pengaturan WHERE key_name IN ('psb_status','psb_tahun')");
@@ -22,6 +23,7 @@ try {
 }
 $landingAlumni = [];
 $galeriDb = [];
+$testimoni = [];
 $mapSettings = ['map_latitude'=>'-7.325','map_longitude'=>'108.350','map_zoom'=>'15','kontak_alamat'=>'Ciamis, Jawa Barat'];
 // ── Timeline PSB (dari pengaturan; fallback ke juknis 2027/2028) ──
 $psbTimeline = [
@@ -31,16 +33,19 @@ $psbTimeline = [
     'hasil'   => '2027-07-01',
 ];
 try {
-    $tlStmt = $pdo->query("SELECT key_name, value FROM pengaturan WHERE key_name IN ('psb_tgl_mulai','psb_tgl_seleksi','psb_tgl_seleksi_selesai','psb_tgl_hasil')");
-    foreach ($tlStmt->fetchAll() as $tlRow) {
-        $tlMap = ['psb_tgl_mulai'=>'mulai','psb_tgl_seleksi'=>'seleksi','psb_tgl_seleksi_selesai'=>'seleksi_selesai','psb_tgl_hasil'=>'hasil'];
-        if (isset($tlMap[$tlRow['key_name']]) && $tlRow['value']) {
-            $psbTimeline[$tlMap[$tlRow['key_name']]] = $tlRow['value'];
+    if ($pdo instanceof PDO) {
+        $tlStmt = $pdo->query("SELECT key_name, value FROM pengaturan WHERE key_name IN ('psb_tgl_mulai','psb_tgl_seleksi','psb_tgl_seleksi_selesai','psb_tgl_hasil')");
+        foreach ($tlStmt->fetchAll() as $tlRow) {
+            $tlMap = ['psb_tgl_mulai'=>'mulai','psb_tgl_seleksi'=>'seleksi','psb_tgl_seleksi_selesai'=>'seleksi_selesai','psb_tgl_hasil'=>'hasil'];
+            if (isset($tlMap[$tlRow['key_name']]) && $tlRow['value']) {
+                $psbTimeline[$tlMap[$tlRow['key_name']]] = $tlRow['value'];
+            }
         }
     }
 } catch (PDOException $e) {}
 try {
-    $landingAlumni = $pdo->query("SELECT * FROM alumni WHERE status='verified' AND tampil_landing=1 ORDER BY updated_at DESC LIMIT 6")->fetchAll();
+    if ($pdo instanceof PDO) {
+        $landingAlumni = $pdo->query("SELECT * FROM alumni WHERE status='verified' AND tampil_landing=1 ORDER BY updated_at DESC LIMIT 6")->fetchAll();
     $testimoni = [];
     $testiRows = $pdo->query("SELECT nama, role, isi, foto FROM testimoni WHERE is_aktif=1 ORDER BY urutan ASC, id DESC LIMIT 3")->fetchAll();
     foreach ($testiRows as $r) {
@@ -62,9 +67,12 @@ try {
             ];
         }
     }
-    $galeriDb = $pdo->query("SELECT nama_file,judul FROM foto_galeri WHERE is_aktif=1 ORDER BY urutan ASC, created_at DESC")->fetchAll();
-    $mapStmt=$pdo->query("SELECT key_name,value FROM pengaturan WHERE key_name IN ('map_latitude','map_longitude','map_zoom','kontak_alamat')");
-    foreach($mapStmt->fetchAll() as $row)$mapSettings[$row['key_name']]=$row['value'];
+    $galeriDb = ($pdo instanceof PDO) ? $pdo->query("SELECT nama_file,judul FROM foto_galeri WHERE is_aktif=1 ORDER BY urutan ASC, created_at DESC")->fetchAll() : [];
+    if ($pdo instanceof PDO) {
+        $mapStmt=$pdo->query("SELECT key_name,value FROM pengaturan WHERE key_name IN ('map_latitude','map_longitude','map_zoom','kontak_alamat')");
+        foreach($mapStmt->fetchAll() as $row)$mapSettings[$row['key_name']]=$row['value'];
+    }
+    }
 } catch (PDOException $e) {}
 ?>
 
