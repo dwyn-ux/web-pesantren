@@ -2,20 +2,26 @@
 # File upload hanya boleh diakses via controller PHP
 
 # Larang eksekusi script apapun di folder ini (kompatibel Apache 2.4 + LiteSpeed + PHP-FPM)
-<FilesMatch "\.(php|php3|php4|php5|phtml|phar|cgi|pl|py|rb|sh)$">
+# (?i) = case-insensitive: blokir .PHP, .PHTML, .HTACCESS juga
+<FilesMatch "(?i)\.(php\d*|php3|php4|php5|php7|php8|phtml|pht|phpt|phps|phar|cgi|pl|py|pyc|rb|sh|shtml|shtm|html?|js|svg|swf|htaccess|htpasswd|user\.ini)$">
     Require all denied
 </FilesMatch>
 
 # Larang eksekusi via mod_cgi / mod_perl / dll
-Options -ExecCGI
-RemoveHandler .php .php3 .php4 .php5 .phtml .phar .cgi .pl .py .rb
+Options -ExecCGI -Indexes
+RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .pht .phar .cgi .pl .py .rb
+RemoveType .php .phtml .html .js .svg
 
-# Hanya izinkan akses ke gambar raster (SVG ditolak: vektor inline XSS)
-<FilesMatch "\.(jpg|jpeg|png|webp|gif)$">
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# Hanya izinkan akses ke gambar raster + pdf/dokumen (SVG/HTML/JS ditolak di atas)
+<FilesMatch "(?i)\.(jpg|jpeg|png|webp|gif|pdf|docx?|xlsx?)$">
     Require all granted
 </FilesMatch>
 
 # Tolak file dotfile & dokumen sensitif
-<FilesMatch "(^\.|^~|\.(env|sql|log|htaccess|htpasswd|ini|bak|swp|tmp)$)">
+<FilesMatch "(^\.|^~|\.(env|sql|log|htpasswd|ini|bak|swp|tmp)$)">
     Require all denied
 </FilesMatch>

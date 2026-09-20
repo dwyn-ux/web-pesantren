@@ -108,7 +108,8 @@ function validateCsrf(): void {
     $sessionToken = $_SESSION['csrf_token'] ?? '';
     $postToken    = $_POST['csrf_token']    ?? '';
 
-    if (!hash_equals($sessionToken, $postToken)) {
+    // Tolak token kosong eksplisit — hash_equals('','') == true, jangan lolos
+    if ($sessionToken === '' || $postToken === '' || !hash_equals($sessionToken, $postToken)) {
         http_response_code(403);
         die('Token keamanan tidak valid. Silakan muat ulang halaman dan coba lagi.');
     }

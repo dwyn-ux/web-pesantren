@@ -27,13 +27,40 @@ function eUrl(string $url): string {
 function sanitizeRichHtml(string $html, string $allowedTags = '<p><br><strong><em><u><h2><h3><h4><ul><ol><li><blockquote><a><img>'): string {
     $html = strip_tags($html, $allowedTags);
     // Buang tag berbahaya yang lolos via allowed list kustom
-    $html = preg_replace('#</?(script|iframe|object|embed|form|input|button|select|textarea|style|link|meta|base|frame|frameset)[^>]*>#i', '', $html);
-    // Buang atribut on*="..."
-    $html = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
-    // Netralkan javascript:/data:text/html/vbscript: di href/src
-    $html = preg_replace('/(href|src|xlink:href)\s*=\s*("|\')\s*javascript:[^"\']*("|\')/i', '$1="#"', $html);
-    $html = preg_replace('/(href|src)\s*=\s*("|\')\s*data:text\/html[^"\']*("|\')/i', '$1="#"', $html);
-    return $html;
+    $html = preg_replace('#</?(script|iframe|object|embed|form|input|button|select|textarea|style|link|meta|base|frame|frameset|svg|math|video|audio|source|details|dialog)[^>]*>#i', '', $html);
+    // Buang atribut on* (quoted, single-quoted, maupun tanpa kutip)
+    $html = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>\/]+)/i', '', $html);
+    // Buang atribut berbahaya: style, formaction, srcset, data-*, tabindex autofocus dsb
+    $html = preg_replace('/\s+(style|formaction|srcset|lowsrc|background|action)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
+    // Decode entity lebih dulu agar javascript: yang di-encode tetap ketangkap
+    $decoded = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    // Deteksi skema berbahaya di href/src/xlink (dengan/tanpa kutip, dengan spasi/control chars)
+    $isDangerous = static function (string $v): bool {
+        $v = preg_replace('/[\x00-\x20]+/', '', strtolower(trim($v)));
+        return str_starts_with($v, 'javascript:') || str_starts_with($v, 'vbscript:')
+            || str_starts_with($v, 'data:') || str_starts_with($v, 'blob:')
+            || str_starts_with($v, 'file:') || str_starts_with($v, 'dict:')
+            || str_starts_with($v, 'gopher:');
+    };
+    // Bersihkan atribut href/src/xlink yang berbahaya (quoted & unquoted)
+    $html = preg_replace_callback(
+        '/\b(href|src|xlink:href)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i',
+        static function (array $m) use ($isDangerous): string {
+            $raw = trim($m[2], "\"'");
+            $raw = trim(html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            // Izinkan hanya http(s), mailto, tel, anchor, dan path relatif
+            if ($isDangerous($raw)) {
+                return $m[1] . '="#"';
+            }
+            // Blokir data:image/svg+xml walau lolos dari data: di atas (defense in depth)
+            if (preg_match('#^\s*data\s*:#i', $raw)) {
+                return $m[1] . '="#"';
+            }
+            return $m[0];
+        },
+        $decoded
+    );
+    return $html ?? '';
 }
 
 /**
@@ -174,16 +201,32 @@ function validateUpload(array $file, array $allowedExt, array $allowedMime, int 
         return $errors;
     }
 
-    // Cek ekstensi (whitelist)
+    // Cek ekstensi (whitelist) + tolak double-extension berbahaya (shell.php.jpg)
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
     if (!in_array($ext, $allowedExt, true)) {
         $errors[] = 'Tipe file tidak diizinkan. Ekstensi yang diperbolehkan: ' . implode(', ', $allowedExt);
+    }
+    $lowerName = strtolower($file['name']);
+    if (preg_match('/\.(php|phtml|phar|phpt|pht|cgi|pl|py|rb|sh|shtml|html?|js|svg)\b/i', $lowerName)) {
+        // Izinkan hanya jika ekstensi akhir adalah allowed DAN tidak ada segmen script di tengah
+        // Pola klasik deface: shell.php.jpg / shell.phtml.png
+        if (!in_array($ext, $allowedExt, true) || preg_match('/\.(php\d*|phtml|phar|phpt|pht|cgi|pl|py|rb|sh|shtml|html?|js|svg)\./i', $lowerName . '.')) {
+            $errors[] = 'Nama file mengandung ekstensi ganda yang tidak diizinkan.';
+        }
     }
 
     // Cek MIME type dari isi file (bukan dari header kiriman)
     $mime = detectMimeType($file['tmp_name']);
     if (!in_array($mime, $allowedMime, true)) {
         $errors[] = 'Tipe MIME file tidak valid (' . e($mime) . ').';
+    }
+
+    // Untuk gambar: wajib lolos getimagesize (gagalkan polyglot header palsu)
+    if (str_starts_with($mime, 'image/')) {
+        $imgInfo = @getimagesize($file['tmp_name']);
+        if ($imgInfo === false) {
+            $errors[] = 'File gambar tidak valid atau rusak.';
+        }
     }
 
     // Cek ukuran
@@ -199,7 +242,26 @@ function validateUpload(array $file, array $allowedExt, array $allowedMime, int 
  * Kembalikan nama file baru (random) atau false jika gagal
  */
 function saveUpload(array $file, string $destDir): string|false {
-    $ext         = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    // Petakan ulang ekstensi dari MIME asli — jangan percaya nama file user.
+    // Mencegah shell.php.jpg tersimpan sebagai .jpg yang masih bisa dieksekusi di config tertentu.
+    $mime = detectMimeType($file['tmp_name']);
+    $mimeToExt = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+        'image/gif' => 'gif',
+        'application/pdf' => 'pdf',
+        'application/msword' => 'doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+        'video/mp4' => 'mp4',
+        'video/webm' => 'webm',
+    ];
+    $ext = $mimeToExt[$mime] ?? strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    // Sanitasi final: hanya alnum, max 5 char
+    $ext = strtolower(preg_replace('/[^a-z0-9]/', '', $ext));
+    if ($ext === '' || strlen($ext) > 5) {
+        return false;
+    }
     $newFilename = bin2hex(random_bytes(16)) . '.' . $ext;
     $destPath    = rtrim($destDir, '/\\') . DIRECTORY_SEPARATOR . $newFilename;
 
@@ -224,42 +286,49 @@ function resizeImage(string $source, string $dest, int $maxWidth = 1200, int $qu
     if ($info === false) return false;
     [$width, $height, $type] = $info;
 
-    if ($width <= $maxWidth) {
-        return $source === $dest ? true : copy($source, $dest);
-    }
-
+    // Selalu re-encode gambar (jangan copy mentah) agar payload PHP di EXIF/komentar
+    // (polyglot JPEG+PHP) hancur. Ini kunci cegah persistence malware/deface via upload.
     $loader = match ($type) {
         IMAGETYPE_JPEG => 'imagecreatefromjpeg',
         IMAGETYPE_PNG  => 'imagecreatefrompng',
         IMAGETYPE_WEBP => 'imagecreatefromwebp',
+        IMAGETYPE_GIF  => 'imagecreatefromgif',
         default        => null,
     };
     $saver = match ($type) {
         IMAGETYPE_JPEG => 'imagejpeg',
         IMAGETYPE_PNG  => 'imagepng',
         IMAGETYPE_WEBP => 'imagewebp',
+        IMAGETYPE_GIF  => 'imagegif',
         default        => null,
     };
 
-    // GD tidak punya fungsi untuk format ini → simpan asli tanpa resize
+    // GD tidak punya fungsi untuk format ini → tolak (jangan copy mentah berpayload)
     if ($loader === null || $saver === null || !function_exists($loader) || !function_exists($saver)) {
-        return copy($source, $dest);
+        return false;
     }
 
-    $ratio  = $maxWidth / $width;
-    $newH   = (int) ($height * $ratio);
-    $canvas = imagecreatetruecolor($maxWidth, $newH);
+    // Re-encode selalu, tanpa upscale: gambar kecil tetap ditulis ulang ukuran asli
+    if ($width <= $maxWidth) {
+        $targetW = $width;
+        $targetH = $height;
+    } else {
+        $ratio  = $maxWidth / $width;
+        $targetW = $maxWidth;
+        $targetH = (int) ($height * $ratio);
+    }
+    $canvas = imagecreatetruecolor($targetW, $targetH);
 
     $src = $loader($source);
     if (!$src) return false;
 
-    // Pertahankan transparansi PNG
-    if ($type === IMAGETYPE_PNG) {
+    // Pertahankan transparansi PNG/GIF/WebP
+    if (in_array($type, [IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_WEBP], true)) {
         imagealphablending($canvas, false);
         imagesavealpha($canvas, true);
     }
 
-    imagecopyresampled($canvas, $src, 0, 0, 0, 0, $maxWidth, $newH, $width, $height);
+    imagecopyresampled($canvas, $src, 0, 0, 0, 0, $targetW, $targetH, $width, $height);
 
     $ok = $type === IMAGETYPE_PNG
         ? $saver($canvas, $dest, 6)

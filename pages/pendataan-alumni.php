@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD']==='POST') {
   if ($data['pesan_kesan']==='') $errors['pesan_kesan']='Pesan dan kesan wajib diisi.';
   $foto=null;
   if (empty($_FILES['foto']['name'])) $errors['foto']='Foto terbaik wajib diunggah.';
-  else { $up=validateUpload($_FILES['foto'],['jpg','jpeg','png','webp'],['image/jpeg','image/png','image/webp'],5242880); if($up)$errors['foto']=implode(' ',$up);else{$foto=saveUpload($_FILES['foto'],UPLOADS_PATH.'/alumni');if($foto){[$w,$h]=getimagesize(UPLOADS_PATH.'/alumni/'.$foto);$orientasi=$w>$h?'landscape':'portrait';}} }
+  else { $up=validateUpload($_FILES['foto'],['jpg','jpeg','png','webp'],['image/jpeg','image/png','image/webp'],5242880); if($up)$errors['foto']=implode(' ',$up);else{$foto=saveUpload($_FILES['foto'],UPLOADS_PATH.'/alumni');if($foto){$pf=UPLOADS_PATH.'/alumni/'.$foto;if(!resizeImage($pf,$pf,1200)){@unlink($pf);$foto=null;$errors['foto']='File gambar tidak valid atau rusak.';}else{[$w,$h]=getimagesize($pf);$orientasi=$w>$h?'landscape':'portrait';}}} }
   if (!$errors) {
     getDB()->prepare("INSERT INTO alumni (nama,tahun_kelulusan,alamat,aktivitas,tempat_kuliah,jurusan,tempat_bekerja,jabatan,pesan_kesan,saran,foto,orientasi) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")->execute([$data['nama'],$data['tahun_kelulusan'],$data['alamat'],$data['aktivitas'],$data['aktivitas']==='kuliah'?$data['tempat_kuliah']:null,$data['aktivitas']==='kuliah'?$data['jurusan']:null,$data['aktivitas']==='bekerja'?$data['tempat_bekerja']:null,$data['aktivitas']==='bekerja'?$data['jabatan']:null,$data['pesan_kesan'],$data['saran']?:null,$foto,$orientasi??'landscape']);
     setFlash('success','Terima kasih. Data alumni berhasil dikirim dan menunggu verifikasi admin.'); redirect('/pendataan-alumni');

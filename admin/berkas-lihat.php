@@ -41,9 +41,15 @@ if ($real === false || !str_starts_with($real, realpath(UPLOADS_PATH) . DIRECTOR
 $path = $real;
 
 while (ob_get_level()) ob_end_clean();
-header('Content-Type: ' . ($berkas['mime_type'] ?: 'application/octet-stream'));
+$serveMime = detectMimeType($path);
+$allowedInline = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+if (!in_array($serveMime, $allowedInline, true)) {
+    $serveMime = 'application/octet-stream';
+}
+header('Content-Type: ' . $serveMime);
 header('Content-Length: ' . filesize($path));
 header('Content-Disposition: inline; filename="' . preg_replace('/[^A-Za-z0-9._-]/', '-', basename($berkas['nama_file'])) . '"');
 header('X-Content-Type-Options: nosniff');
+header('Content-Security-Policy: default-src \'none\'; sandbox');
 readfile($path);
 exit;

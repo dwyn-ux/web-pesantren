@@ -54,8 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $destDir  = ROOT_PATH . '/uploads/artikel/';
             $fotoFile = saveUpload($_FILES['foto'], $destDir);
             if ($fotoFile) {
-                // Resize
-                resizeImage($destDir . $fotoFile, $destDir . $fotoFile, 1200);
+                // Re-encode wajib (hancurkan polyglot PHP di EXIF); gagal = tolak upload
+                if (!resizeImage($destDir . $fotoFile, $destDir . $fotoFile, 1200)) {
+                    @unlink($destDir . $fotoFile);
+                    $errors['foto'] = 'File gambar tidak valid atau rusak.';
+                    $fotoFile = null;
+                }
             } else {
                 $errors['foto'] = 'Gagal menyimpan foto.';
             }

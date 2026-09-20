@@ -406,8 +406,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan
             if ($nominal > $sisa) {
                 $msgCicilan = 'Nominal melebihi sisa tagihan (Rp ' . number_format($sisa, 0, ',', '.') . ').';
             } else {
-                // Simpan bukti transfer
+                // Simpan bukti transfer (gambar di-re-encode untuk hancurkan polyglot)
                 $buktiFile = saveUpload($_FILES['bukti'], UPLOADS_PATH . '/bukti/' . $pendaftaranId);
+                if ($buktiFile !== false) {
+                    $bp = UPLOADS_PATH . '/bukti/' . $pendaftaranId . '/' . $buktiFile;
+                    if (str_starts_with(detectMimeType($bp), 'image/') && !resizeImage($bp, $bp, 1600)) {
+                        @unlink($bp);
+                        $buktiFile = false;
+                    }
+                }
                 if ($buktiFile === false) {
                     $msgCicilan = 'Gagal menyimpan bukti transfer.';
                 } else {
@@ -490,8 +497,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['step'] ?? '') === 'cicilan
             } elseif ($nominalGab > $totalSisa) {
                 $errors['gabungan'] = 'Nominal melebihi total sisa (Rp ' . number_format($totalSisa, 0, ',', '.') . ').';
             } else {
-                // Simpan 1 bukti untuk se-batch, distribusi berurutan dalam transaksi
+                // Simpan 1 bukti untuk se-batch (gambar di-re-encode untuk hancurkan polyglot)
                 $buktiGab = saveUpload($_FILES['bukti'], UPLOADS_PATH . '/bukti/' . $pendaftaranId);
+                if ($buktiGab !== false) {
+                    $bgp = UPLOADS_PATH . '/bukti/' . $pendaftaranId . '/' . $buktiGab;
+                    if (str_starts_with(detectMimeType($bgp), 'image/') && !resizeImage($bgp, $bgp, 1600)) {
+                        @unlink($bgp);
+                        $buktiGab = false;
+                    }
+                }
                 if ($buktiGab === false) {
                     $errors['gabungan'] = 'Gagal menyimpan bukti transfer.';
                 } else {
@@ -1012,9 +1026,9 @@ $ringkasJalurOk = $jalurSaatIni !== null ? count(array_intersect_key($berkasByJe
     </section>
 
     <script>
-    const JALUR_OPTS = <?= json_encode($optsJalur, JSON_UNESCAPED_UNICODE) ?>;
-    const SYARAT_JUKNIS = <?= json_encode($syaratJuknis, JSON_UNESCAPED_UNICODE) ?>;
-    const SIMULASI_DATA = <?= json_encode($simulasi, JSON_UNESCAPED_UNICODE) ?>;
+    const JALUR_OPTS = <?= json_encode($optsJalur, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    const SYARAT_JUKNIS = <?= json_encode($syaratJuknis, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    const SIMULASI_DATA = <?= json_encode($simulasi, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
     const FORMAT_RUPIAH = (n) => 'Rp ' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
     function tampilSyarat(jalur) {

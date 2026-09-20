@@ -29,10 +29,13 @@ ServerSignature Off
 </Files>
 
 # ── Proteksi Folder Internal ─────────────────────────────────
+# Blokir .git walau .htaccess FilesMatch hanya cocok akhiran ekstensi
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
+    RewriteRule ^\.git(/|$) - [F,L]
+    RewriteRule ^\.env - [F,L]
     RewriteRule ^config(/|$) - [F,L]
     RewriteRule ^includes(/|$) - [F,L]
     RewriteRule ^migrations(/|$) - [F,L]

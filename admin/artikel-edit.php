@@ -59,12 +59,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $destDir   = ROOT_PATH . '/uploads/artikel/';
             $newFile   = saveUpload($_FILES['foto'], $destDir);
             if ($newFile) {
-                resizeImage($destDir . $newFile, $destDir . $newFile, 1200);
-                // Hapus foto lama
-                if ($artikel['foto'] && file_exists($destDir . $artikel['foto'])) {
-                    unlink($destDir . $artikel['foto']);
+                if (!resizeImage($destDir . $newFile, $destDir . $newFile, 1200)) {
+                    @unlink($destDir . $newFile);
+                    $errors['foto'] = 'File gambar tidak valid atau rusak.';
+                } else {
+                    // Hapus foto lama hanya jika upload baru sukses
+                    if ($artikel['foto'] && file_exists($destDir . $artikel['foto'])) {
+                        unlink($destDir . $artikel['foto']);
+                    }
+                    $fotoFile = $newFile;
                 }
-                $fotoFile = $newFile;
             } else {
                 $errors['foto'] = 'Gagal menyimpan foto.';
             }

@@ -185,7 +185,25 @@ function requireCalonSantri(): void {
  * Redirect ke URL (relatif dari BASE_URL atau absolut)
  */
 function redirect(string $path): never {
-    $url = str_starts_with($path, 'http') ? $path : BASE_URL . $path;
+    // Hanya izinkan path relatif internal atau URL absolut ke host sendiri.
+    // Cegah open-redirect ke domain attacker bila input user diteruskan ke sini.
+    if (str_starts_with($path, 'http')) {
+        $host = parse_url($path, PHP_URL_HOST);
+        $baseHost = parse_url(BASE_URL, PHP_URL_HOST);
+        if (!$host || !$baseHost || strtolower($host) !== strtolower($baseHost)) {
+            $path = '/';
+        }
+        $url = $path;
+    } else {
+        // Tolak //evil.com dan /\evil
+        if (!str_starts_with($path, '/')) {
+            $path = '/' . ltrim($path, '/');
+        }
+        if (str_starts_with($path, '//')) {
+            $path = '/';
+        }
+        $url = BASE_URL . $path;
+    }
     header('Location: ' . $url);
     exit;
 }

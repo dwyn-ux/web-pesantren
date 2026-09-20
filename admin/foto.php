@@ -174,7 +174,7 @@ require __DIR__ . '/includes/header.php';
 <tr>
   <td><div style="display:flex;align-items:center;gap:12px"><img src="<?=e(BASE_URL.'/uploads/galeri/'.$a['cover'])?>" alt="" style="width:90px;height:58px;object-fit:cover;border-radius:4px"><strong><?=e($a['judul'])?></strong></div></td>
   <td><?=$a['jumlah']?> foto</td>
-  <td><form method="post" onsubmit="return confirm('Hapus album <?=e($a['judul'])?> beserta <?=$a['jumlah']?> fotonya?')"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="judul" value="<?=e($a['judul'])?>"><button class="btn-sm btn-sm-danger">Hapus Album</button></form></td>
+  <td><form method="post" data-confirm-hapus="<?=e('Hapus album ' . $a['judul'] . ' beserta ' . $a['jumlah'] . ' fotonya?')?>" onsubmit="return confirm(this.getAttribute('data-confirm-hapus'))"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="judul" value="<?=e($a['judul'])?>"><button class="btn-sm btn-sm-danger">Hapus Album</button></form></td>
 </tr>
 <?php endforeach; endif; ?>
 </tbody></table></div>

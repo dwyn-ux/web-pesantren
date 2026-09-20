@@ -29,11 +29,16 @@ if (!is_file($path)) {
 }
 
 $mime = detectMimeType($path);
+$allowedInline = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+if (!in_array($mime, $allowedInline, true)) {
+    $mime = 'application/octet-stream';
+}
 while (ob_get_level()) ob_end_clean();
 header('Content-Type: ' . $mime);
 header('Content-Length: ' . filesize($path));
 header('Content-Disposition: inline; filename="bukti-' . $id . '.' . pathinfo($path, PATHINFO_EXTENSION) . '"');
 header('Cache-Control: private, no-store');
 header('X-Content-Type-Options: nosniff');
+header('Content-Security-Policy: default-src \'none\'; sandbox');
 readfile($path);
 exit;

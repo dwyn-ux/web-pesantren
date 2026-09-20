@@ -37,6 +37,30 @@ if ($provider === 'custom' && ($customUrl === '' || $customKey === '')) {
     jsonResponse(['error' => 'Custom endpoint wajib diisi URL dan API key.'], 422);
 }
 
+// ── Validasi SSRF untuk custom endpoint (admin-only tapi tetap kunci) ──
+if ($provider === 'custom') {
+    if (!filter_var($customUrl, FILTER_VALIDATE_URL) || !str_starts_with(strtolower($customUrl), 'https://')) {
+        jsonResponse(['error' => 'Custom URL harus HTTPS yang valid.'], 422);
+    }
+    $parts = parse_url($customUrl);
+    $host = strtolower($parts['host'] ?? '');
+    if ($host === '' || $host === 'localhost' || $host === '127.0.0.1' || $host === '[::1]') {
+        jsonResponse(['error' => 'Custom URL tidak diizinkan (host lokal).'], 422);
+    }
+    // Blokir IP privat / link-local / metadata cloud
+    $resolved = gethostbyname($host);
+    if (filter_var($resolved, FILTER_VALIDATE_IP)) {
+        $isPrivate = !filter_var($resolved, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+        if ($isPrivate || str_starts_with($resolved, '169.254.')) {
+            jsonResponse(['error' => 'Custom URL menunjuk ke jaringan internal.'], 422);
+        }
+    }
+    if (strlen($customUrl) > 500 || strlen($customModel) > 100) {
+        jsonResponse(['error' => 'Custom endpoint terlalu panjang.'], 422);
+    }
+    $customUrl = substr($customUrl, 0, 500);
+}
+
 // ── Konfigurasi per provider ────────────────────────────────
 $configs = [
     'openai'     => [
@@ -119,7 +143,11 @@ curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_HTTPHEADER     => $headers,
     CURLOPT_POSTFIELDS     => json_encode($payload),
-    CURLOPT_TIMEOUT        => 120,
+    CURLOPT_TIMEOUT        => 30,
+    CURLOPT_CONNECTTIMEOUT => 10,
+    CURLOPT_PROTOCOLS      => CURLPROTO_HTTPS,
+    CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
+    CURLOPT_FOLLOWLOCATION => false,
 ]);
 
 $raw       = curl_exec($ch);
