@@ -143,6 +143,7 @@ require_once __DIR__ . '/includes/header.php';
         </form>
     </div>
 
+    <div style="overflow-x:auto;">
     <table class="admin-table">
         <thead>
             <tr>
@@ -331,6 +332,7 @@ require_once __DIR__ . '/includes/header.php';
             <?php endif; ?>
         </tbody>
     </table>
+    </div>
 
     <!-- Pagination -->
     <?php if ($totalHalaman > 1): ?>
