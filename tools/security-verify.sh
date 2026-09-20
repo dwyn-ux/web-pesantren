@@ -41,6 +41,16 @@ echo "== 4. Probe XSS/SQLi reflektif (harus tidak mantul) =="
 if curl -sk -A "$UA" --max-time 15 "$BASE/artikel?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E" | grep -qi 'script>alert'; then fail "XSS reflektif mantul"; else pass "XSS reflektif tidak mantul"; fi
 if curl -sk -A "$UA" --max-time 15 "$BASE/artikel/xxx%27%20OR%201%3D1--" | grep -qi 'sql\|mysql.*error\|syntax'; then fail "pesan SQL bocor"; else pass "tidak ada pesan SQL bocor"; fi
 
+echo "== 5. Cek judol per sub-folder (title harus pesantren, bukan MAHJONG) =="
+for p in artikel galeri dokumentasi alumni profil psb sekapur-sirih; do
+  body=$(curl -sk -A "$UA" --max-time 15 "$BASE/$p/")
+  if echo "$body" | grep -qi -E 'mahjong|sultankoin|musangwin|dewitogel|ratutogel|slot.*qris|gampang maxwin|shop all designs'; then
+    fail "/$p/ MASIH JUDOL"
+  else
+    pass "/$p/ bersih"
+  fi
+done
+
 echo "== 5. SEO/basic =="
 c=$(code_of "$BASE/sitemap.xml"); [ "$c" = "200" ] && pass "sitemap.xml 200" || fail "sitemap.xml -> $c"
 c=$(code_of "$BASE/robots.txt"); [ "$c" = "200" ] && pass "robots.txt 200" || fail "robots.txt -> $c"
