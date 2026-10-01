@@ -20,38 +20,42 @@ if (isCalonSantri() && getCurrentPendaftaran()) {
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validateCsrf();
-    $email = strtolower(trim($_POST['email'] ?? ''));
+    $login = strtolower(trim($_POST['email'] ?? ''));
     $pass  = $_POST['password'] ?? '';
 
-    if (empty($email) || empty($pass)) {
-        $error = 'Email dan password tidak boleh kosong.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Format email tidak valid.';
+    if (empty($login) || empty($pass)) {
+        $error = 'Email/nomor induk dan password tidak boleh kosong.';
+    } elseif (strlen($login) > 150) {
+        $error = 'Format email/nomor induk tidak valid.';
     } else {
-        $rateKey = 'login-santri-' . md5(($_SERVER['REMOTE_ADDR'] ?? 'x') . '|' . $email);
+        $rateKey = 'login-santri-' . md5(($_SERVER['REMOTE_ADDR'] ?? 'x') . '|' . $login);
         if (function_exists('checkLoginRateLimit') && !checkLoginRateLimit($rateKey)) {
             $error = 'Terlalu banyak percobaan. Coba lagi 15 menit.';
         } else try {
             $pdo = getDB();
+            // Login memakai email, nomor induk, atau nomor pendaftaran.
+            // Ketiganya sudah unique di DB (uk_email, uk_nomor_induk, nomor_daftar).
             $stmt = $pdo->prepare(
-                "SELECT id, name, email, password, role, is_active
-                 FROM users WHERE email = ? AND role = 'calon-santri' LIMIT 1"
+                "SELECT u.id, u.name, u.email, u.password, u.role, u.is_active, p.id AS pendaftaran_id
+                 FROM users u
+                 LEFT JOIN pendaftaran p ON p.user_id = u.id
+                 WHERE u.role = 'calon-santri'
+                   AND (u.email = ? OR p.nomor_induk = ? OR p.nomor_daftar = ?)
+                 LIMIT 1"
             );
-            $stmt->execute([$email]);
+            $stmt->execute([$login, $login, $login]);
             $user = $stmt->fetch();
 
             $ok = $user && $user['is_active'] && password_verify($pass, $user['password']);
             if (function_exists('recordLoginAttempt')) recordLoginAttempt($rateKey, (bool) $ok);
             if ($ok) {
-                $cekPendaftaran = $pdo->prepare("SELECT id FROM pendaftaran WHERE user_id = ? LIMIT 1");
-                $cekPendaftaran->execute([$user['id']]);
-                $pendaftaranRow = $cekPendaftaran->fetch();
-                if (!$pendaftaranRow) {
+                $pendaftaranId = (int) ($user['pendaftaran_id'] ?? 0);
+                if ($pendaftaranId <= 0) {
                     $error = 'Akun Anda tidak terhubung ke pendaftaran. Hubungi panitia.';
                 } else {
                     session_regenerate_id(true);
                     $_SESSION['user_id']    = $user['id'];
-                    $_SESSION['santri_id']  = (int) $pendaftaranRow['id'];
+                    $_SESSION['santri_id']  = $pendaftaranId;
                     $_SESSION['user_name']  = $user['name'];
                     $_SESSION['user_email'] = $user['email'];
                     $_SESSION['user_role']  = $user['role'];
@@ -60,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } else {
                 usleep(300000);
-                $error = 'Email atau password salah.';
+                $error = 'Email/nomor induk atau password salah.';
             }
         } catch (PDOException $e) {
             error_log('Login-santri error: ' . $e->getMessage());
@@ -80,13 +84,13 @@ $bodyClass       = 'login-santri-page';
     <form method="post" class="public-form portal-login">
       <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
       <h1 class="section-title">Portal Santri</h1>
-      <p>Masuk dengan email dan password yang Anda buat saat pendaftaran.</p>
+      <p>Masuk dengan email, nomor induk, atau nomor pendaftaran dan password yang Anda buat saat pendaftaran.</p>
       <?php if ($error): ?>
         <div class="flash-message flash-error"><?= e($error) ?></div>
       <?php endif; ?>
       <div class="form-group">
-        <label for="email">Email</label>
-        <input class="form-control" type="email" name="email" id="email"
+        <label for="email">Email / Nomor Induk / Nomor Pendaftaran</label>
+        <input class="form-control" type="text" name="email" id="email"
                required autocomplete="username" autofocus
                value="<?= e($_POST['email'] ?? '') ?>">
       </div>
