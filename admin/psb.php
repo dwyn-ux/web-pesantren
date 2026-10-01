@@ -38,10 +38,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
         }
     } elseif ($_POST['action'] === 'issue_portal') {
-        $id=sanitizeInt($_POST['id']??0);$nomorInduk=strtoupper(sanitizeString($_POST['nomor_induk']??''));$password=$_POST['portal_password']??'';
-        if($id>0 && preg_match('/^[A-Z0-9.\/-]{4,40}$/',$nomorInduk) && ($password===''||strlen($password)>=8)){
-            try{if($password!=='')$pdo->prepare("UPDATE pendaftaran SET nomor_induk=?,portal_password=?,status='diterima' WHERE id=?")->execute([$nomorInduk,password_hash($password,PASSWORD_BCRYPT),$id]);else $pdo->prepare("UPDATE pendaftaran SET nomor_induk=?,status='diterima' WHERE id=?")->execute([$nomorInduk,$id]);setFlash('success','Nomor induk dan akses portal diperbarui.');}catch(PDOException $e){setFlash('error','Nomor induk sudah digunakan atau data tidak valid.');}
-        } else setFlash('error','Nomor induk tidak valid atau password baru kurang dari 8 karakter.');
+        $id          = sanitizeInt($_POST['id'] ?? 0);
+        $nomorInduk  = strtoupper(sanitizeString($_POST['nomor_induk'] ?? ''));
+        $password    = $_POST['portal_password'] ?? '';
+        $konfirmasi  = $_POST['portal_password_confirm'] ?? '';
+
+        if ($id <= 0 || !preg_match('/^[A-Z0-9.\/-]{4,40}$/', $nomorInduk)) {
+            setFlash('error', 'Nomor induk tidak valid.');
+        } elseif ($password !== '' && $password !== $konfirmasi) {
+            setFlash('error', 'Konfirmasi password tidak cocok.');
+        } elseif ($password !== '' && strlen($password) < 8) {
+            setFlash('error', 'Password baru minimal 8 karakter.');
+        } else {
+            $hash = $password !== '' ? password_hash($password, PASSWORD_BCRYPT) : null;
+            // ponytail: sesi login lama tidak di-revoke karena tabel users belum
+            // punya kolom token/sesi. Tambahkan password_changed_at + cek di
+            // isLoggedIn() hanya kalau ada indikasi akun dibajak.
+            $pdo->beginTransaction();
+            try {
+                if ($hash !== null) {
+                    $q = $pdo->prepare("SELECT user_id FROM pendaftaran WHERE id = ?");
+                    $q->execute([$id]);
+                    $userId = (int) $q->fetchColumn();
+                    if ($userId <= 0) throw new PDOException('pendaftaran tanpa user');
+                    $pdo->prepare("UPDATE users SET password = ? WHERE id = ?")->execute([$hash, $userId]);
+                }
+                $pdo->prepare(
+                    "UPDATE pendaftaran SET nomor_induk = ?, portal_password = COALESCE(?, portal_password), status = 'diterima' WHERE id = ?"
+                )->execute([$nomorInduk, $hash, $id]);
+                $pdo->commit();
+                setFlash('success', $hash !== null
+                    ? 'Nomor induk dan password portal berhasil diperbarui.'
+                    : 'Nomor induk berhasil disimpan.');
+                if ($hash !== null) {
+                    kirimTelegram('Password portal direset: ' . telegramInfoPendaftar($pdo, $id), $pdo);
+                }
+            } catch (PDOException $e) {
+                $pdo->rollBack();
+                setFlash('error', 'Gagal menyimpan. Nomor induk mungkin sudah digunakan atau akun tidak ditemukan.');
+            }
+        }
     } elseif ($_POST['action'] === 'update_payment') {
         $itemId=sanitizeInt($_POST['item_id']??0);$payment=sanitizeString($_POST['status_pembayaran']??'');
         if($itemId>0&&in_array($payment,['belum','menunggu','lunas','ditolak'],true)){
@@ -323,7 +359,7 @@ require_once __DIR__ . '/includes/header.php';
                             <?php endif; ?>
                             <br><br><strong>Portal Santri</strong><br>
                             <?php if(!empty($p['nomor_induk'])):?><span class="badge badge-diterima">Aktif: <?=e($p['nomor_induk'])?></span><?php endif;?>
-                            <form method="post" class="admin-form"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><input type="hidden" name="action" value="issue_portal"><input type="hidden" name="id" value="<?=$p['id']?>"><input class="form-control" name="nomor_induk" placeholder="Nomor induk" value="<?=e($p['nomor_induk']??'')?>" required><input class="form-control" type="password" name="portal_password" placeholder="Reset password (opsional)"><button class="btn-sm btn-sm-primary">Simpan Nomor Induk</button></form>
+                            <form method="post" class="admin-form"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><input type="hidden" name="action" value="issue_portal"><input type="hidden" name="id" value="<?=$p['id']?>"><input class="form-control" name="nomor_induk" placeholder="Nomor induk" value="<?=e($p['nomor_induk']??'')?>" required><input class="form-control" type="password" name="portal_password" placeholder="Password baru (kosongkan jika tidak diubah)" autocomplete="new-password"><input class="form-control" type="password" name="portal_password_confirm" placeholder="Ulangi password baru" autocomplete="new-password"><button class="btn-sm btn-sm-primary">Simpan Nomor Induk</button></form>
                         </div>
                     </div>
                 </td>
