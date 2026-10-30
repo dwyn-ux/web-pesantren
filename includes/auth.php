@@ -120,9 +120,9 @@ function requireLogin(): void {
  */
 function requireAdmin(): void {
     if (!isAdmin()) {
-        http_response_code(403);
         // Jika sudah login tapi bukan admin
         if (isLoggedIn()) {
+            http_response_code(403);
             setFlash('error', 'Anda tidak memiliki izin untuk mengakses halaman tersebut.');
             redirect('/');
         }
@@ -204,6 +204,6 @@ function redirect(string $path): never {
         }
         $url = BASE_URL . $path;
     }
-    header('Location: ' . $url);
+    header('Location: ' . $url, true, 302);
     exit;
 }

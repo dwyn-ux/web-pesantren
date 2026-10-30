@@ -128,7 +128,7 @@ CSS;
         <div class="login-error" role="alert"><?= e($loginError) ?></div>
         <?php endif; ?>
 
-        <form method="POST" action="<?= e(BASE_URL . '/login') ?>" class="login-form" novalidate>
+        <form method="POST" action="" class="login-form" novalidate>
             <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
 
             <div class="form-group">
