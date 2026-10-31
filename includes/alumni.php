@@ -7,8 +7,8 @@
  * Output should be escaped with `htmlspecialchars` when rendered.
  */
 
-require_once __DIR__ . '/db.php'; // getDB() helper assumed to exist
-require_once __DIR__ . '/rate_limit.php'; // for rate‑limit helper
+require_once __DIR__ . '/db.php';          // getDB() helper assumed to exist
+require_once __DIR__ . '/rate_limit.php'; // rate‑limit helper
 
 /** Validate alumni data. Returns array of error messages (empty if OK). */
 function validateAlumni(array $data): array {
@@ -38,6 +38,24 @@ function validateAlumni(array $data): array {
         $errors[] = 'Jurusan terlalu panjang.';
     }
 
+    // ==== Job saat kuliah (opsional) ====
+    $hasJob = $data['has_job'] ?? '0'; // expected '1' or '0'
+    $hasJobBool = $hasJob == '1' || $hasJob === true || $hasJob === 1;
+    if ($hasJobBool) {
+        // job title optional, max 100 chars
+        $jobTitle = trim($data['job_title'] ?? '');
+        if ($jobTitle !== '' && mb_strlen($jobTitle) > 100) {
+            $errors[] = 'Nama pekerjaan terlalu panjang.';
+        }
+        // income optional, must be positive integer if provided
+        $incomeRaw = $data['job_income'] ?? '';
+        if ($incomeRaw !== '') {
+            if (!filter_var($incomeRaw, FILTER_VALIDATE_INT, ['options'=>['min_range'=>0]])) {
+                $errors[] = 'Penghasilan harus berupa angka non‑negatif.';
+            }
+        }
+    }
+
     return $errors;
 }
 
@@ -46,24 +64,30 @@ function addAlumni(array $data): bool {
     // Rate‑limit: max 5 submissions per IP per hour
     $rateKey = 'alumni-submit-' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
     if (!checkRateLimit($rateKey, 5, 3600)) {
-        return false; // could also throw exception / return message
+        $_SESSION['alumni_form_errors'] = ['Terlalu banyak pengiriman. Coba lagi nanti.'];
+        return false;
     }
 
     $errors = validateAlumni($data);
     if ($errors) {
-        // Store errors in session for display (or handle as you wish)
         $_SESSION['alumni_form_errors'] = $errors;
         return false;
     }
 
     $pdo = getDB();
     $stmt = $pdo->prepare(
-        'INSERT INTO alumni (name, email, graduation_year, major) VALUES (:name, :email, :year, :major)'
+        'INSERT INTO alumni (name, email, graduation_year, major, has_job, job_title, job_income) '
+        . 'VALUES (:name, :email, :year, :major, :has_job, :job_title, :job_income)'
     );
     $stmt->bindParam(':name', $data['name']);
     $stmt->bindParam(':email', $data['email']);
     $stmt->bindParam(':year', $data['year'], PDO::PARAM_INT);
     $stmt->bindParam(':major', $data['major']);
+    $hasJob = ($data['has_job'] ?? '0') == '1' ? 1 : 0;
+    $stmt->bindValue(':has_job', $hasJob, PDO::PARAM_INT);
+    $stmt->bindValue(':job_title', $data['job_title'] ?? null);
+    $income = $data['job_income'] ?? null;
+    $stmt->bindValue(':job_income', $income !== '' ? $income : null, PDO::PARAM_INT);
     return $stmt->execute();
 }
 
@@ -76,12 +100,19 @@ function updateAlumni(int $id, array $data): bool {
     }
     $pdo = getDB();
     $stmt = $pdo->prepare(
-        'UPDATE alumni SET name = :name, email = :email, graduation_year = :year, major = :major WHERE id = :id'
+        'UPDATE alumni SET name = :name, email = :email, graduation_year = :year, '
+        . 'major = :major, has_job = :has_job, job_title = :job_title, job_income = :job_income '
+        . 'WHERE id = :id'
     );
     $stmt->bindParam(':name', $data['name']);
     $stmt->bindParam(':email', $data['email']);
     $stmt->bindParam(':year', $data['year'], PDO::PARAM_INT);
     $stmt->bindParam(':major', $data['major']);
+    $hasJob = ($data['has_job'] ?? '0') == '1' ? 1 : 0;
+    $stmt->bindValue(':has_job', $hasJob, PDO::PARAM_INT);
+    $stmt->bindValue(':job_title', $data['job_title'] ?? null);
+    $income = $data['job_income'] ?? null;
+    $stmt->bindValue(':job_income', $income !== '' ? $income : null, PDO::PARAM_INT);
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     return $stmt->execute();
 }
