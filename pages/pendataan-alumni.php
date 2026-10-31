@@ -1,34 +1,89 @@
 <?php
-$activePage='alumni'; $pageTitle='Pendataan Alumni | '.APP_NAME; $pageDescription='Form pendataan alumni Pondok Pesantren Ash-Shiddiq.'; $pageCanonical=BASE_URL.'/pendataan-alumni';
-$errors=[]; $data=[];
-if ($_SERVER['REQUEST_METHOD']==='POST') {
-  validateCsrf();
-  foreach (['nama','alamat','aktivitas','tempat_kuliah','jurusan','tempat_bekerja','jabatan','pesan_kesan','saran'] as $key) $data[$key]=sanitizeString($_POST[$key]??'');
-  $data['tahun_kelulusan']=sanitizeInt($_POST['tahun_kelulusan']??0); $now=(int)date('Y');
-  if ($data['nama']==='') $errors['nama']='Nama wajib diisi.';
-  if ($data['tahun_kelulusan']<1950 || $data['tahun_kelulusan']>$now) $errors['tahun_kelulusan']='Tahun kelulusan tidak valid.';
-  if ($data['alamat']==='') $errors['alamat']='Alamat wajib diisi.';
-  if (!in_array($data['aktivitas'],['kuliah','bekerja'],true)) $errors['aktivitas']='Pilih aktivitas saat ini.';
-  if ($data['aktivitas']==='kuliah' && ($data['tempat_kuliah']==='' || $data['jurusan']==='')) $errors['detail']='Tempat kuliah dan jurusan wajib diisi.';
-  if ($data['aktivitas']==='bekerja' && ($data['tempat_bekerja']==='' || $data['jabatan']==='')) $errors['detail']='Tempat bekerja dan posisi wajib diisi.';
-  if ($data['pesan_kesan']==='') $errors['pesan_kesan']='Pesan dan kesan wajib diisi.';
-  $foto=null;
-  if (empty($_FILES['foto']['name'])) $errors['foto']='Foto terbaik wajib diunggah.';
-  else { $up=validateUpload($_FILES['foto'],['jpg','jpeg','png','webp'],['image/jpeg','image/png','image/webp'],5242880); if($up)$errors['foto']=implode(' ',$up);else{$foto=saveUpload($_FILES['foto'],UPLOADS_PATH.'/alumni');if($foto){$pf=UPLOADS_PATH.'/alumni/'.$foto;if(!resizeImage($pf,$pf,1200)){@unlink($pf);$foto=null;$errors['foto']='File gambar tidak valid atau rusak.';}else{[$w,$h]=getimagesize($pf);$orientasi=$w>$h?'landscape':'portrait';}}} }
-  if (!$errors) {
-    getDB()->prepare("INSERT INTO alumni (nama,tahun_kelulusan,alamat,aktivitas,tempat_kuliah,jurusan,tempat_bekerja,jabatan,pesan_kesan,saran,foto,orientasi) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")->execute([$data['nama'],$data['tahun_kelulusan'],$data['alamat'],$data['aktivitas'],$data['aktivitas']==='kuliah'?$data['tempat_kuliah']:null,$data['aktivitas']==='kuliah'?$data['jurusan']:null,$data['aktivitas']==='bekerja'?$data['tempat_bekerja']:null,$data['aktivitas']==='bekerja'?$data['jabatan']:null,$data['pesan_kesan'],$data['saran']?:null,$foto,$orientasi??'landscape']);
-    setFlash('success','Terima kasih. Data alumni berhasil dikirim dan menunggu verifikasi admin.'); redirect('/pendataan-alumni');
-  }
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/csrf.php';
+require_once __DIR__ . '/../includes/alumni.php';
+
+// Halaman ini publik, tapi pengguna dapat mengisi data alumni.
+// Jika ingin hanya admin, tambahkan requireLogin() atau requireAdmin().
+
+ensureCsrfToken();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyCsrfToken($_POST['csrf_token'] ?? '');
+    $alumniData = [
+        'name'      => $_POST['name'] ?? '',
+        'email'     => $_POST['email'] ?? '',
+        'year'      => $_POST['year'] ?? '',
+        'major'     => $_POST['major'] ?? '',
+        'has_job'   => isset($_POST['has_job']) ? '1' : '0',
+        'job_title' => $_POST['job_title'] ?? '',
+        'job_income'=> $_POST['job_income'] ?? '',
+    ];
+    if (addAlumni($alumniData)) {
+        $_SESSION['flash_success'] = 'Data alumni berhasil disimpan.';
+        redirect('/pendataan-alumni');
+    }
+    // errors stored in session
 }
 ?>
-<main class="page-section"><div class="container narrow-container"><div class="section-tag"><span></span><span class="section-tag-text">Jejak Alumni</span><span></span></div><h1 class="section-title">Pendataan Alumni</h1><p class="section-desc">Isi data terbaru dengan benar. Foto sebaiknya foto sendiri, wajah terlihat jelas, dan bukan foto berkelompok.</p>
-<?php if($errors): ?><div class="flash-message flash-error">Periksa kembali: <?= e(implode(' ',array_values($errors))) ?></div><?php endif; ?>
-<form method="post" enctype="multipart/form-data" class="public-form alumni-form"><input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
-<div class="form-grid"><div class="form-group"><label for="nama">Nama lengkap *</label><input class="form-control" id="nama" name="nama" maxlength="120" required value="<?= e($data['nama']??'') ?>"></div><div class="form-group"><label for="tahun_kelulusan">Tahun kelulusan *</label><input class="form-control" type="number" id="tahun_kelulusan" name="tahun_kelulusan" min="1950" max="<?= date('Y') ?>" required value="<?= e((string)($data['tahun_kelulusan']??'')) ?>"></div></div>
-<div class="form-group"><label for="alamat">Alamat saat ini *</label><textarea class="form-control" id="alamat" name="alamat" required><?= e($data['alamat']??'') ?></textarea></div>
-<div class="form-group"><label for="aktivitas">Aktivitas saat ini *</label><select class="form-control" id="aktivitas" name="aktivitas" required><option value="">Pilih</option><option value="kuliah" <?= ($data['aktivitas']??'')==='kuliah'?'selected':'' ?>>Kuliah</option><option value="bekerja" <?= ($data['aktivitas']??'')==='bekerja'?'selected':'' ?>>Bekerja</option></select></div>
-<div id="kuliahFields" class="conditional-fields"><div class="form-grid"><div class="form-group"><label>Tempat kuliah *</label><input class="form-control" name="tempat_kuliah" value="<?= e($data['tempat_kuliah']??'') ?>"></div><div class="form-group"><label>Jurusan *</label><input class="form-control" name="jurusan" value="<?= e($data['jurusan']??'') ?>"></div></div></div>
-<div id="kerjaFields" class="conditional-fields"><div class="form-grid"><div class="form-group"><label>Tempat bekerja *</label><input class="form-control" name="tempat_bekerja" value="<?= e($data['tempat_bekerja']??'') ?>"></div><div class="form-group"><label>Bekerja sebagai *</label><input class="form-control" name="jabatan" value="<?= e($data['jabatan']??'') ?>"></div></div></div>
-<div class="form-group"><label>Pesan dan kesan *</label><textarea class="form-control" name="pesan_kesan" required><?= e($data['pesan_kesan']??'') ?></textarea></div><div class="form-group"><label>Saran</label><textarea class="form-control" name="saran"><?= e($data['saran']??'') ?></textarea></div>
-<div class="form-group"><label>Foto terbaik (sendiri dan terlihat jelas) *</label><input class="form-control" type="file" name="foto" accept="image/jpeg,image/png,image/webp" required><small>JPG, PNG, atau WebP. Maksimal 5 MB.</small></div><button class="btn-primary" type="submit">Kirim Data Alumni</button></form></div></main>
-<?php $extraScripts='<script>(function(){var s=document.getElementById("aktivitas"),k=document.getElementById("kuliahFields"),b=document.getElementById("kerjaFields");function x(){k.hidden=s.value!=="kuliah";b.hidden=s.value!=="bekerja";}s.addEventListener("change",x);x();})();</script>'; ?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Pendataan Alumni</title>
+    <style>
+        .error { color:#c00; }
+        .success { color:#090; }
+    </style>
+</head>
+<body>
+<h1>Pendataan Alumni</h1>
+<?php
+if (!empty($_SESSION['flash_success'])) {
+    echo '<p class="success">' . htmlspecialchars($_SESSION['flash_success']) . '</p>';
+    unset($_SESSION['flash_success']);
+}
+if (!empty($_SESSION['alumni_form_errors'])) {
+    echo '<ul class="error">';
+    foreach ($_SESSION['alumni_form_errors'] as $e) {
+        echo '<li>' . htmlspecialchars($e) . '</li>';
+    }
+    echo '</ul>';    
+    unset($_SESSION['alumni_form_errors']);
+}
+?>
+<form method="post" action="">
+    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+    <label>Nama:<br>
+        <input type="text" name="name" maxlength="100" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
+    </label><br><br>
+    <label>Email:<br>
+        <input type="email" name="email" maxlength="150" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
+    </label><br><br>
+    <label>Tahun Lulus:<br>
+        <input type="number" name="year" min="1900" max="2100" required value="<?= htmlspecialchars($_POST['year'] ?? '') ?>">
+    </label><br><br>
+    <label>Jurusan (opsional):<br>
+        <input type="text" name="major" maxlength="100" value="<?= htmlspecialchars($_POST['major'] ?? '') ?>">
+    </label><br><br>
+    <label><input type="checkbox" name="has_job" id="has_job_chk" <?= (!empty($_POST['has_job']) ? 'checked' : '') ?>> Saya memiliki pekerjaan saat kuliah</label><br><br>
+    <div id="job_fields" style="display:none;">
+        <label>Nama Pekerjaan:<br>
+            <input type="text" name="job_title" maxlength="100" value="<?= htmlspecialchars($_POST['job_title'] ?? '') ?>">
+        </label><br><br>
+        <label>Penghasilan per bulan (Rp):<br>
+            <input type="number" name="job_income" min="0" value="<?= htmlspecialchars($_POST['job_income'] ?? '') ?>">
+        </label><br><br>
+    </div>
+    <button type="submit">Simpan</button>
+</form>
+<script>
+    const chk = document.getElementById('has_job_chk');
+    const div = document.getElementById('job_fields');
+    function toggle(){ div.style.display = chk.checked ? 'block' : 'none'; }
+    chk.addEventListener('change', toggle);
+    toggle();
+</script>
+</body>
+</html>
+?>
