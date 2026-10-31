@@ -7,8 +7,8 @@
  * Output should be escaped with `htmlspecialchars` when rendered.
  */
 
-require_once __DIR__ . '/db.php';          // getDB() helper assumed to exist
-require_once __DIR__ . '/rate_limit.php'; // rate‑limit helper
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/session.php';
 
 /** Validate alumni data. Returns array of error messages (empty if OK). */
 function validateAlumni(array $data): array {
@@ -63,7 +63,7 @@ function validateAlumni(array $data): array {
 function addAlumni(array $data): bool {
     // Rate‑limit: max 5 submissions per IP per hour
     $rateKey = 'alumni-submit-' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
-    if (!checkRateLimit($rateKey, 5, 3600)) {
+    if (!checkLoginRateLimit($rateKey, 5, 3600)) {
         $_SESSION['alumni_form_errors'] = ['Terlalu banyak pengiriman. Coba lagi nanti.'];
         return false;
     }
@@ -73,6 +73,8 @@ function addAlumni(array $data): bool {
         $_SESSION['alumni_form_errors'] = $errors;
         return false;
     }
+
+    recordLoginAttempt($rateKey, false, 5, 3600);
 
     // Inside addAlumni function, after obtaining PDO, check for null
     $pdo = getDB();
