@@ -38,24 +38,6 @@ function validateAlumni(array $data): array {
         $errors[] = 'Jurusan terlalu panjang.';
     }
 
-    // ==== Job saat kuliah (opsional) ====
-    $hasJob = $data['has_job'] ?? '0'; // expected '1' or '0'
-    $hasJobBool = $hasJob == '1' || $hasJob === true || $hasJob === 1;
-    if ($hasJobBool) {
-        // job title optional, max 100 chars
-        $jobTitle = trim($data['job_title'] ?? '');
-        if ($jobTitle !== '' && mb_strlen($jobTitle) > 100) {
-            $errors[] = 'Nama pekerjaan terlalu panjang.';
-        }
-        // income optional, must be positive integer if provided
-        $incomeRaw = $data['job_income'] ?? '';
-        if ($incomeRaw !== '') {
-            if (!filter_var($incomeRaw, FILTER_VALIDATE_INT, ['options'=>['min_range'=>0]])) {
-                $errors[] = 'Penghasilan harus berupa angka non‑negatif.';
-            }
-        }
-    }
-
     return $errors;
 }
 
@@ -85,18 +67,13 @@ function addAlumni(array $data): bool {
     }
 
     $stmt = $pdo->prepare(
-        'INSERT INTO alumni (name, email, graduation_year, major, has_job, job_title, job_income) '
-        . 'VALUES (:name, :email, :year, :major, :has_job, :job_title, :job_income)'
+        'INSERT INTO alumni (name, email, graduation_year, major) '
+        . 'VALUES (:name, :email, :year, :major)'
     );
     $stmt->bindParam(':name', $data['name']);
     $stmt->bindParam(':email', $data['email']);
     $stmt->bindParam(':year', $data['year'], PDO::PARAM_INT);
     $stmt->bindParam(':major', $data['major']);
-    $hasJob = ($data['has_job'] ?? '0') == '1' ? 1 : 0;
-    $stmt->bindValue(':has_job', $hasJob, PDO::PARAM_INT);
-    $stmt->bindValue(':job_title', $data['job_title'] ?? null);
-    $income = $data['job_income'] ?? null;
-    $stmt->bindValue(':job_income', $income !== '' ? $income : null, PDO::PARAM_INT);
     return $stmt->execute();
 }
 
@@ -117,18 +94,12 @@ function updateAlumni(int $id, array $data): bool {
 
     $stmt = $pdo->prepare(
         'UPDATE alumni SET name = :name, email = :email, graduation_year = :year, '
-        . 'major = :major, has_job = :has_job, job_title = :job_title, job_income = :job_income '
-        . 'WHERE id = :id'
+        . 'major = :major WHERE id = :id'
     );
     $stmt->bindParam(':name', $data['name']);
     $stmt->bindParam(':email', $data['email']);
     $stmt->bindParam(':year', $data['year'], PDO::PARAM_INT);
     $stmt->bindParam(':major', $data['major']);
-    $hasJob = ($data['has_job'] ?? '0') == '1' ? 1 : 0;
-    $stmt->bindValue(':has_job', $hasJob, PDO::PARAM_INT);
-    $stmt->bindValue(':job_title', $data['job_title'] ?? null);
-    $income = $data['job_income'] ?? null;
-    $stmt->bindValue(':job_income', $income !== '' ? $income : null, PDO::PARAM_INT);
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     return $stmt->execute();
 }

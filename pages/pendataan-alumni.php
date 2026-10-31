@@ -18,9 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'email'     => $_POST['email'] ?? '',
         'year'      => $_POST['year'] ?? '',
         'major'     => $_POST['major'] ?? '',
-        'has_job'   => isset($_POST['has_job']) ? '1' : '0',
-        'job_title' => $_POST['job_title'] ?? '',
-        'job_income'=> $_POST['job_income'] ?? '',
     ];
     if (addAlumni($alumniData)) {
         $_SESSION['flash_success'] = 'Data alumni berhasil disimpan.';
@@ -69,24 +66,7 @@ if (!empty($_SESSION['alumni_form_errors'])) {
     <label>Jurusan (opsional):<br>
         <input type="text" name="major" maxlength="100" value="<?= htmlspecialchars($_POST['major'] ?? '') ?>">
     </label><br><br>
-    <label><input type="checkbox" name="has_job" id="has_job_chk" <?php echo (!empty($_POST['has_job']) ? 'checked' : ''); ?>> Saya memiliki pekerjaan saat kuliah</label><br><br>
-    <div id="job_fields" style="display:none;">
-        <label>Nama Pekerjaan:<br>
-            <input type="text" name="job_title" maxlength="100" value="<?= htmlspecialchars($_POST['job_title'] ?? '') ?>">
-        </label><br><br>
-        <label>Penghasilan per bulan (Rp):<br>
-            <input type="number" name="job_income" min="0" value="<?= htmlspecialchars($_POST['job_income'] ?? '') ?>">
-        </label><br><br>
-    </div>
     <button type="submit">Simpan</button>
 </form>
-<script>
-    const chk = document.getElementById('has_job_chk');
-    const div = document.getElementById('job_fields');
-    function toggle(){ div.style.display = chk.checked ? 'block' : 'none'; }
-    chk.addEventListener('change', toggle);
-    toggle();
-</script>
 </body>
 </html>
-?>
