@@ -19,6 +19,43 @@ function eUrl(string $url): string {
     return htmlspecialchars(filter_var($url, FILTER_SANITIZE_URL), ENT_QUOTES, 'UTF-8');
 }
 
+function alumniActivityLabel(string $activity): string {
+    return match ($activity) {
+        'kuliah' => 'Kuliah',
+        'bekerja' => 'Bekerja',
+        'kuliah_dan_bekerja' => 'Kuliah dan Bekerja',
+        default => 'Aktivitas belum diisi',
+    };
+}
+
+/** @param array<string, mixed> $alumni */
+function alumniActivityDetails(array $alumni): string {
+    $activity = $alumni['aktivitas'] ?? '';
+    $details = [];
+
+    if (in_array($activity, ['kuliah', 'kuliah_dan_bekerja'], true)) {
+        $study = array_filter([
+            trim((string) ($alumni['tempat_kuliah'] ?? '')),
+            trim((string) ($alumni['jurusan'] ?? '')),
+        ]);
+        if ($study) {
+            $details[] = 'Kuliah: ' . implode(' — ', $study);
+        }
+    }
+
+    if (in_array($activity, ['bekerja', 'kuliah_dan_bekerja'], true)) {
+        $work = array_filter([
+            trim((string) ($alumni['jabatan'] ?? '')),
+            trim((string) ($alumni['tempat_bekerja'] ?? '')),
+        ]);
+        if ($work) {
+            $details[] = 'Bekerja: ' . implode(' di ', $work);
+        }
+    }
+
+    return implode(' · ', $details);
+}
+
 /**
  * Sanitasi HTML kaya (artikel/template) cegah stored XSS.
  * - Buang tag berbahaya (script/iframe/object/embed/form/dll)

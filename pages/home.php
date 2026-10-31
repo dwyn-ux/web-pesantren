@@ -55,11 +55,11 @@ try {
         ];
     }
     if (!$testimoni) {
-        $testiRows = $pdo->query("SELECT nama,tahun_kelulusan,aktivitas,jurusan,jabatan,pesan_kesan,foto,orientasi FROM alumni WHERE status='verified' AND tampil_landing=1 AND foto<>'' ORDER BY updated_at DESC LIMIT 3")->fetchAll();
+        $testiRows = $pdo->query("SELECT nama,tahun_kelulusan,aktivitas,tempat_kuliah,jurusan,tempat_bekerja,jabatan,pesan_kesan,foto,orientasi FROM alumni WHERE status='verified' AND tampil_landing=1 AND foto<>'' ORDER BY updated_at DESC LIMIT 3")->fetchAll();
         foreach ($testiRows as $r) {
-            $role = $r['aktivitas'] === 'kuliah'
-                ? 'Alumni · '.$r['tahun_kelulusan'].' · '.$r['jurusan']
-                : 'Alumni · '.$r['tahun_kelulusan'].' · '.$r['jabatan'];
+            $activityDetails = alumniActivityDetails($r);
+            $role = 'Alumni · ' . $r['tahun_kelulusan'] . ' · '
+                . ($activityDetails !== '' ? $activityDetails : alumniActivityLabel($r['aktivitas']));
             $testimoni[] = [
                 'nama' => $r['nama'], 'pesan_kesan' => $r['pesan_kesan'], 'role' => $role,
                 'orientasi' => $r['orientasi'] === 'portrait' ? 'portrait' : 'landscape',

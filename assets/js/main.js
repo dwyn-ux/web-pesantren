@@ -19,6 +19,30 @@
   const mobileNav   = document.getElementById('mobileNav');
   const mobileClose = document.getElementById('mobileNavClose');
 
+  // ── Field aktivitas pada formulir alumni ───────────────────
+  const alumniActivity = document.getElementById('alumni-activity');
+  const alumniForm = document.querySelector('.alumni-entry-form');
+  if (alumniActivity) {
+    const activityPanels = document.querySelectorAll('[data-alumni-activity-fields]');
+    const updateAlumniFields = function () {
+      activityPanels.forEach(function (panel) {
+        const activities = panel.dataset.alumniActivityFields.split(',');
+        const visible = activities.includes(alumniActivity.value);
+        panel.hidden = !visible;
+        panel.querySelectorAll('[data-alumni-required]').forEach(function (field) {
+          field.required = visible;
+        });
+      });
+    };
+    alumniActivity.addEventListener('change', updateAlumniFields);
+    updateAlumniFields();
+  }
+  if (alumniForm) {
+    alumniForm.addEventListener('invalid', function () {
+      alumniForm.classList.add('was-validated');
+    }, true);
+  }
+
   function openMobileNav() {
     if (!mobileNav) return;
     mobileNav.classList.add('open');
