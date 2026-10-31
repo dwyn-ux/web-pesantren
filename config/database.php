@@ -1,9 +1,10 @@
 <?php
 /**
  * Koneksi database via PDO — singleton pattern
+ * Returns null if configuration is missing or connection fails, allowing callers to handle the error gracefully.
  */
 
-function getDB(): PDO {
+function getDB(): ?PDO {
     static $pdo = null;
 
     if ($pdo !== null) {
@@ -16,9 +17,10 @@ function getDB(): PDO {
     $pass    = $_ENV['DB_PASS'] ?? '';
     $charset = 'utf8mb4';
 
+    // If essential credentials are missing, log and return null instead of terminating.
     if (empty($dbname) || empty($user)) {
         error_log('Database credentials tidak dikonfigurasi di .env');
-        die('Konfigurasi database belum diatur. Silakan hubungi administrator.');
+        return null;
     }
 
     try {
@@ -31,8 +33,10 @@ function getDB(): PDO {
         ]);
     } catch (PDOException $e) {
         error_log('DB Connection failed: ' . $e->getMessage());
-        die('Terjadi kesalahan koneksi database. Silakan coba beberapa saat lagi.');
+        // Return null so the application can show a friendly message.
+        return null;
     }
 
     return $pdo;
 }
+?>

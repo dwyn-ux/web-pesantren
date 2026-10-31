@@ -1,4 +1,13 @@
 <?php
+// Enable detailed error output for debugging (remove in production)
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+require_once __DIR__ . '/../config/constants.php';
+require_once __DIR__ . '/../config/session.php';
+require_once __DIR__ . '/../config/constants.php';
+require_once __DIR__ . '/../config/session.php';
+require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/csrf.php';
 require_once __DIR__ . '/../includes/alumni.php';
@@ -53,7 +62,7 @@ if (!empty($_SESSION['alumni_form_errors'])) {
 }
 ?>
 <form method="post" action="">
-    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token']) ?>">
+    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
     <label>Nama:<br>
         <input type="text" name="name" maxlength="100" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
     </label><br><br>
@@ -66,7 +75,7 @@ if (!empty($_SESSION['alumni_form_errors'])) {
     <label>Jurusan (opsional):<br>
         <input type="text" name="major" maxlength="100" value="<?= htmlspecialchars($_POST['major'] ?? '') ?>">
     </label><br><br>
-    <label><input type="checkbox" name="has_job" id="has_job_chk" <?= (!empty($_POST['has_job']) ? 'checked' : '') ?>> Saya memiliki pekerjaan saat kuliah</label><br><br>
+    <label><input type="checkbox" name="has_job" id="has_job_chk" <?php echo (!empty($_POST['has_job']) ? 'checked' : ''); ?>> Saya memiliki pekerjaan saat kuliah</label><br><br>
     <div id="job_fields" style="display:none;">
         <label>Nama Pekerjaan:<br>
             <input type="text" name="job_title" maxlength="100" value="<?= htmlspecialchars($_POST['job_title'] ?? '') ?>">

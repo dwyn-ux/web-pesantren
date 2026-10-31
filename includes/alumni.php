@@ -74,7 +74,14 @@ function addAlumni(array $data): bool {
         return false;
     }
 
+    // Inside addAlumni function, after obtaining PDO, check for null
     $pdo = getDB();
+    if ($pdo === null) {
+        // Database not configured/connection failed – add friendly error
+        $_SESSION['alumni_form_errors'] = ['Tidak dapat terhubung ke basis data. Silakan coba lagi nanti.'];
+        return false;
+    }
+
     $stmt = $pdo->prepare(
         'INSERT INTO alumni (name, email, graduation_year, major, has_job, job_title, job_income) '
         . 'VALUES (:name, :email, :year, :major, :has_job, :job_title, :job_income)'
@@ -98,7 +105,14 @@ function updateAlumni(int $id, array $data): bool {
         $_SESSION['alumni_form_errors'] = $errors;
         return false;
     }
+    // Inside addAlumni function, after obtaining PDO, check for null
     $pdo = getDB();
+    if ($pdo === null) {
+        // Database not configured/connection failed – add friendly error
+        $_SESSION['alumni_form_errors'] = ['Tidak dapat terhubung ke basis data. Silakan coba lagi nanti.'];
+        return false;
+    }
+
     $stmt = $pdo->prepare(
         'UPDATE alumni SET name = :name, email = :email, graduation_year = :year, '
         . 'major = :major, has_job = :has_job, job_title = :job_title, job_income = :job_income '
@@ -119,7 +133,14 @@ function updateAlumni(int $id, array $data): bool {
 
 /** Delete alumni by ID. */
 function deleteAlumni(int $id): bool {
+    // Inside addAlumni function, after obtaining PDO, check for null
     $pdo = getDB();
+    if ($pdo === null) {
+        // Database not configured/connection failed – add friendly error
+        $_SESSION['alumni_form_errors'] = ['Tidak dapat terhubung ke basis data. Silakan coba lagi nanti.'];
+        return false;
+    }
+
     $stmt = $pdo->prepare('DELETE FROM alumni WHERE id = :id');
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     return $stmt->execute();
@@ -127,7 +148,14 @@ function deleteAlumni(int $id): bool {
 
 /** Retrieve alumni record by ID (or null). */
 function getAlumni(int $id): ?array {
+    // Inside addAlumni function, after obtaining PDO, check for null
     $pdo = getDB();
+    if ($pdo === null) {
+        // Database not configured/connection failed – add friendly error
+        $_SESSION['alumni_form_errors'] = ['Tidak dapat terhubung ke basis data. Silakan coba lagi nanti.'];
+        return false;
+    }
+
     $stmt = $pdo->prepare('SELECT * FROM alumni WHERE id = :id');
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     $stmt->execute();
