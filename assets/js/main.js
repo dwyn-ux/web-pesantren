@@ -19,6 +19,17 @@
   const mobileNav   = document.getElementById('mobileNav');
   const mobileClose = document.getElementById('mobileNavClose');
 
+  // ── Field pekerjaan pada formulir pendataan alumni ─────────
+  const alumniJobCheckbox = document.getElementById('has_job_chk');
+  const alumniJobFields = document.getElementById('job_fields');
+  if (alumniJobCheckbox && alumniJobFields) {
+    const toggleAlumniJobFields = function () {
+      alumniJobFields.hidden = !alumniJobCheckbox.checked;
+    };
+    alumniJobCheckbox.addEventListener('change', toggleAlumniJobFields);
+    toggleAlumniJobFields();
+  }
+
   function openMobileNav() {
     if (!mobileNav) return;
     mobileNav.classList.add('open');
