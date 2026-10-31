@@ -1,10 +1,4 @@
 <?php
-// Enable detailed error output for debugging (remove in production)
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
-require_once __DIR__ . '/../config/constants.php';
-require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/constants.php';
 require_once __DIR__ . '/../config/session.php';
 require_once __DIR__ . '/../config/database.php';
