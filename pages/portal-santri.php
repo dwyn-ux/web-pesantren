@@ -176,8 +176,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$faseSelesai) {
                 if (!in_array($jb, $adaJenis, true)) $jalurKurang[] = $jb;
             }
             if (!empty($wajibKurang) || !empty($jalurKurang)) {
+                $kurangLabels = array_map('berkasLabel', array_merge($wajibKurang, $jalurKurang));
                 $errors['finalisasi'] = 'Berkas belum lengkap. Lengkapi dulu sebelum mengirim: '
-                    . implode(', ', array_merge($wajibKurang, $jalurKurang)) . '.';
+                    . implode(', ', $kurangLabels) . '.';
             } else {
                 $upd = $pdo->prepare(
                     "UPDATE pendaftaran SET status = 'menunggu-verifikasi' WHERE id = ?"
@@ -1080,7 +1081,7 @@ $ringkasJalurOk = $jalurSaatIni !== null ? count(array_intersect_key($berkasByJe
       fd.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
       fd.append('jalur', jalur);
       if (detail) fd.append('jalur_detail', detail);
-      fetch('/api/simulasi-biaya.php', { method: 'POST', body: fd, credentials: 'same-origin' })
+      fetch('<?= BASE_URL ?>/api/simulasi-biaya.php', { method: 'POST', body: fd, credentials: 'same-origin' })
         .then(r => r.json())
         .then(data => {
           if (!data.success) { document.getElementById('simulasiBox').style.display = 'none'; return; }
@@ -1369,7 +1370,7 @@ $ringkasJalurOk = $jalurSaatIni !== null ? count(array_intersect_key($berkasByJe
           <li><a href="?step=berkas-wajib" class="btn-link"><?= e($berkasWajibList[$k]) ?></a></li>
           <?php endforeach; ?>
           <?php foreach ($jalurKurangView as $k): ?>
-          <li><a href="?step=berkas-jalur" class="btn-link"><?= e($k) ?></a></li>
+          <li><a href="?step=berkas-jalur" class="btn-link"><?= e(berkasLabel($k)) ?></a></li>
           <?php endforeach; ?>
         </ul>
       </div>

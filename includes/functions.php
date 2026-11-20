@@ -1042,9 +1042,9 @@ function klaimVoucherAkashi(PDO $pdo, int $pendaftaranId, string $kode): array {
         $lepas->execute([$pendaftaranId, $v['id']]);
         $upd = $pdo->prepare(
             'UPDATE voucher_akashi SET pendaftaran_id = ?
-              WHERE id = ?'
+              WHERE id = ? AND (pendaftaran_id IS NULL OR pendaftaran_id = ?)'
         );
-        $upd->execute([$pendaftaranId, $v['id']]);
+        $upd->execute([$pendaftaranId, $v['id'], $pendaftaranId]);
         if ($upd->rowCount() !== 1) {
             $pdo->rollBack();
             return ['ok' => false, 'pesan' => 'Kode voucher sudah terpakai.'];
@@ -1288,12 +1288,27 @@ function snapshotPembiayaan(PDO $pdo, int $pendaftaranId, string $gender): void 
                         $t['harga_diskon'] = max(0, $dasar - $potong);
                     }
                 }
+            } elseif ($jalur === 'prestasi' && $jalurDetail === 'internal') {
+                // Potongan tunai Akashi (mengurangi ADM Awal)
+                $ak = $pdo->prepare("SELECT juara FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1");
+                $ak->execute([$pendaftaranId]);
+                $j = $ak->fetchColumn() ?: 'juara-3';
+                $akashiCfg = getPotonganAkashi($adminJalur);
+                $potong = $akashiCfg[$j] ?? $akashiCfg['juara-3'];
+                $dasar = (float) $t['harga_asli'];
+                $t['harga_diskon'] = max(0, $dasar - $potong);
             } elseif ($persenPotongan > 0) {
                 // Jalur potongan ADM Awal: nominal dipotong
                 // (jadikan harga_diskon agar tampil coret di UI).
                 $dasar   = (float) $t['harga_asli'];
                 $potong  = round($dasar * $persenPotongan / 100);
                 $t['harga_diskon'] = max(0, $dasar - $potong);
+            }
+        } elseif (!$t['gratis'] && $jenis === 'wakaf') {
+            // Tarif wakaf khusus per jalur (jika diatur admin)
+            $wakafKhusus = $adminJalur[$jalur]['wakaf'] ?? null;
+            if ($wakafKhusus !== null) {
+                $t['harga_diskon'] = (float) $wakafKhusus;
             }
         }
         $add($t);
@@ -1424,6 +1439,9 @@ function jalurTerapkanKeputusan(PDO $pdo, int $pendaftaranId, string $keputusan,
     } elseif ($keputusan === 'ditolak') {
         $pdo->prepare("UPDATE pendaftaran SET jalur='reguler', jalur_detail=NULL, jalur_status='none', jalur_potongan=NULL WHERE id=?")
             ->execute([$pendaftaranId]);
+        // Lepas voucher yang mungkin menempel
+        $pdo->prepare('UPDATE voucher_alumni SET pendaftaran_id = NULL WHERE pendaftaran_id = ?')->execute([$pendaftaranId]);
+        $pdo->prepare('UPDATE voucher_akashi SET pendaftaran_id = NULL WHERE pendaftaran_id = ?')->execute([$pendaftaranId]);
     } else {
         return ['ok' => false, 'pesan' => 'Keputusan tidak valid.'];
     }
@@ -1655,9 +1673,17 @@ function applyTarifToSnapshot(PDO $pdo, int $pendaftaranId): bool {
         return false;
     }
 
+    $akashiJuara = null;
+    if ($row['jalur'] === 'prestasi' && $row['jalur_detail'] === 'internal') {
+        $ak = $pdo->prepare("SELECT juara FROM voucher_akashi WHERE pendaftaran_id = ? LIMIT 1");
+        $ak->execute([$pendaftaranId]);
+        $akashiJuara = $ak->fetchColumn() ?: null;
+    }
+
     $simulasi = getSimulasiBiaya(
         $pdo, $row['jalur'], $row['jalur_detail'],
-        (int) $row['gelombang_id'], $row['jenis_kelamin']
+        (int) $row['gelombang_id'], $row['jenis_kelamin'],
+        $akashiJuara
     );
 
     // Override dengan potongan admin (jika diset utk alumni/dhuafa)

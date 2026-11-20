@@ -16,17 +16,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($act === 'setujui' && $pendaftaranId) {
         $potongan = sanitizeFloat($_POST['jalur_potongan'] ?? 0) ?: null;
-        $pdo->prepare(
-            "UPDATE pendaftaran SET jalur_status='disetujui', jalur_potongan=? WHERE id=?"
-        )->execute([$potongan, $pendaftaranId]);
-        $msg = 'Jalur disetujui.'; $msgType = 'success';
-        kirimTelegram('Jalur disetujui: ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
+        $res = jalurTerapkanKeputusan($pdo, $pendaftaranId, 'disetujui', $potongan);
+        $msg = $res['pesan']; $msgType = $res['ok'] ? 'success' : 'error';
+        if ($res['ok']) {
+            kirimTelegram('Jalur DISETUJUI' . ($potongan !== null ? " ({$potongan}%)" : '') . ': ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
+        }
     } elseif ($act === 'tolak' && $pendaftaranId) {
-        $pdo->prepare(
-            "UPDATE pendaftaran SET jalur_status='ditolak' WHERE id=?"
-        )->execute([$pendaftaranId]);
-        $msg = 'Jalur ditolak.'; $msgType = 'success';
-        kirimTelegram('Jalur ditolak: ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
+        $res = jalurTerapkanKeputusan($pdo, $pendaftaranId, 'ditolak');
+        $msg = $res['pesan']; $msgType = $res['ok'] ? 'success' : 'error';
+        if ($res['ok']) {
+            kirimTelegram('Jalur DITOLAK (kembali reguler): ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
+        }
     } elseif ($act === 'snapshot' && $pendaftaranId) {
         // Trigger snapshot final
         $ok = applyTarifToSnapshot($pdo, $pendaftaranId);
@@ -220,7 +220,7 @@ $labelStatus = [
             <tbody>
                 <?php foreach ($wajibList as $j): ?>
                 <tr>
-                    <td><?= e($j) ?></td>
+                    <td><?= e(berkasLabel($j)) ?></td>
                     <td>
                         <?php if (isset($byJenis[$j])): ?>
                             <span class="badge badge-success">✓ Ada</span>
@@ -245,7 +245,7 @@ $labelStatus = [
             <tbody>
                 <?php foreach ($jalurBerkas as $j): ?>
                 <tr>
-                    <td><?= e($j) ?></td>
+                    <td><?= e(berkasLabel($j)) ?></td>
                     <td>
                         <?php if (isset($byJenis[$j])): ?>
                             <span class="badge badge-success">✓ Ada</span>

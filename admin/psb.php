@@ -296,7 +296,14 @@ require_once __DIR__ . '/includes/header.php';
                                 <button class="btn-sm btn-sm-secondary">Batalkan persetujuan (kembali reguler)</button>
                             </form>
                             <?php elseif (($p['jalur'] ?? 'reguler') !== 'reguler'): ?>
-                            <span class="muted">Tidak perlu verifikasi — potongan diterapkan otomatis.</span>
+                            <span class="muted">Potongan otomatis sesuai juknis.</span>
+                            <form method="post" style="display:inline-block;margin-top:4px;">
+                                <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
+                                <input type="hidden" name="action" value="verifikasi_jalur">
+                                <input type="hidden" name="id" value="<?=$p['id']?>">
+                                <input type="hidden" name="keputusan" value="ditolak">
+                                <button class="btn-sm btn-sm-secondary" onclick="return confirm('Kembalikan santri ini ke jalur Reguler (hapus potongan)?')">Batalkan jalur (kembali reguler)</button>
+                            </form>
                             <?php endif; ?>
                             <br><br><strong>Pembiayaan:</strong><br>
                             <?php syncPembiayaan($pdo,(int)$p['id'],$p['jenis_kelamin']);
