@@ -98,6 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($validation) { $errors[] = basename($name) . ': ' . implode(' ', $validation); continue; }
             $saved = saveUpload($file, UPLOADS_PATH . '/galeri');
             if (!$saved) { $errors[] = basename($name) . ': gagal disimpan.'; continue; }
+            $destPath = UPLOADS_PATH . '/galeri/' . $saved;
+            if (!resizeImage($destPath, $destPath, 1600, 85)) {
+                @unlink($destPath);
+                $errors[] = basename($name) . ': file gambar tidak valid atau rusak.';
+                continue;
+            }
             $caption = $judul !== '' ? $judul : pathinfo(basename($name), PATHINFO_FILENAME);
             $pdo->prepare('INSERT INTO foto_galeri (nama_file,judul,kategori,is_aktif) VALUES (?,?,?,1)')->execute([$saved,$caption,'kehidupan']);
             $uploaded++;
@@ -163,7 +169,7 @@ require __DIR__ . '/includes/header.php';
     <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
     <div class="form-row">
       <div class="form-group"><label>Nama Album *</label><input class="form-control" name="judul" placeholder="contoh: Rihlah" required><small>Foto dengan nama album yang sama akan tampil sebagai 1 kartu di halaman Galeri. Contoh: Rihlah, Wisuda, Halaqah.</small></div>
-      <div class="form-group"><label>Foto *</label><input class="form-control" type="file" name="foto[]" accept=".jpg,.jpeg,.png,.webp" multiple required><small>Bisa pilih banyak foto sekaligus. Maksimal 10 MB per foto.</small></div>
+      <div class="form-group"><label>Foto *</label><input class="form-control" type="file" name="foto[]" accept=".jpg,.jpeg,.png,.webp" multiple required><small>Bisa pilih banyak foto sekaligus. Foto otomatis dikompres & dioptimalkan untuk web.</small></div>
     </div>
     <div class="form-actions"><button class="btn-sm btn-sm-primary">Simpan Album</button></div>
   </form>

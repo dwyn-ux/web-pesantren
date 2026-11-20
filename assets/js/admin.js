@@ -53,11 +53,13 @@
         }, 5000);
     });
 
-    // Auto-kompres gambar upload (foto sampul artikel, foto profil, dll.)
+    // Auto-kompres gambar upload (foto sampul artikel, album galeri, foto profil, dll.)
     function inisialisasiKompresUpload() {
         if (typeof window.kompresGambar !== 'function') return;
 
-        var inputs = document.querySelectorAll('input[type="file"]#foto, input[type="file"][data-compress="true"]');
+        var selector = 'input[type="file"]#foto, input[type="file"][name^="foto"], input[type="file"][accept*="image"], input[type="file"][accept*=".jpg"], input[type="file"][data-compress="true"]';
+        var inputs = document.querySelectorAll(selector);
+
         inputs.forEach(function (input) {
             if (input.dataset.compressBound) return;
             input.dataset.compressBound = '1';
@@ -74,8 +76,21 @@
             var submitBtns = form ? form.querySelectorAll('button[type="submit"]') : [];
 
             input.addEventListener('change', function () {
-                var file = input.files && input.files[0];
-                if (!file || !/^image\//.test(file.type || '')) {
+                var files = input.files;
+                if (!files || files.length === 0) {
+                    infoBox.style.display = 'none';
+                    return;
+                }
+
+                // Filter hanya file gambar
+                var imageFiles = [];
+                for (var f = 0; f < files.length; f++) {
+                    if (/^image\//.test(files[f].type || '') || /\.(jpe?g|png|webp)$/i.test(files[f].name || '')) {
+                        imageFiles.push(files[f]);
+                    }
+                }
+
+                if (imageFiles.length === 0) {
                     infoBox.style.display = 'none';
                     return;
                 }
@@ -86,41 +101,70 @@
                     return (b / 1048576).toFixed(2) + ' MB';
                 }
 
-                var origSize = file.size;
+                var totalOrigSize = 0;
+                for (var o = 0; o < imageFiles.length; o++) {
+                    totalOrigSize += imageFiles[o].size;
+                }
+
+                var isMultiple = imageFiles.length > 1;
                 infoBox.style.display = 'flex';
                 infoBox.innerHTML = '<span style="color:#d97706;display:inline-flex;align-items:center;gap:6px;">' +
-                    '⏳ Mengompres & mengoptimalkan gambar...</span>';
+                    '⏳ Mengompres & mengoptimalkan ' + (isMultiple ? imageFiles.length + ' foto...' : 'gambar...') + '</span>';
 
                 submitBtns.forEach(function (btn) { btn.disabled = true; });
 
-                // Target 800KB, max 1600px sisi terpanjang
-                window.kompresGambar(file, 819200, 1600).then(function (compressed) {
+                // Kompres semua gambar paralel (Target 800KB, max 1600px)
+                var compressPromises = imageFiles.map(function (file) {
+                    return window.kompresGambar(file, 819200, 1600);
+                });
+
+                Promise.all(compressPromises).then(function (compressedList) {
                     submitBtns.forEach(function (btn) { btn.disabled = false; });
 
-                    if (window.DataTransfer && compressed instanceof File) {
+                    var totalNewSize = 0;
+                    if (window.DataTransfer) {
                         try {
                             var dt = new DataTransfer();
-                            dt.items.add(compressed);
+                            compressedList.forEach(function (c) {
+                                if (c instanceof File) {
+                                    dt.items.add(c);
+                                    totalNewSize += c.size;
+                                }
+                            });
                             input.files = dt.files;
                         } catch (e) {
                             // Abaikan jika browser membatasi modifikasi input.files
                         }
                     }
 
-                    var newSize = compressed.size || origSize;
-                    var thumbUrl = (window.URL || window.webkitURL).createObjectURL(compressed);
-                    var detail = origSize > newSize
-                        ? 'Dioptimalkan: ' + fmt(origSize) + ' &rarr; <strong style="color:#0f172a;">' + fmt(newSize) + '</strong> (Hemat ' + Math.round((1 - newSize / origSize) * 100) + '%)'
-                        : 'Ukuran siap upload: <strong style="color:#0f172a;">' + fmt(newSize) + '</strong>';
+                    if (totalNewSize === 0) {
+                        compressedList.forEach(function (c) { totalNewSize += c.size || 0; });
+                    }
 
-                    infoBox.innerHTML = '<img src="' + thumbUrl + '" style="width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid #cbd5e1;flex-shrink:0;" alt="Preview">' +
+                    var savedPercent = totalOrigSize > totalNewSize ? Math.round((1 - totalNewSize / totalOrigSize) * 100) : 0;
+                    var detail = totalOrigSize > totalNewSize
+                        ? 'Dioptimalkan: ' + fmt(totalOrigSize) + ' &rarr; <strong style="color:#0f172a;">' + fmt(totalNewSize) + '</strong> (Hemat ' + savedPercent + '%)'
+                        : 'Ukuran siap upload: <strong style="color:#0f172a;">' + fmt(totalNewSize) + '</strong>';
+
+                    // Thumbnail preview
+                    var thumbsHtml = '';
+                    var maxThumbs = Math.min(3, compressedList.length);
+                    for (var t = 0; t < maxThumbs; t++) {
+                        var thumbUrl = (window.URL || window.webkitURL).createObjectURL(compressedList[t]);
+                        thumbsHtml += '<img src="' + thumbUrl + '" style="width:42px;height:42px;object-fit:cover;border-radius:4px;border:1px solid #cbd5e1;flex-shrink:0;margin-right:4px;" alt="Thumb">';
+                    }
+                    if (compressedList.length > 3) {
+                        thumbsHtml += '<span style="font-size:11px;color:#64748b;margin-right:6px;">+' + (compressedList.length - 3) + ' lagi</span>';
+                    }
+
+                    infoBox.innerHTML = '<div style="display:flex;align-items:center;flex-shrink:0;">' + thumbsHtml + '</div>' +
                         '<div>' +
-                        '<div style="color:#16a34a;font-weight:600;margin-bottom:2px;">✓ Gambar siap diunggah</div>' +
+                        '<div style="color:#16a34a;font-weight:600;margin-bottom:2px;">✓ ' + (isMultiple ? compressedList.length + ' foto siap diunggah' : 'Gambar siap diunggah') + '</div>' +
                         '<div style="color:#64748b;font-size:11px;">' + detail + '</div>' +
                         '</div>';
                 }).catch(function () {
                     submitBtns.forEach(function (btn) { btn.disabled = false; });
-                    infoBox.innerHTML = '<span style="color:#16a34a;">✓ Gambar dipilih (' + fmt(origSize) + ')</span>';
+                    infoBox.innerHTML = '<span style="color:#16a34a;">✓ ' + imageFiles.length + ' file dipilih (' + fmt(totalOrigSize) + ')</span>';
                 });
             });
         });
