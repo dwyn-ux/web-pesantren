@@ -62,6 +62,11 @@ if ($provider === 'custom') {
 }
 
 // ── Konfigurasi per provider ────────────────────────────────
+$openrouterModel = $_ENV['OPENROUTER_MODEL'] ?? 'particle-ai/particle-1:free';
+if ($openrouterModel === 'minimax/minimax-m3:free' || $openrouterModel === '') {
+    $openrouterModel = 'particle-ai/particle-1:free';
+}
+
 $configs = [
     'openai'     => [
         'key'   => $_ENV['OPENAI_API_KEY'] ?? '',
@@ -75,7 +80,7 @@ $configs = [
     ],
     'openrouter' => [
         'key'   => $_ENV['OPENROUTER_API_KEY'] ?? '',
-        'model' => $_ENV['OPENROUTER_MODEL'] ?? 'minimax/minimax-m3:free',
+        'model' => $openrouterModel,
         'url'   => 'https://openrouter.ai/api/v1/chat/completions',
     ],
     'gemini'     => [
@@ -156,9 +161,14 @@ $curlError = curl_error($ch);
 curl_close($ch);
 
 if ($raw === false || $status < 200 || $status >= 300) {
+    $detail = '';
+    if (!empty($raw)) {
+        $errObj = json_decode($raw, true);
+        $detail = $errObj['error']['message'] ?? (is_string($errObj['error'] ?? null) ? $errObj['error'] : '');
+    }
     jsonResponse([
         'error' => 'Permintaan AI gagal'
-            . ($curlError ? ': ' . $curlError : '. Periksa API key/model (HTTP ' . $status . ').')
+            . ($curlError ? ': ' . $curlError : ($detail ? ': ' . $detail : '. Periksa API key/model (HTTP ' . $status . ').'))
     ], 502);
 }
 
@@ -169,20 +179,15 @@ $response = json_decode($raw, true);
 if ($provider === 'gemini') {
     $text = $response['candidates'][0]['content']['parts'][0]['text'] ?? '';
 } else {
-    $text = $response['choices'][0]['message']['content'] ?? '';
-}
-
-// Bersihkan markdown fence jika ada
-$text = preg_replace('/^```(?:json)?\s*|\s*```$/i', '', $text);
-
-// Coba extract JSON dari teks (kadang AI nambahin teks di luar JSON)
-$article = json_decode($text, true);
-if (!is_array($article) || empty($article['isi'])) {
-    // Coba cari JSON object di dalam teks
-    if (preg_match('/\{[\s\S]*\"judul\"[\s\S]*\}/', $text, $m)) {
-        $article = json_decode($m[0], true);
+    $msg  = $response['choices'][0]['message'] ?? [];
+    $text = $msg['content'] ?? '';
+    // Jika content kosong tetapi ada reasoning yang berisi teks/JSON
+    if ($text === '' && !empty($msg['reasoning'])) {
+        $text = $msg['reasoning'];
     }
 }
+
+$article = parseAiArticleJson($text);
 if (!is_array($article) || empty($article['isi'])) {
     jsonResponse(['error' => 'Format jawaban AI tidak valid. Coba lagi.'], 502);
 }
@@ -195,3 +200,68 @@ jsonResponse([
         'isi'       => sanitizeRichHtml($article['isi']),
     ],
 ]);
+
+/**
+ * Ekstrak dan parse JSON artikel yang dihasilkan oleh AI
+ */
+function parseAiArticleJson(string $rawText): ?array {
+    $text = trim($rawText);
+    if ($text === '') {
+        return null;
+    }
+
+    // 1. Ekstrak dari markdown code fence jika ada (```json ... ```)
+    if (preg_match('/```(?:json)?\s*([\s\S]*?)\s*```/i', $text, $matches)) {
+        $text = trim($matches[1]);
+    }
+
+    // 2. Coba parse langsung
+    $data = json_decode($text, true);
+    if (is_array($data) && !empty($data['isi'])) {
+        return $data;
+    }
+
+    // 3. Jika ada teks pengantar/penutup, ambil blok JSON { ... }
+    $jsonCandidate = $text;
+    if (preg_match('/\{[\s\S]*\}/', $text, $blockMatch)) {
+        $jsonCandidate = $blockMatch[0];
+        $data = json_decode($jsonCandidate, true);
+        if (is_array($data) && !empty($data['isi'])) {
+            return $data;
+        }
+    }
+
+    // 4. Tangani unescaped control characters (newline, tab) di dalam string JSON
+    // Umum terjadi saat AI menulis artikel HTML panjang dengan multi-line
+    $fixedJson = preg_replace_callback('/"((?:[^"\\\\]|\\\\.)*)"/s', function ($m) {
+        $escaped = str_replace(
+            ["\r\n", "\r", "\n", "\t"],
+            ['\n', '\n', '\n', '\t'],
+            $m[1]
+        );
+        return '"' . $escaped . '"';
+    }, $jsonCandidate);
+
+    $data = json_decode($fixedJson, true);
+    if (is_array($data) && !empty($data['isi'])) {
+        return $data;
+    }
+
+    // 5. Fallback regex extraction per field jika JSON tetap gagal diparse
+    $fallback = [];
+    if (preg_match('/"judul"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/s', $text, $m)) {
+        $fallback['judul'] = stripcslashes($m[1]);
+    }
+    if (preg_match('/"ringkasan"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/s', $text, $m)) {
+        $fallback['ringkasan'] = stripcslashes($m[1]);
+    }
+    if (preg_match('/"isi"\s*:\s*"([\s\S]*?)"\s*[\}\],]/s', $text, $m)) {
+        $fallback['isi'] = stripcslashes($m[1]);
+    }
+
+    if (!empty($fallback['isi'])) {
+        return $fallback;
+    }
+
+    return null;
+}
