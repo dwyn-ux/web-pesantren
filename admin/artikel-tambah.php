@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_FILES['foto'],
             ['jpg','jpeg','png','webp'],
             ['image/jpeg','image/png','image/webp'],
-            2097152 // 2 MB
+            10485760 // 10 MB (otomatis dikompres client-side & di-resize server-side)
         );
         if (!empty($uploadErrors)) {
             $errors['foto'] = implode(' ', $uploadErrors);
@@ -188,7 +188,7 @@ require_once __DIR__ . '/includes/header.php';
                     <label for="foto">Foto Sampul</label>
                     <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp"
                            class="form-control<?= isset($errors['foto']) ? ' is-error' : '' ?>">
-                    <p class="muted">JPG/PNG/WebP, maks. 2MB. Akan di-resize otomatis ke 1200px.</p>
+                    <p class="muted">Format: JPG, PNG, WebP. Gambar dikompres & dioptimalkan otomatis untuk web.</p>
                     <?php if (isset($errors['foto'])): ?>
                     <p class="field-error"><?= e($errors['foto']) ?></p>
                     <?php endif; ?>

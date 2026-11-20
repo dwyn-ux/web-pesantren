@@ -16,7 +16,7 @@
     targetBytes = targetBytes || 1048576; // 1MB
     maxDim = maxDim || 1600;
     return new Promise(function (resolve) {
-      if (!file || !/^image\//.test(file.type || '') || file.size <= targetBytes) {
+      if (!file || !/^image\//.test(file.type || '')) {
         resolve(file);
         return;
       }
@@ -27,6 +27,10 @@
         var w = img.naturalWidth || img.width;
         var h = img.naturalHeight || img.height;
         if (!w || !h) { resolve(file); return; }
+        if (w <= maxDim && h <= maxDim && file.size <= targetBytes) {
+          resolve(file);
+          return;
+        }
         var skala = Math.min(1, maxDim / Math.max(w, h));
         var nw = Math.max(1, Math.round(w * skala));
         var nh = Math.max(1, Math.round(h * skala));
