@@ -67,7 +67,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-        $publishedAt = $data['status'] === 'published' ? date('Y-m-d H:i:s') : null;
+        $rawPub = trim($_POST['published_at'] ?? '');
+        $publishedAt = null;
+        if ($data['status'] === 'published') {
+            $ts = $rawPub !== '' ? strtotime($rawPub) : false;
+            $publishedAt = $ts ? date('Y-m-d H:i:s', $ts) : date('Y-m-d H:i:s');
+        } elseif ($rawPub !== '') {
+            $ts = strtotime($rawPub);
+            $publishedAt = $ts ? date('Y-m-d H:i:s', $ts) : null;
+        }
+
         $pdo->prepare(
             "INSERT INTO artikel
                 (slug, judul, ringkasan, isi, foto, kategori, status, penulis_id, published_at)
@@ -165,6 +174,14 @@ require_once __DIR__ . '/includes/header.php';
                         <option value="draft"     <?= ($data['status'] ?? 'draft') === 'draft'     ? 'selected' : '' ?>>Draft</option>
                         <option value="published" <?= ($data['status'] ?? '') === 'published' ? 'selected' : '' ?>>Published</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="published_at">Tanggal Tayang / Publikasi</label>
+                    <input type="datetime-local" id="published_at" name="published_at"
+                           class="form-control"
+                           value="<?= e($_POST['published_at'] ?? date('Y-m-d\TH:i')) ?>">
+                    <p class="muted">Bisa diatur tanggal lampau jika telat upload (backdate).</p>
                 </div>
 
                 <div class="form-group">

@@ -51,6 +51,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/admin/foto');
     }
 
+    if ($action === 'update_date') {
+        $judul = trim((string) ($_POST['judul'] ?? ''));
+        $rawTgl = trim((string) ($_POST['tanggal'] ?? ''));
+        if ($rawTgl !== '') {
+            $ts = strtotime($rawTgl);
+            $newCreatedAt = $ts ? date('Y-m-d H:i:s', $ts) : date('Y-m-d H:i:s');
+            if ($judul === '(tanpa judul)' || $judul === '') {
+                $pdo->prepare("UPDATE foto_galeri SET created_at = ? WHERE judul IS NULL OR judul = ''")->execute([$newCreatedAt]);
+            } else {
+                $pdo->prepare("UPDATE foto_galeri SET created_at = ? WHERE judul = ?")->execute([$newCreatedAt, $judul]);
+            }
+            setFlash('success', 'Tanggal album "' . ($judul ?: 'Tanpa Judul') . '" berhasil diperbarui.');
+        }
+        redirect('/admin/foto');
+    }
+
     // ── Foto halaman depan & profil (hero, mudir, gedung, pengajar, fasilitas) ──
     if ($action === 'home' || $action === 'profil') {
         $savedHome = [];
@@ -85,8 +101,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/admin/foto');
     }
 
-    $judul = sanitizeString($_POST['judul'] ?? '');
-    $files = $_FILES['foto'] ?? null;
+    $judul   = sanitizeString($_POST['judul'] ?? '');
+    $rawTgl  = trim($_POST['tanggal'] ?? '');
+    $tsTgl   = $rawTgl !== '' ? strtotime($rawTgl) : false;
+    $albumCreatedAt = $tsTgl ? date('Y-m-d H:i:s', $tsTgl) : date('Y-m-d H:i:s');
+    $files   = $_FILES['foto'] ?? null;
     if (!$files || !isset($files['name']) || !is_array($files['name'])) {
         $errors[] = 'Pilih minimal satu foto.';
     } else {
@@ -105,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 continue;
             }
             $caption = $judul !== '' ? $judul : pathinfo(basename($name), PATHINFO_FILENAME);
-            $pdo->prepare('INSERT INTO foto_galeri (nama_file,judul,kategori,is_aktif) VALUES (?,?,?,1)')->execute([$saved,$caption,'kehidupan']);
+            $pdo->prepare('INSERT INTO foto_galeri (nama_file,judul,kategori,is_aktif,created_at) VALUES (?,?,?,1,?)')->execute([$saved,$caption,'kehidupan',$albumCreatedAt]);
             $uploaded++;
         }
         if ($uploaded && !$errors) { setFlash('success', $uploaded . ' foto berhasil ditambahkan ke galeri.'); redirect('/admin/foto'); }
@@ -113,14 +132,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Kelompokkan foto berdasarkan judul → satu album = satu baris
-$rows = $pdo->query('SELECT nama_file, judul FROM foto_galeri ORDER BY created_at ASC, id ASC')->fetchAll();
+$rows = $pdo->query('SELECT nama_file, judul, created_at FROM foto_galeri ORDER BY created_at DESC, id DESC')->fetchAll();
 $albums = [];
 foreach ($rows as $r) {
     $key = trim((string) $r['judul']) !== '' ? $r['judul'] : '(tanpa judul)';
-    if (!isset($albums[$key])) $albums[$key] = ['judul' => $key, 'cover' => $r['nama_file'], 'jumlah' => 0];
+    if (!isset($albums[$key])) {
+        $albums[$key] = [
+            'judul'      => $key,
+            'cover'      => $r['nama_file'],
+            'jumlah'     => 0,
+            'created_at' => $r['created_at'],
+        ];
+    }
     $albums[$key]['jumlah']++;
 }
-$albums = array_reverse(array_values($albums)); // album terbaru di depan
+$albums = array_values($albums); // album terbaru di depan
 $adminTitle = 'Galeri Foto'; $adminPage = 'admin/foto';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -168,17 +194,27 @@ require __DIR__ . '/includes/header.php';
   <form method="post" enctype="multipart/form-data" class="admin-form">
     <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
     <div class="form-row">
-      <div class="form-group"><label>Nama Album *</label><input class="form-control" name="judul" placeholder="contoh: Rihlah" required><small>Foto dengan nama album yang sama akan tampil sebagai 1 kartu di halaman Galeri. Contoh: Rihlah, Wisuda, Halaqah.</small></div>
+      <div class="form-group"><label>Nama Album *</label><input class="form-control" name="judul" placeholder="contoh: Rihlah" required><small>Foto dengan nama album yang sama akan tampil sebagai 1 kartu di halaman Galeri.</small></div>
+      <div class="form-group"><label>Tanggal Album</label><input class="form-control" type="date" name="tanggal" value="<?= date('Y-m-d') ?>"><small>Atur tanggal lampau jika telat upload (backdate).</small></div>
       <div class="form-group"><label>Foto *</label><input class="form-control" type="file" name="foto[]" accept=".jpg,.jpeg,.png,.webp" multiple required><small>Bisa pilih banyak foto sekaligus. Foto otomatis dikompres & dioptimalkan untuk web.</small></div>
     </div>
     <div class="form-actions"><button class="btn-sm btn-sm-primary">Simpan Album</button></div>
   </form>
 </div>
-<div class="admin-table-wrap"><div class="table-head"><h2>Daftar Album Galeri</h2></div><table class="admin-table"><thead><tr><th>Album</th><th>Jumlah Foto</th><th></th></tr></thead><tbody>
-<?php if (!$albums): ?><tr><td colspan="3"><div class="table-empty">Belum ada foto galeri.</div></td></tr>
+<div class="admin-table-wrap"><div class="table-head"><h2>Daftar Album Galeri</h2></div><table class="admin-table"><thead><tr><th>Album</th><th>Tanggal</th><th>Jumlah Foto</th><th></th></tr></thead><tbody>
+<?php if (!$albums): ?><tr><td colspan="4"><div class="table-empty">Belum ada foto galeri.</div></td></tr>
 <?php else: foreach ($albums as $a): ?>
 <tr>
   <td><div style="display:flex;align-items:center;gap:12px"><img src="<?=e(BASE_URL.'/uploads/galeri/'.$a['cover'])?>" alt="" style="width:90px;height:58px;object-fit:cover;border-radius:4px"><strong><?=e($a['judul'])?></strong></div></td>
+  <td>
+    <form method="post" style="display:inline-flex;align-items:center;gap:6px;">
+      <input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>">
+      <input type="hidden" name="action" value="update_date">
+      <input type="hidden" name="judul" value="<?=e($a['judul'])?>">
+      <input type="date" name="tanggal" value="<?= date('Y-m-d', strtotime($a['created_at'])) ?>" class="form-control" style="width:130px;padding:4px 8px;font-size:12px;">
+      <button class="btn-sm btn-sm-secondary" style="padding:4px 8px;font-size:11px;" title="Ubah tanggal album">Ubah</button>
+    </form>
+  </td>
   <td><?=$a['jumlah']?> foto</td>
   <td><form method="post" data-confirm-hapus="<?=e('Hapus album ' . $a['judul'] . ' beserta ' . $a['jumlah'] . ' fotonya?')?>" onsubmit="return confirm(this.getAttribute('data-confirm-hapus'))"><input type="hidden" name="csrf_token" value="<?=generateCsrfToken()?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="judul" value="<?=e($a['judul'])?>"><button class="btn-sm btn-sm-danger">Hapus Album</button></form></td>
 </tr>

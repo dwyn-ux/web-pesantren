@@ -8,7 +8,7 @@ $pageCanonical = BASE_URL . '/galeri';
 $galeri = [];
 try {
     $rows = getDB()->query(
-        "SELECT nama_file, judul FROM foto_galeri WHERE is_aktif=1 ORDER BY urutan ASC, created_at ASC, id ASC"
+        "SELECT nama_file, judul, created_at FROM foto_galeri WHERE is_aktif=1 ORDER BY urutan ASC, created_at DESC, id DESC"
     )->fetchAll();
 } catch (PDOException $e) {
     $rows = [];
@@ -16,11 +16,15 @@ try {
 foreach ($rows as $r) {
     $key = trim((string) $r['judul']) !== '' ? $r['judul'] : '(tanpa judul)';
     if (!isset($galeri[$key])) {
-        $galeri[$key] = ['judul' => $key, 'fotos' => []];
+        $galeri[$key] = [
+            'judul'      => $key,
+            'fotos'      => [],
+            'created_at' => $r['created_at'],
+        ];
     }
     $galeri[$key]['fotos'][] = $r['nama_file'];
 }
-$galeri = array_reverse(array_values($galeri)); // album terbaru di depan
+$galeri = array_values($galeri); // album terbaru di depan
 ?>
 <main class="page-section galeri-page">
   <div class="container">
@@ -40,7 +44,12 @@ $galeri = array_reverse(array_values($galeri)); // album terbaru di depan
       <figure class="galeri-item" data-photos='<?= $fotosJson ?>' tabindex="0" role="button" aria-label="Buka album <?= e($album['judul']) ?> (<?= $jml ?> foto)">
         <img src="<?= e($cover) ?>" alt="<?= e($album['judul']) ?>" loading="<?= $i > 5 ? 'lazy' : 'eager' ?>">
         <?php if ($jml > 1): ?><span class="galeri-count"><?= $jml ?> foto</span><?php endif; ?>
-        <figcaption><span class="galeri-caption"><?= e($album['judul']) ?></span></figcaption>
+        <figcaption>
+          <span class="galeri-caption"><?= e($album['judul']) ?></span>
+          <?php if (!empty($album['created_at'])): ?>
+          <span class="galeri-date" style="display:block;font-size:11px;opacity:0.85;margin-top:2px;"><?= e(formatTanggal($album['created_at'])) ?></span>
+          <?php endif; ?>
+        </figcaption>
       </figure>
     <?php endforeach; ?>
     </div>

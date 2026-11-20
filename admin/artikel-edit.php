@@ -84,9 +84,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         // Tentukan published_at
-        $publishedAt = $artikel['published_at'];
-        if ($data['status'] === 'published' && empty($publishedAt)) {
-            $publishedAt = date('Y-m-d H:i:s');
+        $rawPub = trim($_POST['published_at'] ?? '');
+        $publishedAt = null;
+        if ($data['status'] === 'published') {
+            if ($rawPub !== '') {
+                $ts = strtotime($rawPub);
+                $publishedAt = $ts ? date('Y-m-d H:i:s', $ts) : date('Y-m-d H:i:s');
+            } else {
+                $publishedAt = $artikel['published_at'] ?: date('Y-m-d H:i:s');
+            }
+        } elseif ($rawPub !== '') {
+            $ts = strtotime($rawPub);
+            $publishedAt = $ts ? date('Y-m-d H:i:s', $ts) : null;
         }
 
         $pdo->prepare(
@@ -178,6 +187,24 @@ require_once __DIR__ . '/includes/header.php';
                         <option value="draft"     <?= ($data['status'] ?? '') === 'draft'     ? 'selected' : '' ?>>Draft</option>
                         <option value="published" <?= ($data['status'] ?? '') === 'published' ? 'selected' : '' ?>>Published</option>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="published_at">Tanggal Tayang / Publikasi</label>
+                    <?php
+                    $pubVal = '';
+                    if (!empty($_POST['published_at'])) {
+                        $pubVal = $_POST['published_at'];
+                    } elseif (!empty($artikel['published_at'])) {
+                        $pubVal = date('Y-m-d\TH:i', strtotime($artikel['published_at']));
+                    } else {
+                        $pubVal = date('Y-m-d\TH:i');
+                    }
+                    ?>
+                    <input type="datetime-local" id="published_at" name="published_at"
+                           class="form-control"
+                           value="<?= e($pubVal) ?>">
+                    <p class="muted">Bisa diatur tanggal lampau jika telat upload (backdate).</p>
                 </div>
 
                 <div class="form-group">

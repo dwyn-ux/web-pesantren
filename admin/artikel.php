@@ -55,7 +55,7 @@ $stmtData = $pdo->prepare(
     "SELECT a.id, a.slug, a.judul, a.kategori, a.status, a.views, a.published_at,
             u.name AS penulis
      FROM artikel a JOIN users u ON u.id = a.penulis_id
-     $where ORDER BY a.created_at DESC
+     $where ORDER BY COALESCE(a.published_at, a.created_at) DESC
      LIMIT $perHalaman OFFSET $offset"
 );
 $stmtData->execute($params);
