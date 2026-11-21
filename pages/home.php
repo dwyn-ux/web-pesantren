@@ -5,7 +5,8 @@ $pageDescription = 'Pondok Pesantren Ash-Shiddiq, lembaga pendidikan Islam berba
 $pageCanonical   = BASE_URL . '/';
 $bodyClass       = 'page-home';
 
-$extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/home.css?v=' . ASSET_VERSION . '">';
+$extraHead = '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/home.css?v=' . ASSET_VERSION . '">' . "\n" . '<link rel="stylesheet" href="' . BASE_URL . '/assets/css/alumni.css?v=' . ASSET_VERSION . '">';
+$extraScripts = '<script src="' . BASE_URL . '/assets/js/alumni-modal.js?v=' . ASSET_VERSION . '" defer></script>';
 
 // Ambil info status PSB dari database
 $psbStatus = 'buka';
@@ -46,6 +47,9 @@ try {
 try {
     if ($pdo instanceof PDO) {
         $landingAlumni = $pdo->query("SELECT * FROM alumni WHERE status='verified' AND tampil_landing=1 ORDER BY updated_at DESC LIMIT 6")->fetchAll();
+        if (!$landingAlumni) {
+            $landingAlumni = $pdo->query("SELECT * FROM alumni WHERE status='verified' ORDER BY updated_at DESC LIMIT 6")->fetchAll();
+        }
     $testimoni = [];
     $testiRows = $pdo->query("SELECT nama, role, isi, foto FROM testimoni WHERE is_aktif=1 ORDER BY urutan ASC, id DESC LIMIT 3")->fetchAll();
     foreach ($testiRows as $r) {
@@ -329,7 +333,75 @@ try {
 <?php endif; ?>
 
 <?php if($landingAlumni): ?>
-<section id="alumni-landing" class="alumni-landing" aria-labelledby="alumni-heading"><div class="container"><div class="section-tag" style="justify-content:center"><span></span><span class="section-tag-text">Jejak Alumni</span><span></span></div><h2 class="section-title" id="alumni-heading">Dari Ash-Shiddiq, Melangkah Lebih Jauh</h2><div class="landing-alumni-grid"><?php foreach($landingAlumni as $a):?><article class="landing-alumni-card reveal"><img src="<?=e(BASE_URL.'/uploads/alumni/'.$a['foto'])?>" alt="<?=e($a['nama'])?>" loading="lazy"><div><p class="alumni-quote">“<?=e($a['pesan_kesan'])?>”</p><h3><?=e($a['nama'])?></h3><small>Alumni <?=e((string)$a['tahun_kelulusan'])?> · <?=e($a['aktivitas']==='kuliah'?$a['tempat_kuliah'].' / '.$a['jurusan']:$a['tempat_bekerja'].' / '.$a['jabatan'])?></small></div></article><?php endforeach;?></div><div style="text-align:center;margin-top:30px"><a class="btn-outline" href="<?=BASE_URL?>/alumni">Lihat Semua Profil Alumni</a></div></div></section>
+<section id="alumni-landing" class="alumni-section-home" aria-labelledby="alumni-heading">
+    <div class="container">
+        <div class="alumni-home-header">
+            <div>
+                <div class="section-tag">
+                    <span></span><span class="section-tag-text">Alumni Terpilih</span><span></span>
+                </div>
+                <h2 class="section-title" id="alumni-heading">Cerita dan Prestasi Alumni</h2>
+            </div>
+            <a href="<?= BASE_URL ?>/alumni" class="alumni-header-btn">
+                <span>Alumni</span>
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                </svg>
+            </a>
+        </div>
+
+        <div class="alumni-cards-grid">
+            <?php foreach($landingAlumni as $idx => $a):
+                $photoUrl = alumniPhotoUrl($a['foto'] ?? '');
+                $activityLabel = alumniActivityLabel($a['aktivitas'] ?? '');
+                $subText = '';
+                if (($a['aktivitas'] ?? '') === 'kuliah') {
+                    $subParts = array_filter([$a['tempat_kuliah'] ?? '', $a['jurusan'] ?? '']);
+                    $subText = implode(' — ', $subParts);
+                } elseif (($a['aktivitas'] ?? '') === 'bekerja') {
+                    $subParts = array_filter([$a['jabatan'] ?? '', $a['tempat_bekerja'] ?? '']);
+                    $subText = implode(' di ', $subParts);
+                } else {
+                    $subText = trim((string)($a['tempat_kuliah'] ?? '')) ?: trim((string)($a['tempat_bekerja'] ?? ''));
+                }
+                if ($subText === '') $subText = $activityLabel;
+            ?>
+            <button type="button"
+                style="animation-delay: <?= $idx * 60 ?>ms;"
+                class="alumni-card home-alumni-card"
+                data-name="<?= e($a['nama']) ?>"
+                data-year="<?= e((string)$a['tahun_kelulusan']) ?>"
+                data-activity="<?= e($a['aktivitas'] ?? '') ?>"
+                data-activity-label="<?= e($activityLabel) ?>"
+                data-campus="<?= e((string)($a['tempat_kuliah'] ?? '')) ?>"
+                data-major="<?= e((string)($a['jurusan'] ?? '')) ?>"
+                data-company="<?= e((string)($a['tempat_bekerja'] ?? '')) ?>"
+                data-job="<?= e((string)($a['jabatan'] ?? '')) ?>"
+                data-address="<?= e((string)($a['alamat'] ?? '')) ?>"
+                data-message="<?= e((string)($a['pesan_kesan'] ?? '')) ?>"
+                data-photo="<?= e($photoUrl) ?>">
+                <div class="alumni-card-media">
+                    <img src="<?= e($photoUrl) ?>" alt="Foto <?= e($a['nama']) ?>" loading="lazy" class="alumni-card-img">
+                    <div class="alumni-card-shade"></div>
+
+                    <?php if(!empty($a['tahun_kelulusan'])): ?>
+                        <span class="alumni-card-badge">Angkatan <?= e((string)$a['tahun_kelulusan']) ?></span>
+                    <?php endif; ?>
+
+                    <div class="alumni-card-info">
+                        <h3 class="alumni-card-name"><?= e($a['nama']) ?></h3>
+                        <div class="alumni-card-sub">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
+                            <span><?= e($subText) ?></span>
+                        </div>
+                    </div>
+                </div>
+            </button>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php require ROOT_PATH . '/includes/alumni-modal.php'; ?>
 <?php endif; ?>
 
 <section id="lokasi" class="map-section"><div class="map-copy"><div class="section-tag"><span></span><span class="section-tag-text">Lokasi Pesantren</span><span></span></div><h2 class="section-title">Kunjungi Ash-Shiddiq</h2><p><?=e($mapSettings['kontak_alamat'])?></p><a class="btn-primary" target="_blank" rel="noopener" href="https://www.google.com/maps?q=<?=eUrl($mapSettings['map_latitude'].','.$mapSettings['map_longitude'])?>">Buka di Google Maps</a></div><iframe title="Peta lokasi Pondok Pesantren Ash-Shiddiq" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=<?=eUrl($mapSettings['map_latitude'].','.$mapSettings['map_longitude'])?>&amp;z=<?=e((string)(int)$mapSettings['map_zoom'])?>&amp;output=embed"></iframe></section>

@@ -196,6 +196,35 @@ function getLogoFile(): string {
     return '';
 }
 
+/**
+ * URL foto alumni dengan fallback jika file kosong atau tidak ditemukan di disk.
+ */
+function alumniPhotoUrl(?string $foto): string {
+    $f = trim(str_replace('\\', '/', (string) $foto));
+    if ($f !== '') {
+        if (str_starts_with($f, 'http://') || str_starts_with($f, 'https://')) {
+            return $f;
+        }
+        $clean = ltrim($f, '/');
+        foreach (['uploads/alumni/', 'uploads/', 'alumni/'] as $prefix) {
+            if (str_starts_with($clean, $prefix)) {
+                $clean = substr($clean, strlen($prefix));
+                break;
+            }
+        }
+        $diskPath = ROOT_PATH . '/uploads/alumni/' . $clean;
+        if (is_file($diskPath)) {
+            return BASE_URL . '/uploads/alumni/' . $clean;
+        }
+    }
+
+    $logo = getLogoFile();
+    if ($logo !== '') {
+        return BASE_URL . '/assets/img/' . $logo;
+    }
+    return BASE_URL . '/assets/img/default-alumni.svg';
+}
+
 // ── File Upload ──────────────────────────────────────────────
 
 /** Deteksi MIME dari isi file, termasuk pada hosting tanpa ekstensi fileinfo. */

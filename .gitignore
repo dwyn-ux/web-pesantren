@@ -22,3 +22,4 @@ assets/img/**/*.jpeg
 assets/img/**/*.png
 assets/img/**/*.webp
 assets/img/**/*.svg
+!assets/img/default-alumni.svg

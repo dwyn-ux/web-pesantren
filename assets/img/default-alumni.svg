@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#092118"/>
+      <stop offset="50%" stop-color="#123c2f"/>
+      <stop offset="100%" stop-color="#1d5543"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5c840"/>
+      <stop offset="100%" stop-color="#b78a3d"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#b78a3d" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#092118" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="600" height="800" fill="url(#bg)"/>
+  <circle cx="300" cy="340" r="260" fill="url(#glow)"/>
+
+  <!-- Geometric Arch Motif -->
+  <path d="M 120 700 L 120 340 C 120 220 200 130 300 100 C 400 130 480 220 480 340 L 480 700" fill="none" stroke="rgba(245,200,64,0.18)" stroke-width="2"/>
+  <path d="M 140 700 L 140 345 C 140 235 210 155 300 128 C 390 155 460 235 460 345 L 460 700" fill="none" stroke="rgba(245,200,64,0.12)" stroke-width="1.5"/>
+
+  <!-- Decorative Islamic Star -->
+  <g transform="translate(300, 195) scale(0.65)" opacity="0.6">
+    <rect x="-35" y="-35" width="70" height="70" fill="none" stroke="url(#gold)" stroke-width="2"/>
+    <rect x="-35" y="-35" width="70" height="70" fill="none" stroke="url(#gold)" stroke-width="2" transform="rotate(45)"/>
+    <circle cx="0" cy="0" r="10" fill="url(#gold)"/>
+  </g>
+
+  <!-- Avatar Silhouette -->
+  <!-- Head & Turban/Kopiah -->
+  <circle cx="300" cy="350" r="75" fill="#f4efe6"/>
+  <ellipse cx="300" cy="295" rx="80" ry="36" fill="#123c2f"/>
+  <path d="M 220 310 Q 300 250 380 310 Q 300 325 220 310 Z" fill="url(#gold)"/>
+
+  <!-- Body / Jubbah -->
+  <path d="M 170 650 Q 220 460 260 440 L 300 520 L 340 440 Q 380 460 430 650 Z" fill="#f4efe6"/>
+  <!-- Cloak Collar / Scarf -->
+  <path d="M 235 445 Q 300 560 365 445 L 340 440 Q 300 520 260 440 Z" fill="url(#gold)"/>
+
+  <!-- Text / Label -->
+  <text x="300" y="705" font-family="'Plus Jakarta Sans', sans-serif" font-size="20" font-weight="700" fill="#f4efe6" text-anchor="middle" letter-spacing="3">ALUMNI</text>
+  <text x="300" y="735" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="600" fill="#f5c840" text-anchor="middle" letter-spacing="2">PONDOK PESANTREN ASH-SHIDDIQ</text>
+</svg>

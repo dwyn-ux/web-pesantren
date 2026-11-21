@@ -1,0 +1,563 @@
+/* ============================================================
+   alumni.css — Tampilan Alumni Modern (Web SMP Style)
+   Untuk Beranda (Home) dan Halaman Profil Alumni (/alumni)
+   ============================================================ */
+
+/* ── Animasi ──────────────────────────────────────────────── */
+.alumni-card {
+  animation: alumniRise .55s cubic-bezier(.2,.7,.2,1) backwards;
+}
+.alumni-backdrop {
+  animation: alumniFade .25s ease;
+}
+.alumni-dialog {
+  animation: alumniPop .35s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes alumniRise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes alumniFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes alumniPop {
+  from { opacity: 0; transform: translateY(16px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alumni-card, .alumni-backdrop, .alumni-dialog {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── Section Home ─────────────────────────────────────────── */
+.alumni-section-home {
+  padding: clamp(60px, 8vw, 100px) 0;
+  background: var(--white, #ffffff);
+}
+.alumni-home-header {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 36px;
+}
+@media (min-width: 768px) {
+  .alumni-home-header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+.alumni-home-header .section-tag {
+  margin-bottom: 10px;
+}
+.alumni-home-header .section-title {
+  margin: 0;
+  color: var(--text-dark, #102f26);
+}
+.alumni-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 2px solid var(--green-deep, #123c2f);
+  color: var(--green-deep, #123c2f);
+  padding: 10px 24px;
+  font-weight: 700;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  align-self: flex-start;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+@media (min-width: 768px) {
+  .alumni-header-btn {
+    align-self: flex-end;
+  }
+}
+.alumni-header-btn:hover {
+  background: var(--green-deep, #123c2f);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(18,60,47,0.18);
+}
+
+/* ── Halaman Alumni (/alumni) ─────────────────────────────── */
+.alumni-page-section {
+  padding: 135px 20px 85px;
+  min-height: 80vh;
+  background: var(--cream, #f6f2e9);
+}
+.alumni-page-wrapper {
+  max-width: 1080px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 18px 50px rgba(18,60,47,0.08);
+  overflow: hidden;
+  border: 1px solid rgba(18,60,47,0.08);
+}
+.alumni-page-hero {
+  background: linear-gradient(135deg, #0d2921 0%, #123c2f 60%, #1c5240 100%);
+  color: #ffffff;
+  padding: clamp(38px, 6vw, 56px) 24px;
+  text-align: center;
+}
+.alumni-page-hero h1 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(26px, 4vw, 36px);
+  font-weight: 800;
+  margin: 0 0 10px;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+.alumni-page-hero p {
+  color: rgba(255,255,255,0.85);
+  font-size: clamp(14px, 1.6vw, 15.5px);
+  max-width: 620px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+.alumni-page-body {
+  padding: clamp(20px, 4vw, 44px);
+}
+.alumni-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(18,60,47,0.07);
+}
+@media (min-width: 640px) {
+  .alumni-toolbar {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+.alumni-toolbar-count {
+  font-size: 14.5px;
+  color: #64748b;
+  margin: 0;
+}
+.alumni-toolbar-count strong {
+  color: #102f26;
+  font-weight: 800;
+}
+.alumni-btn-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f5c840;
+  color: #102f26;
+  padding: 11px 26px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(245,200,64,0.32);
+}
+.alumni-btn-cta:hover {
+  background: #e8a820;
+  color: #102f26;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(245,200,64,0.45);
+}
+
+/* ── Grid Kartu Alumni (Web SMP Style) ────────────────────── */
+.alumni-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 10px;
+}
+@media (min-width: 640px) {
+  .alumni-cards-grid {
+    gap: 22px;
+  }
+}
+@media (min-width: 1024px) {
+  .alumni-cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+}
+@media (max-width: 420px) {
+  .alumni-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Komponen Kartu Alumni (Web SMP Style) ─────────────────── */
+.alumni-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  border: none;
+  padding: 0;
+  background: #0f2318;
+  border-radius: 24px;
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  outline: none;
+  transition: transform 0.3s cubic-bezier(0.2,0.7,0.2,1), box-shadow 0.3s cubic-bezier(0.2,0.7,0.2,1);
+}
+.alumni-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 38px -8px rgba(0,0,0,0.35);
+}
+.alumni-card:focus-visible {
+  box-shadow: 0 0 0 4px rgba(245,200,64,0.5), 0 22px 38px -8px rgba(0,0,0,0.35);
+}
+.alumni-card-media {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: #112d22;
+}
+/* Fallback aspect-ratio */
+@supports not (aspect-ratio: 3 / 4) {
+  .alumni-card-media {
+    padding-top: 133.33%;
+  }
+}
+.alumni-card-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  transition: transform 0.7s cubic-bezier(0.2,0.7,0.2,1);
+}
+.alumni-card:hover .alumni-card-img {
+  transform: scale(1.05);
+}
+.alumni-card-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10,35,27,.94) 0%, rgba(10,35,27,.55) 34%, rgba(10,35,27,0) 64%);
+  pointer-events: none;
+}
+.alumni-card-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #f5c840;
+  color: #102f26;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+  z-index: 2;
+  pointer-events: none;
+  line-height: 1.4;
+}
+.alumni-card-info {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding: clamp(14px, 2.5vw, 18px);
+  color: #ffffff;
+  z-index: 2;
+  pointer-events: none;
+}
+.alumni-card-name {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(15px, 1.8vw, 17.5px);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #ffffff;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.alumni-card-sub {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(11px, 1.3vw, 12.5px);
+  color: rgba(230,245,236,0.92);
+  line-height: 1.4;
+}
+.alumni-card-sub svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+.alumni-card-sub span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Pop Up Detail Alumni (Modal Web SMP) ─────────────────── */
+.alumni-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vw, 24px);
+}
+.alumni-modal-root.open {
+  display: flex;
+}
+.alumni-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 25, 20, 0.76);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.alumni-dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 880px;
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px -15px rgba(0,0,0,0.45);
+  z-index: 2;
+}
+@media (min-width: 768px) {
+  .alumni-dialog {
+    flex-direction: row;
+  }
+}
+.alumni-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 20;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #334155;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+  transition: all 0.25s ease;
+}
+.alumni-modal-close:hover {
+  background: #ffffff;
+  color: #123c2f;
+  transform: rotate(90deg);
+}
+.alumni-modal-photo-col {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #092118;
+  padding: 20px;
+  flex-shrink: 0;
+  min-height: 220px;
+}
+@media (min-width: 768px) {
+  .alumni-modal-photo-col {
+    width: 42%;
+    padding: 32px;
+    min-height: auto;
+  }
+}
+.alumni-modal-photo-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(24px);
+  opacity: 0.45;
+  transform: scale(1.25);
+  pointer-events: none;
+}
+.alumni-modal-photo {
+  position: relative;
+  max-height: 36vh;
+  width: auto;
+  max-width: 100%;
+  border-radius: 18px;
+  object-fit: contain;
+  box-shadow: 0 16px 36px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+@media (min-width: 768px) {
+  .alumni-modal-photo {
+    max-height: 72vh;
+  }
+}
+.alumni-modal-content-col {
+  min-width: 0;
+  flex: 1 1 0%;
+  overflow-y: auto;
+  padding: 24px 24px 28px;
+}
+@media (min-width: 768px) {
+  .alumni-modal-content-col {
+    padding: 34px 38px;
+  }
+}
+.alumni-modal-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-right: 44px;
+}
+.alumni-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.alumni-pill-badge.badge-gold {
+  background: #f5c840;
+  color: #102f26;
+}
+.alumni-pill-badge.badge-emerald {
+  background: #e8f5ec;
+  color: #0d7a4a;
+}
+.alumni-modal-name {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 800;
+  line-height: 1.2;
+  color: #102f26;
+  margin: 0 0 12px;
+}
+.alumni-modal-divider {
+  width: 56px;
+  height: 4px;
+  border-radius: 999px;
+  background: #b78a3d;
+  margin-bottom: 22px;
+}
+.alumni-modal-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.alumni-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.alumni-detail-item.hidden {
+  display: none !important;
+}
+.alumni-detail-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.alumni-detail-icon.bg-green-soft {
+  background: #e8f5ec;
+  color: #0d7a4a;
+}
+.alumni-detail-icon.bg-gold-soft {
+  background: #fdf6e6;
+  color: #b78a3d;
+}
+.alumni-detail-icon.bg-blue-soft {
+  background: #edf4fe;
+  color: #2563eb;
+}
+.alumni-detail-icon .alumni-icon {
+  width: 20px;
+  height: 20px;
+}
+.alumni-detail-text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.alumni-detail-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #88968f;
+  margin: 0 0 2px;
+}
+.alumni-detail-val {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #18231e;
+  line-height: 1.45;
+  margin: 0;
+  word-break: break-word;
+}
+.alumni-modal-message-wrap {
+  position: relative;
+  margin-top: 24px;
+  padding: 22px 22px 18px 22px;
+  border-radius: 18px;
+  background: #f4f8f5;
+  border: 1px solid #e1ede5;
+}
+.alumni-modal-message-wrap.hidden {
+  display: none !important;
+}
+.alumni-modal-quote-badge {
+  position: absolute;
+  top: -12px;
+  left: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #102f26;
+  color: #f5c840;
+  font-size: 20px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.alumni-modal-message-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #102f26;
+  margin: 0 0 6px;
+}
+.alumni-modal-message-body {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #3a5444;
+  font-style: italic;
+  white-space: pre-line;
+  word-break: break-word;
+  margin: 0;
+}
