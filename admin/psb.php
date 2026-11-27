@@ -145,23 +145,29 @@ if ($filterStat && !in_array($filterStat, $validStatus, true)) {
 $where  = "WHERE 1=1";
 $params = [];
 if ($filterStat) {
-    $where    .= " AND status = ?";
+    $where    .= " AND p.status = ?";
     $params[]  = $filterStat;
 }
 if ($cari) {
-    $where    .= " AND (nama_lengkap LIKE ? OR nomor_daftar LIKE ? OR whatsapp LIKE ?)";
+    $where    .= " AND (p.nama_lengkap LIKE ? OR p.nomor_daftar LIKE ? OR p.whatsapp LIKE ?)";
     $kw        = '%' . $cari . '%';
     $params[] = $kw; $params[] = $kw; $params[] = $kw;
 }
 
-$stmtCount = $pdo->prepare("SELECT COUNT(*) FROM pendaftaran $where");
+$exportFmt = sanitizeString($_GET['export'] ?? '');
+if (in_array($exportFmt, ['excel', 'pdf'], true)) {
+    require __DIR__ . '/includes/psb-export.php';
+    exit;
+}
+
+$stmtCount = $pdo->prepare("SELECT COUNT(*) FROM pendaftaran p $where");
 $stmtCount->execute($params);
 $total = (int) $stmtCount->fetchColumn();
 $totalHalaman = (int) ceil($total / $perHalaman);
 
 $stmtData = $pdo->prepare(
-    "SELECT * FROM pendaftaran $where
-     ORDER BY FIELD(status, 'menunggu-verifikasi', 'tes-selesai', 'pending', 'diterima', 'daftar-ulang', 'ditolak'), created_at DESC
+    "SELECT p.* FROM pendaftaran p $where
+     ORDER BY FIELD(p.status, 'menunggu-verifikasi', 'tes-selesai', 'pending', 'diterima', 'daftar-ulang', 'ditolak'), p.created_at DESC
      LIMIT $perHalaman OFFSET $offset"
 );
 $stmtData->execute($params);
@@ -207,6 +213,11 @@ require_once __DIR__ . '/includes/header.php';
             <?php if ($cari || $filterStat): ?>
             <a href="<?= e(BASE_URL . '/admin/psb') ?>" style="text-decoration:none;" class="btn-sm btn-sm-secondary">Reset</a>
             <?php endif; ?>
+            <?php
+            $expQ = ($filterStat ? '&status=' . urlencode($filterStat) : '') . ($cari ? '&cari=' . urlencode($cari) : '');
+            ?>
+            <a href="<?= e(BASE_URL . '/admin/psb?export=excel' . $expQ) ?>" style="text-decoration:none;" class="btn-sm btn-sm-secondary">Export Excel</a>
+            <a href="<?= e(BASE_URL . '/admin/psb?export=pdf' . $expQ) ?>" style="text-decoration:none;" class="btn-sm btn-sm-secondary">Export PDF</a>
         </form>
     </div>
 
