@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
             'tanggal_lahir'   => sanitizeString($_POST['tanggal_lahir']   ?? ''),
             'jenis_kelamin'   => sanitizeString($_POST['jenis_kelamin']   ?? ''),
             'jenjang'         => sanitizeString($_POST['jenjang']         ?? ''),
-            'whatsapp'        => sanitizeString($_POST['whatsapp']        ?? ''),
+            'whatsapp'        => preg_replace('/[\s\-\.\(\)]+/', '', ltrim(sanitizeString($_POST['whatsapp'] ?? ''), '+')),
             'email'           => strtolower(trim($_POST['email']         ?? '')),
             'password'        => $_POST['password']         ?? '',
             'nama_ayah'       => sanitizeString($_POST['nama_ayah']       ?? ''),
@@ -138,18 +138,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
                 $userId = (int) $pdo->lastInsertId();
 
                 // 2. INSERT pendaftaran
-                // tahun_lulus sengaja NULL — kolom ini diisi di step
-                // "Akademik" portal, bukan saat membuat akun.
-                $stmtPendaftaran = $pdo->prepare(
-                    "INSERT INTO pendaftaran
-                        (user_id, nomor_daftar, nama_lengkap, tempat_lahir, tanggal_lahir,
+                // tahun_lulus diisi NULL jika kolom nullable (migrasi 026),
+                // fallback tahun berjalan jika migrasi 026 belum dijalankan agar tidak 1364.
+                $tahunLulusNullable = true;
+                try {
+                    $colNull = $pdo->query(
+                        "SELECT IS_NULLABLE FROM information_schema.COLUMNS
+                         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pendaftaran' AND COLUMN_NAME = 'tahun_lulus'
+                         LIMIT 1"
+                    )->fetchColumn();
+                    if ($colNull === 'NO') {
+                        $tahunLulusNullable = false;
+                    }
+                } catch (Throwable $ignored) {
+                    // Biarkan default true bila information_schema tidak terbaca.
+                }
+
+                $colsPendaftaran = "user_id, nomor_daftar, nama_lengkap, tempat_lahir, tanggal_lahir,
                          jenis_kelamin, jenjang, gelombang_id, whatsapp,
                          nama_ayah, nama_ibu, hp_ortu, pekerjaan_ortu, alamat,
                          asal_sekolah, kemampuan_quran,
-                         jalur, jalur_status, status)
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'reguler', 'none', 'pending')"
-                );
-                $stmtPendaftaran->execute([
+                         jalur, jalur_status, status";
+                $valsPendaftaran = "?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'reguler', 'none', 'pending'";
+                $paramsPendaftaran = [
                     $userId,
                     $nomorDaftar,
                     $data['nama_lengkap'],
@@ -166,7 +177,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
                     $data['alamat'],
                     $data['asal_sekolah'],
                     $data['kemampuan_quran'],
-                ]);
+                ];
+                if (!$tahunLulusNullable) {
+                    $colsPendaftaran .= ", tahun_lulus";
+                    $valsPendaftaran .= ", ?";
+                    $paramsPendaftaran[] = (int) date('Y');
+                }
+
+                $stmtPendaftaran = $pdo->prepare(
+                    "INSERT INTO pendaftaran ($colsPendaftaran) VALUES ($valsPendaftaran)"
+                );
+                $stmtPendaftaran->execute($paramsPendaftaran);
                 $pdo->commit();
 
                 kirimTelegram(
@@ -249,12 +270,10 @@ $errorLabels = [
 ];
 $tahunOptions = range(date('Y') + 1, 2018);
 $old = $_POST; // untuk repopulate form
+$page1Fields = ['nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'jenjang', 'whatsapp', 'asal_sekolah', 'kemampuan_quran'];
+$hasPage1Error = (bool) array_intersect($page1Fields, array_keys($errors));
+$activeFormPage = (!empty($errors) && !$hasPage1Error) ? 2 : 1;
 ?>
-<?php if (!empty($errors['_global'])): ?>
-<div class="alert alert-error" style="max-width:1100px;margin:20px auto;padding:12px 16px;background:#fee;color:#c33;border-radius:4px;">
-  <?= e($errors['_global']) ?>
-</div>
-<?php endif; ?>
 
 <?php if ($successData): ?>
 <div class="psb-success-overlay" id="psbSuccessOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;">
@@ -305,6 +324,9 @@ $old = $_POST; // untuk repopulate form
 <?php elseif (!$gelombangAktif): ?>
 <div class="psb-closed" style="max-width:680px;margin:60px auto;padding:40px;background:#fff;border-radius:6px;text-align:center;">
   <h2 style="color:#888;margin-bottom:12px;">Tidak Ada Gelombang Aktif</h2>
+  <?php if (!empty($errors['_global'])): ?>
+    <p style="color:#b91c1c;margin-bottom:12px;"><?= e($errors['_global']) ?></p>
+  <?php endif; ?>
   <p style="color:#666;">Saat ini tidak ada gelombang pendaftaran yang sedang buka. Hubungi panitia untuk informasi lebih lanjut.</p>
   <p style="margin-top:20px;font-size:13px;color:#999;">
     <a href="https://wa.me/<?= e($kontakWA) ?>" style="color:#0d7a4a;">Hubungi Panitia via WhatsApp</a>
@@ -377,20 +399,31 @@ $old = $_POST; // untuk repopulate form
     </div>
 
     <div class="form-step" aria-label="Langkah pendaftaran">
-      <div class="step-item active" id="stepInd1">
-        <div class="step-num active" id="sNum1">1</div>
+      <div class="step-item<?= $activeFormPage === 1 ? ' active' : '' ?>" id="stepInd1">
+        <div class="step-num<?= $activeFormPage === 2 ? ' done' : ' active' ?>" id="sNum1"><?= $activeFormPage === 2 ? '&#10003;' : '1' ?></div>
         <div class="step-label">Data Calon</div>
       </div>
-      <div class="step-item" id="stepInd2">
-        <div class="step-num" id="sNum2">2</div>
+      <div class="step-item<?= $activeFormPage === 2 ? ' active' : '' ?>" id="stepInd2">
+        <div class="step-num<?= $activeFormPage === 2 ? ' active' : '' ?>" id="sNum2">2</div>
         <div class="step-label">Data Orang Tua &amp; Akun</div>
       </div>
     </div>
 
+    <?php if (!empty($errors)): ?>
+    <div class="alert alert-error" id="psbErrorBox" role="alert" style="margin-bottom:20px;padding:12px 16px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:4px;font-size:13px;line-height:1.6;">
+      <strong>Pendaftaran belum bisa diproses:</strong>
+      <ul style="margin:6px 0 0 18px;padding:0;">
+        <?php foreach ($errors as $msg): ?>
+          <li><?= e($msg) ?></li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+    <?php endif; ?>
+
     <form method="post" id="psbForm" novalidate>
       <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
 
-      <div class="form-page active" id="page1">
+      <div class="form-page<?= $activeFormPage === 1 ? ' active' : '' ?>" id="page1">
         <div class="form-group">
           <label>Nama Lengkap Calon Santri <span class="req">*</span></label>
           <input type="text" name="nama_lengkap" class="form-control<?= isset($errors['nama_lengkap']) ? ' is-error' : '' ?>"
@@ -474,7 +507,7 @@ $old = $_POST; // untuk repopulate form
         </div>
       </div>
 
-      <div class="form-page" id="page2">
+      <div class="form-page<?= $activeFormPage === 2 ? ' active' : '' ?>" id="page2">
         <div class="form-group">
           <label>Nama Ayah <span class="req">*</span></label>
           <input type="text" name="nama_ayah" class="form-control<?= isset($errors['nama_ayah']) ? ' is-error' : '' ?>"
@@ -550,20 +583,76 @@ $old = $_POST; // untuk repopulate form
 </div>
 
 <script>
-let currentPage = 1;
+let currentPage = <?= (int) $activeFormPage ?>;
+function validatePage1() {
+  const page1 = document.getElementById('page1');
+  const requiredNames = ['nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenjang', 'whatsapp', 'asal_sekolah', 'kemampuan_quran'];
+  let firstInvalid = null;
+  page1.querySelectorAll('.js-client-error').forEach(el => el.remove());
+
+  for (const name of requiredNames) {
+    const el = page1.querySelector('[name="' + name + '"]');
+    if (!el) continue;
+    let val = el.value.trim();
+    let msg = '';
+    if (!val) {
+      msg = 'Wajib diisi.';
+    } else if (name === 'whatsapp') {
+      const digits = val.replace(/^\+/, '').replace(/[\s\-\.\(\)]+/g, '');
+      if (!/^[0-9]{9,15}$/.test(digits)) {
+        msg = 'Nomor WhatsApp harus 9-15 digit angka.';
+      }
+    }
+    if (msg) {
+      el.classList.add('is-error');
+      const p = document.createElement('p');
+      p.className = 'field-error js-client-error';
+      p.textContent = msg;
+      el.closest('.form-group').appendChild(p);
+      if (!firstInvalid) firstInvalid = el;
+    } else {
+      el.classList.remove('is-error');
+    }
+  }
+
+  const jkChecked = page1.querySelector('input[name="jenis_kelamin"]:checked');
+  if (!jkChecked) {
+    const rg = page1.querySelector('.radio-group');
+    const p = document.createElement('p');
+    p.className = 'field-error js-client-error';
+    p.textContent = 'Pilih jenis kelamin.';
+    rg.closest('.form-group').appendChild(p);
+    if (!firstInvalid) firstInvalid = rg;
+  }
+
+  if (firstInvalid) {
+    firstInvalid.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (typeof firstInvalid.focus === 'function') firstInvalid.focus();
+    return false;
+  }
+  return true;
+}
+
 function psbGoTo(page) {
+  if (page === 2 && currentPage === 1 && !validatePage1()) return;
   document.getElementById('page' + currentPage).classList.remove('active');
   document.getElementById('page' + page).classList.add('active');
   for (let i = 1; i <= 2; i++) {
     const num = document.getElementById('sNum' + i);
     const ind = document.getElementById('stepInd' + i);
     num.classList.remove('active', 'done');
-    if (i < page) { num.classList.add('done'); num.textContent = '\u2713'; }
+    if (i < page) { num.classList.add('done'); num.textContent = '\u2713'; ind.classList.remove('active'); }
     else if (i === page) { num.classList.add('active'); num.textContent = i; ind.classList.add('active'); }
     else { num.textContent = i; ind.classList.remove('active'); }
   }
   currentPage = page;
   document.querySelector('.psb-form-card').scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
+<?php if (!empty($errors)): ?>
+document.addEventListener('DOMContentLoaded', function () {
+  const card = document.querySelector('.psb-form-card');
+  if (card) card.scrollIntoView({ block: 'start', behavior: 'smooth' });
+});
+<?php endif; ?>
 </script>
 <?php endif; ?>

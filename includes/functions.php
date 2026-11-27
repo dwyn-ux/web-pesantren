@@ -1515,7 +1515,11 @@ function generatePasswordAwal(): string {
 /** Generate nomor pendaftaran ASQ-YYYY-XXXX (per tahun). */
 function generateNomorDaftar(PDO $pdo): string {
     $tahun = date('Y');
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM pendaftaran WHERE nomor_daftar LIKE ?");
+    // Pakai MAX nomor urut agar tidak tabrakan bila ada pendaftar yang dihapus.
+    $stmt = $pdo->prepare(
+        "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(nomor_daftar, '-', -1) AS UNSIGNED)), 0)
+         FROM pendaftaran WHERE nomor_daftar LIKE ?"
+    );
     $stmt->execute(["ASQ-$tahun-%"]);
     $urutan = (int) $stmt->fetchColumn() + 1;
     return "ASQ-$tahun-" . str_pad((string) $urutan, 4, '0', STR_PAD_LEFT);
