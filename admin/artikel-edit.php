@@ -182,11 +182,27 @@ require_once __DIR__ . '/includes/header.php';
         <!-- Sidebar kanan -->
         <div>
                 <div class="form-group">
-                    <label for="status">Status</label>
-                    <select id="status" name="status" class="form-control">
-                        <option value="draft"     <?= ($data['status'] ?? '') === 'draft'     ? 'selected' : '' ?>>Draft</option>
-                        <option value="published" <?= ($data['status'] ?? '') === 'published' ? 'selected' : '' ?>>Published</option>
+                    <span class="muted">Status saat ini:</span>
+                    <span class="badge badge-<?= e($artikel['status']) ?>" style="margin-left:6px;">
+                        <?= $artikel['status'] === 'published' ? 'Terpublish' : 'Draft' ?>
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <label for="kategori">Kategori <span class="req">*</span></label>
+                    <select id="kategori" name="kategori"
+                            class="form-control<?= isset($errors['kategori']) ? ' is-error' : '' ?>" required>
+                        <option value="">-- Pilih --</option>
+                        <?php foreach ($labelKategori as $val => $lbl): ?>
+                        <option value="<?= e($val) ?>"
+                            <?= ($data['kategori'] ?? '') === $val ? 'selected' : '' ?>>
+                            <?= e($lbl) ?>
+                        </option>
+                        <?php endforeach; ?>
                     </select>
+                    <?php if (isset($errors['kategori'])): ?>
+                    <p class="field-error"><?= e($errors['kategori']) ?></p>
+                    <?php endif; ?>
                 </div>
 
                 <div class="form-group">
@@ -208,23 +224,6 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
 
                 <div class="form-group">
-                    <label for="kategori">Kategori <span class="req">*</span></label>
-                    <select id="kategori" name="kategori"
-                            class="form-control<?= isset($errors['kategori']) ? ' is-error' : '' ?>" required>
-                        <option value="">-- Pilih --</option>
-                        <?php foreach ($labelKategori as $val => $lbl): ?>
-                        <option value="<?= e($val) ?>"
-                            <?= ($data['kategori'] ?? '') === $val ? 'selected' : '' ?>>
-                            <?= e($lbl) ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <?php if (isset($errors['kategori'])): ?>
-                    <p class="field-error"><?= e($errors['kategori']) ?></p>
-                    <?php endif; ?>
-                </div>
-
-                <div class="form-group">
                     <label for="foto">Foto Sampul</label>
                     <?php if ($artikel['foto']): ?>
                     <div style="margin-bottom:10px;">
@@ -238,16 +237,28 @@ require_once __DIR__ . '/includes/header.php';
                     <?php endif; ?>
                     <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp"
                            class="form-control<?= isset($errors['foto']) ? ' is-error' : '' ?>">
-                    <p class="muted">Format: JPG, PNG, WebP. Gambar dikompres & dioptimalkan otomatis untuk web.</p>
+                    <p class="muted">Format: JPG, PNG, WebP. Gambar dikompres &amp; dioptimalkan otomatis untuk web.</p>
                     <?php if (isset($errors['foto'])): ?>
                     <p class="field-error"><?= e($errors['foto']) ?></p>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn-sm btn-sm-primary">
-                        Simpan Perubahan
-                    </button>
+                    <?php if ($artikel['status'] === 'published'): ?>
+                        <button type="submit" name="status" value="published" class="btn-sm btn-sm-primary">
+                            Perbarui Artikel
+                        </button>
+                        <button type="submit" name="status" value="draft" class="btn-sm btn-sm-secondary">
+                            Kembalikan ke Draft
+                        </button>
+                    <?php else: ?>
+                        <button type="submit" name="status" value="published" class="btn-sm btn-sm-primary">
+                            Publish Sekarang
+                        </button>
+                        <button type="submit" name="status" value="draft" class="btn-sm btn-sm-secondary">
+                            Simpan Draft
+                        </button>
+                    <?php endif; ?>
                     <a href="<?= e(BASE_URL . '/admin/artikel') ?>" class="btn-sm btn-sm-secondary" style="text-decoration:none;">
                         Batal
                     </a>

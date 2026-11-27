@@ -30,7 +30,7 @@ if (preg_match('#^artikel/([a-z0-9\-]+)$#', $rawPage, $m)) {
 $publicPages = [
     'home', 'profil', 'sekapur-sirih',
     'artikel', 'artikel-detail',
-    'psb', 'login', 'login-santri', 'portal-santri', 'profil-santri', 'surat-kesanggupan', 'dokumentasi', 'alumni', 'pendataan-alumni', 'dokumen-lihat', 'berkas-santri', 'upload-berkas', 'download-template', 'dokumen-santri', '404', 'galeri',
+    'psb', 'login', 'login-santri', 'portal-santri', 'profil-santri', 'kartu-santri', 'surat-kesanggupan', 'dokumentasi', 'alumni', 'pendataan-alumni', 'dokumen-lihat', 'berkas-santri', 'upload-berkas', 'download-template', 'dokumen-santri', '404', 'galeri',
 ];
 
 // Halaman yang butuh login (admin)
@@ -70,6 +70,7 @@ $pageMap = [
     'login'           => ROOT_PATH . '/pages/login.php',
     'login-santri'    => ROOT_PATH . '/pages/login-santri.php',
     'portal-santri'   => ROOT_PATH . '/pages/portal-santri.php',
+    'kartu-santri'    => ROOT_PATH . '/pages/kartu-santri.php',
     'surat-kesanggupan' => ROOT_PATH . '/pages/surat-kesanggupan.php',
     'logout'          => null, // ditangani di bawah
     'profil-santri'   => ROOT_PATH . '/pages/profil-santri.php',

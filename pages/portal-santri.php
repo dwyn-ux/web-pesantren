@@ -725,7 +725,9 @@ $ringkasJalurOk = $jalurSaatIni !== null ? count(array_intersect_key($berkasByJe
         </ul>
       </div>
       <div class="portal-actions">
-        <a href="<?= BASE_URL ?>/surat-kesanggupan" target="_blank" rel="noopener" class="btn-primary">⬇ Unduh Ringkasan (PDF)</a>
+        <a href="<?= BASE_URL ?>/kartu-santri?download=pdf" class="btn-primary">Unduh Kartu Santri (PDF)</a>
+        <a href="<?= BASE_URL ?>/kartu-santri" target="_blank" rel="noopener" class="btn-outline">Lihat Kartu Santri</a>
+        <a href="<?= BASE_URL ?>/surat-kesanggupan" target="_blank" rel="noopener" class="btn-outline">Unduh Ringkasan (PDF)</a>
         <?php if ($pendaftaran['status'] === 'pending'): ?>
           <a href="?step=akademik" class="btn-outline">Lengkapi / Ubah Data &rarr;</a>
         <?php endif; ?>

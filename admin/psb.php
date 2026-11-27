@@ -6,22 +6,53 @@ $pdo = getDB();
 backfillNomorDaftar9Digit($pdo);
 $adminJalur = getJalurPotonganAdmin($pdo);
 
-// ── Proses update status ──────────────────────────────────────
+// ── Proses update status & terima santri ──────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     validateCsrf();
 
-    if ($_POST['action'] === 'update_status') {
+    $terimaSantri = function (int $id, ?string $catatan = null, bool $updateCatatan = false) use ($pdo): void {
+        $q = $pdo->prepare('SELECT jalur, jalur_status FROM pendaftaran WHERE id = ?');
+        $q->execute([$id]);
+        $row = $q->fetch();
+        if (!$row) {
+            setFlash('error', 'Data pendaftar tidak ditemukan.');
+            return;
+        }
+        if (in_array($row['jalur'], jalurPerluVerifikasi(), true) && $row['jalur_status'] !== 'disetujui') {
+            setFlash('error', 'Jalur ' . (jalurPendaftaran()[$row['jalur']] ?? $row['jalur']) . ' harus disetujui atau ditolak dulu di menu Detail / Verifikasi Berkas.');
+            return;
+        }
+        applyTarifToSnapshot($pdo, $id);
+        if ($updateCatatan) {
+            $pdo->prepare("UPDATE pendaftaran SET status = 'diterima', catatan_admin = ? WHERE id = ?")
+                ->execute([$catatan ?: null, $id]);
+        } else {
+            $pdo->prepare("UPDATE pendaftaran SET status = 'diterima' WHERE id = ?")
+                ->execute([$id]);
+        }
+        setFlash('success', 'Santri diterima dan tagihan pendaftaran sudah dibuat.');
+        kirimTelegram('DITERIMA: ' . telegramInfoPendaftar($pdo, $id), $pdo);
+    };
+
+    if ($_POST['action'] === 'terima_santri') {
+        $id = sanitizeInt($_POST['id'] ?? 0);
+        if ($id > 0) $terimaSantri($id);
+    } elseif ($_POST['action'] === 'update_status') {
         $id     = sanitizeInt($_POST['id'] ?? 0);
         $status = sanitizeString($_POST['status'] ?? '');
         $catatan= sanitizeString($_POST['catatan'] ?? '');
 
-        $validStatus = ['pending', 'diterima', 'ditolak', 'daftar-ulang'];
+        $validStatus = ['pending', 'menunggu-verifikasi', 'tes-selesai', 'diterima', 'ditolak', 'daftar-ulang'];
         if ($id > 0 && in_array($status, $validStatus, true)) {
-            $pdo->prepare(
-                "UPDATE pendaftaran SET status = ?, catatan_admin = ? WHERE id = ?"
-            )->execute([$status, $catatan ?: null, $id]);
-            setFlash('success', 'Status pendaftaran berhasil diperbarui.');
-            kirimTelegram('Status → ' . strtoupper($status) . ': ' . telegramInfoPendaftar($pdo, $id), $pdo);
+            if ($status === 'diterima') {
+                $terimaSantri($id, $catatan, true);
+            } else {
+                $pdo->prepare(
+                    "UPDATE pendaftaran SET status = ?, catatan_admin = ? WHERE id = ?"
+                )->execute([$status, $catatan ?: null, $id]);
+                setFlash('success', 'Status pendaftaran berhasil diperbarui.');
+                kirimTelegram('Status → ' . strtoupper($status) . ': ' . telegramInfoPendaftar($pdo, $id), $pdo);
+            }
         }
     } elseif ($_POST['action'] === 'verifikasi_jalur') {
         $id        = sanitizeInt($_POST['id'] ?? 0);
@@ -106,7 +137,7 @@ $offset     = paginationOffset($halaman, $perHalaman);
 $filterStat = sanitizeString($_GET['status'] ?? '');
 $cari       = sanitizeString($_GET['cari'] ?? '');
 
-$validStatus = ['pending', 'diterima', 'ditolak', 'daftar-ulang'];
+$validStatus = ['pending', 'menunggu-verifikasi', 'tes-selesai', 'diterima', 'ditolak', 'daftar-ulang'];
 if ($filterStat && !in_array($filterStat, $validStatus, true)) {
     $filterStat = '';
 }
@@ -130,24 +161,23 @@ $totalHalaman = (int) ceil($total / $perHalaman);
 
 $stmtData = $pdo->prepare(
     "SELECT * FROM pendaftaran $where
-     ORDER BY created_at DESC LIMIT $perHalaman OFFSET $offset"
+     ORDER BY FIELD(status, 'menunggu-verifikasi', 'tes-selesai', 'pending', 'diterima', 'daftar-ulang', 'ditolak'), created_at DESC
+     LIMIT $perHalaman OFFSET $offset"
 );
 $stmtData->execute($params);
 $pendaftaran = $stmtData->fetchAll();
 
-$adminTitle = 'Data PSB';
+$adminTitle = 'Data Pendaftar PSB';
 $adminPage  = 'admin/psb';
 
 $labelJenjang = [
     'smp'              => 'SMP',
     'sma'              => 'SMA',
 ];
-$labelStatus = [
-    'pending'      => 'Menunggu',
-    'diterima'     => 'Diterima',
-    'ditolak'      => 'Ditolak',
-    'daftar-ulang' => 'Daftar Ulang',
-];
+$labelStatus = [];
+foreach ($validStatus as $stKey) {
+    $labelStatus[$stKey] = statusLabel($stKey);
+}
 $optsJalur = jalurDetailOptions();
 // Format persen aman: "20.00" → "20", "27.50" → "27.5"
 $formatPersen = function ($nilai): string {
@@ -215,7 +245,7 @@ require_once __DIR__ . '/includes/header.php';
                     </span>
                     <?php if (in_array($p['jalur'], jalurPerluVerifikasi(), true) && $p['jalur_status'] !== 'none'): ?><br>
                     <span class="muted">
-                        <?= e(jalurStatusLabel($p['jalur_status'])) ?><?= $p['jalur_status'] === 'disetujui' && $p['jalur_potongan'] !== null ? ' (' . e($formatPersen($p['jalur_potongan'])) . '%)' : '' ?>)
+                        <?= e(jalurStatusLabel($p['jalur_status'])) ?><?= $p['jalur_status'] === 'disetujui' && $p['jalur_potongan'] !== null ? ' (' . e($formatPersen($p['jalur_potongan'])) . '%)' : '' ?>
                     </span>
                     <?php endif; ?>
                     <?php else: ?>
@@ -235,14 +265,31 @@ require_once __DIR__ . '/includes/header.php';
                     </span>
                 </td>
                 <td>
-                    <button type="button" class="btn-sm btn-sm-warning"
-                            onclick="openPsbModal(<?= $p['id'] ?>, '<?= e(addslashes($p['nama_lengkap'])) ?>', '<?= e($p['status']) ?>', '<?= e(addslashes($p['catatan_admin'] ?? '')) ?>')">
-                        Update
-                    </button>
-                    <button type="button" class="btn-sm btn-sm-secondary"
-                            onclick="openPsbDetail(<?= $p['id'] ?>)">
-                        Detail
-                    </button>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                        <?php if (in_array($p['status'], ['pending', 'menunggu-verifikasi', 'tes-selesai'], true)): ?>
+                        <form method="post" action="<?= e(BASE_URL . '/admin/psb') ?>" style="display:inline;"
+                              data-confirm="Terima santri <?= e($p['nama_lengkap']) ?> dan buat tagihan pendaftaran?">
+                            <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
+                            <input type="hidden" name="action" value="terima_santri">
+                            <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
+                            <button type="submit" class="btn-sm btn-sm-primary">Terima</button>
+                        </form>
+                        <?php endif; ?>
+                        <button type="button" class="btn-sm btn-sm-warning"
+                                data-psb-id="<?= (int) $p['id'] ?>"
+                                data-psb-nama="<?= e($p['nama_lengkap']) ?>"
+                                data-psb-status="<?= e($p['status']) ?>"
+                                data-psb-catatan="<?= e($p['catatan_admin'] ?? '') ?>"
+                                onclick="openPsbModalFromBtn(this)">
+                            Ubah Status
+                        </button>
+                        <a href="<?= e(BASE_URL . '/kartu-santri?id=' . (int) $p['id']) ?>" target="_blank" rel="noopener"
+                           class="btn-sm btn-sm-secondary" style="text-decoration:none;">Kartu Santri</a>
+                        <button type="button" class="btn-sm btn-sm-secondary"
+                                onclick="openPsbDetail(<?= (int) $p['id'] ?>)">
+                            Detail
+                        </button>
+                    </div>
                 </td>
             </tr>
             <!-- Detail row (hidden) -->
@@ -349,7 +396,7 @@ require_once __DIR__ . '/includes/header.php';
                             <?php if(!empty($p['kesanggupan_at'])): ?>
                             <br><strong>Kesanggupan:</strong> tanda tangan <a href="<?=BASE_URL?>/api/signature.php?id=<?=$p['id']?>" target="_blank" rel="noopener">lihat</a> · <?=e($p['kesanggupan_at'])?>
                             <?php endif; ?>
-                            <br><a href="<?=BASE_URL?>/surat-kesanggupan?id=<?=$p['id']?>" target="_blank" rel="noopener" style="text-decoration:none;" class="btn-sm btn-sm-primary">Download Ringkasan</a>
+                            <br><a href="<?=BASE_URL?>/kartu-santri?id=<?=$p['id']?>&download=pdf" style="text-decoration:none;margin-right:6px;" class="btn-sm btn-sm-primary">Download Kartu Santri (PDF)</a><a href="<?=BASE_URL?>/surat-kesanggupan?id=<?=$p['id']?>" target="_blank" rel="noopener" style="text-decoration:none;" class="btn-sm btn-sm-secondary">Download Ringkasan</a>
                             <?php $bf=$pdo->prepare('SELECT id,jenis,nama_asli,status FROM berkas_santri WHERE pendaftaran_id=? ORDER BY created_at DESC');$bf->execute([$p['id']]);$berkasP=$bf->fetchAll(); ?>
                             <br><br><strong>Berkas Masuk (<?=count($berkasP)?>):</strong><br>
                             <?php foreach($berkasP as $file): ?><a target="_blank" href="<?=BASE_URL?>/admin/berkas-lihat?id=<?=$file['id']?>"><?=e(ucwords(str_replace('-',' ',$file['jenis'])))?> — <?=e($file['nama_asli'])?></a> (<?=e($file['status'])?>)<br><?php endforeach; ?>
@@ -417,10 +464,9 @@ require_once __DIR__ . '/includes/header.php';
             <div class="form-group">
                 <label>Status</label>
                 <select name="status" id="modalStatus" class="form-control">
-                    <option value="pending">Menunggu</option>
-                    <option value="diterima">Diterima</option>
-                    <option value="ditolak">Ditolak</option>
-                    <option value="daftar-ulang">Daftar Ulang</option>
+                    <?php foreach ($labelStatus as $val => $lbl): ?>
+                    <option value="<?= e($val) ?>"><?= e($lbl) ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
             <div class="form-group">
@@ -436,11 +482,11 @@ require_once __DIR__ . '/includes/header.php';
 </div>
 
 <script>
-function openPsbModal(id, nama, status, catatan) {
-    document.getElementById('modalId').value = id;
-    document.getElementById('modalNama').textContent = nama;
-    document.getElementById('modalStatus').value = status;
-    document.getElementById('modalCatatan').value = catatan;
+function openPsbModalFromBtn(btn) {
+    document.getElementById('modalId').value = btn.dataset.psbId || '';
+    document.getElementById('modalNama').textContent = btn.dataset.psbNama || '';
+    document.getElementById('modalStatus').value = btn.dataset.psbStatus || 'pending';
+    document.getElementById('modalCatatan').value = btn.dataset.psbCatatan || '';
     var modal = document.getElementById('psbModal');
     modal.removeAttribute('hidden');
     modal.style.display = 'flex';

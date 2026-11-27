@@ -24,7 +24,7 @@ $stats['psb_total'] = (int) $stmtPsbTotal->fetchColumn();
 
 // ── Pendaftaran terbaru (5) ───────────────────────────────────
 $stmtTerbaru = $pdo->query(
-    "SELECT nomor_daftar, nama_lengkap, jenjang, status, created_at
+    "SELECT id, nomor_daftar, nama_lengkap, jenjang, status, created_at
      FROM pendaftaran ORDER BY created_at DESC LIMIT 5"
 );
 $pendaftaranTerbaru = $stmtTerbaru->fetchAll();
@@ -85,7 +85,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="stat-icon orange" aria-hidden="true">◎</div>
         <div>
             <div class="stat-num"><?= $stats['psb_pending'] ?></div>
-            <div class="stat-label">PSB Menunggu Review</div>
+            <div class="stat-label">Pendaftar Baru</div>
         </div>
     </div>
     <div class="stat-card">
@@ -100,8 +100,11 @@ require_once __DIR__ . '/includes/header.php';
 <!-- ── RINGKASAN PSB ────────────────────────────────────────── -->
 <div class="admin-table-wrap">
     <div class="table-head">
-        <h2>Ringkasan Pendaftaran (5 Fase)</h2>
-        <a href="<?= e(BASE_URL . '/admin/verifikasi-berkas') ?>" style="text-decoration:none;" class="btn-sm btn-sm-primary">Verifikasi</a>
+        <h2>Ringkasan Pendaftaran</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="<?= e(BASE_URL . '/admin/psb') ?>" style="text-decoration:none;" class="btn-sm btn-sm-primary">Data Pendaftar</a>
+            <a href="<?= e(BASE_URL . '/admin/verifikasi-berkas') ?>" style="text-decoration:none;" class="btn-sm btn-sm-secondary">Verifikasi Berkas</a>
+        </div>
     </div>
     <div class="stat-grid">
         <?php
@@ -144,7 +147,7 @@ require_once __DIR__ . '/includes/header.php';
     </table>
     <?php if ($cicilanPending > 0): ?>
         <div class="flash-message">
-            ⏳ Ada <strong><?= $cicilanPending ?></strong> cicilan menunggu verifikasi.
+            Ada <strong><?= $cicilanPending ?></strong> pembayaran menunggu verifikasi.
             <a href="<?= e(BASE_URL . '/admin/cicilan-verifikasi') ?>">Verifikasi sekarang →</a>
         </div>
     <?php endif; ?>
@@ -164,11 +167,12 @@ require_once __DIR__ . '/includes/header.php';
                 <th>Jenjang</th>
                 <th>Status</th>
                 <th>Tanggal</th>
+                <th>Aksi</th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($pendaftaranTerbaru)): ?>
-            <tr><td colspan="5" class="table-empty">Belum ada data pendaftaran.</td></tr>
+            <tr><td colspan="6" class="table-empty">Belum ada data pendaftaran.</td></tr>
             <?php else: ?>
             <?php foreach ($pendaftaranTerbaru as $row): ?>
             <tr>
@@ -181,10 +185,14 @@ require_once __DIR__ . '/includes/header.php';
                     $badgeCls = $badgeMap[$row['status']] ?? 'pending';
                     ?>
                     <span class="badge badge-<?= $badgeCls ?>">
-                        <?= e(ucfirst(str_replace('-', ' ', $row['status']))) ?>
+                        <?= e(statusLabel($row['status'])) ?>
                     </span>
                 </td>
                 <td><?= e(formatTanggal($row['created_at'])) ?></td>
+                <td>
+                    <a href="<?= e(BASE_URL . '/admin/psb?cari=' . urlencode($row['nomor_daftar'])) ?>"
+                       style="text-decoration:none;" class="btn-sm btn-sm-primary">Kelola</a>
+                </td>
             </tr>
             <?php endforeach; ?>
             <?php endif; ?>

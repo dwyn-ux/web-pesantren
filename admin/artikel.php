@@ -118,10 +118,14 @@ require_once __DIR__ . '/includes/header.php';
             <?php foreach ($artikelList as $art): ?>
             <tr>
                 <td>
-                    <a href="<?= e(BASE_URL . '/artikel/' . $art['slug']) ?>"
-                       target="_blank" rel="noopener noreferrer">
-                        <?= e(truncate($art['judul'], 55)) ?>
+                    <a href="<?= e(BASE_URL . '/admin/artikel-edit?id=' . $art['id']) ?>">
+                        <strong><?= e(truncate($art['judul'], 55)) ?></strong>
                     </a>
+                    <?php if ($art['status'] === 'published'): ?>
+                        <a href="<?= e(BASE_URL . '/artikel/' . $art['slug']) ?>"
+                           target="_blank" rel="noopener noreferrer"
+                           class="muted" style="margin-left:6px;font-size:12px;">↗ Lihat</a>
+                    <?php endif; ?>
                 </td>
                 <td><?= e($labelKategori[$art['kategori']] ?? $art['kategori']) ?></td>
                 <td><?= e($art['penulis']) ?></td>

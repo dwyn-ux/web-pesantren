@@ -3,8 +3,8 @@ require_once __DIR__ . '/bootstrap.php';
 requireAdmin();
 
 $pdo = getDB();
-$adminTitle = 'Verifikasi Berkas PSB';
-$adminNavActive = 'admin/verifikasi-berkas';
+$adminTitle = 'Verifikasi Berkas & Penerimaan';
+$adminPage  = 'admin/verifikasi-berkas';
 
 $msg = '';
 $msgType = '';
@@ -28,15 +28,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             kirimTelegram('Jalur DITOLAK (kembali reguler): ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
         }
     } elseif ($act === 'snapshot' && $pendaftaranId) {
-        // Trigger snapshot final
-        $ok = applyTarifToSnapshot($pdo, $pendaftaranId);
-        if ($ok) {
-            $pdo->prepare("UPDATE pendaftaran SET status='diterima' WHERE id=?")->execute([$pendaftaranId]);
-            $msg = 'Tagihan final disnapshot. Status: DITERIMA.'; $msgType = 'success';
-            kirimTelegram('DITERIMA: ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
-        } else {
-            $msg = 'Gagal snapshot. Pastikan jalur sudah disetujui (jika alumni/dhuafa).';
+        $q = $pdo->prepare('SELECT jalur, jalur_status FROM pendaftaran WHERE id = ?');
+        $q->execute([$pendaftaranId]);
+        $jRow = $q->fetch();
+        if ($jRow && in_array($jRow['jalur'], jalurPerluVerifikasi(), true) && $jRow['jalur_status'] !== 'disetujui') {
+            $msg = 'Belum bisa diterima: pastikan jalur Alumni/Dhuafa sudah disetujui atau ditolak terlebih dahulu.';
             $msgType = 'error';
+        } else {
+            applyTarifToSnapshot($pdo, $pendaftaranId);
+            $pdo->prepare("UPDATE pendaftaran SET status='diterima' WHERE id=?")->execute([$pendaftaranId]);
+            $msg = 'Santri DITERIMA dan tagihan pendaftaran sudah dibuat.'; $msgType = 'success';
+            kirimTelegram('DITERIMA: ' . telegramInfoPendaftar($pdo, $pendaftaranId), $pdo);
         }
     } elseif ($act === 'tolak_pendaftaran' && $pendaftaranId) {
         $pdo->prepare("UPDATE pendaftaran SET status='ditolak' WHERE id=?")->execute([$pendaftaranId]);
@@ -60,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Filter
-$filterStatus = sanitizeString($_GET['status'] ?? 'menunggu-verifikasi');
+$filterStatus = sanitizeString($_GET['status'] ?? '');
 $filterJalur  = sanitizeString($_GET['jalur'] ?? '');
 
 $where = ['1=1'];
@@ -68,11 +70,13 @@ $params = [];
 if ($filterStatus) { $where[] = 'p.status = ?'; $params[] = $filterStatus; }
 if ($filterJalur)  { $where[] = 'p.jalur = ?';   $params[] = $filterJalur; }
 
-$sql = "SELECT p.*, pg.label AS gelombang_label, pg.tanggal_tes
+$sql = "SELECT p.*, u.email, pg.label AS gelombang_label, pg.tanggal_tes
         FROM pendaftaran p
+        LEFT JOIN users u ON u.id = p.user_id
         LEFT JOIN pendaftaran_gelombang pg ON pg.id = p.gelombang_id
         WHERE " . implode(' AND ', $where) . "
-        ORDER BY p.created_at DESC LIMIT 200";
+        ORDER BY FIELD(p.status, 'menunggu-verifikasi', 'tes-selesai', 'pending', 'diterima', 'daftar-ulang', 'ditolak'), p.created_at DESC
+        LIMIT 200";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $list = $stmt->fetchAll();
@@ -282,8 +286,12 @@ $labelStatus = [
             }
             $pesanWa = templateWaFollowup($pdo, $d, $kurangWa);
             ?>
+            <a href="<?= e(BASE_URL . '/kartu-santri?id=' . (int)$did) ?>" target="_blank" rel="noopener"
+               class="btn-sm btn-sm-secondary" style="text-decoration:none;">Kartu Santri</a>
+            <a href="<?= e(BASE_URL . '/kartu-santri?id=' . (int)$did . '&download=pdf') ?>"
+               class="btn-sm btn-sm-secondary" style="text-decoration:none;">Download Kartu (PDF)</a>
             <a href="<?= e(linkWa($d['whatsapp'] ?? $d['hp_ortu'] ?? '', $pesanWa)) ?>" target="_blank" rel="noopener"
-               class="btn-sm btn-sm-primary" style="text-decoration:none;" id="btnKirimWa">💬 <?= e(labelWaFollowup($d['status'])) ?></a>
+               class="btn-sm btn-sm-primary" style="text-decoration:none;" id="btnKirimWa"><?= e(labelWaFollowup($d['status'])) ?> (WA)</a>
             <script>
             document.getElementById('btnKirimWa').addEventListener('click', function () {
               var fd = new FormData();
@@ -311,12 +319,12 @@ $labelStatus = [
                 </form>
             <?php endif; ?>
 
-            <?php if (in_array($d['status'], ['menunggu-verifikasi','tes-selesai'], true)): ?>
-                <form method="post" onsubmit="return confirm('Snapshot tagihan final & set DITERIMA?')">
+            <?php if (in_array($d['status'], ['pending', 'menunggu-verifikasi', 'tes-selesai'], true)): ?>
+                <form method="post" onsubmit="return confirm('Terima santri ini dan buat tagihan pendaftaran?')">
                     <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
                     <input type="hidden" name="act" value="snapshot">
                     <input type="hidden" name="pendaftaran_id" value="<?= (int)$did ?>">
-                    <button type="submit" class="btn-sm btn-sm-primary">Snapshot Tagihan &amp; Terima</button>
+                    <button type="submit" class="btn-sm btn-sm-primary">✓ Terima Santri</button>
                 </form>
             <?php endif; ?>
 
@@ -330,7 +338,7 @@ $labelStatus = [
             <?php endif; ?>
 
             <?php if (isSnapshotFinal((int)$did, $pdo)): ?>
-                <span class="badge badge-success">✓ Snapshot Final Ada</span>
+                <span class="badge badge-success">✓ Tagihan Resmi Sudah Dibuat</span>
             <?php endif; ?>
         </div>
     </div>

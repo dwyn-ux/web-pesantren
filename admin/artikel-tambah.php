@@ -169,22 +169,6 @@ require_once __DIR__ . '/includes/header.php';
         <!-- Sidebar kanan -->
         <div>
                 <div class="form-group">
-                    <label for="status">Status</label>
-                    <select id="status" name="status" class="form-control">
-                        <option value="draft"     <?= ($data['status'] ?? 'draft') === 'draft'     ? 'selected' : '' ?>>Draft</option>
-                        <option value="published" <?= ($data['status'] ?? '') === 'published' ? 'selected' : '' ?>>Published</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="published_at">Tanggal Tayang / Publikasi</label>
-                    <input type="datetime-local" id="published_at" name="published_at"
-                           class="form-control"
-                           value="<?= e($_POST['published_at'] ?? date('Y-m-d\TH:i')) ?>">
-                    <p class="muted">Bisa diatur tanggal lampau jika telat upload (backdate).</p>
-                </div>
-
-                <div class="form-group">
                     <label for="kategori">Kategori <span class="req">*</span></label>
                     <select id="kategori" name="kategori"
                             class="form-control<?= isset($errors['kategori']) ? ' is-error' : '' ?>" required>
@@ -202,10 +186,18 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
 
                 <div class="form-group">
+                    <label for="published_at">Tanggal Tayang / Publikasi</label>
+                    <input type="datetime-local" id="published_at" name="published_at"
+                           class="form-control"
+                           value="<?= e($_POST['published_at'] ?? date('Y-m-d\TH:i')) ?>">
+                    <p class="muted">Bisa diatur tanggal lampau jika telat upload (backdate).</p>
+                </div>
+
+                <div class="form-group">
                     <label for="foto">Foto Sampul</label>
                     <input type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp"
                            class="form-control<?= isset($errors['foto']) ? ' is-error' : '' ?>">
-                    <p class="muted">Format: JPG, PNG, WebP. Gambar dikompres & dioptimalkan otomatis untuk web.</p>
+                    <p class="muted">Format: JPG, PNG, WebP. Gambar dikompres &amp; dioptimalkan otomatis untuk web.</p>
                     <?php if (isset($errors['foto'])): ?>
                     <p class="field-error"><?= e($errors['foto']) ?></p>
                     <?php endif; ?>
@@ -213,10 +205,10 @@ require_once __DIR__ . '/includes/header.php';
 
                 <div class="form-actions">
                     <button type="submit" name="status" value="published" class="btn-sm btn-sm-primary">
-                        Publish Sekarang
+                        Publish Artikel
                     </button>
                     <button type="submit" name="status" value="draft" class="btn-sm btn-sm-secondary">
-                        Simpan sebagai Draft
+                        Simpan Draft
                     </button>
                     <a href="<?= e(BASE_URL . '/admin/artikel') ?>" class="btn-sm btn-sm-secondary" style="text-decoration:none;">
                         Batal

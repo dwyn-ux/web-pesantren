@@ -283,6 +283,8 @@ $row = fn(string $label, string $value): string =>
             <?php if ($isEdit): ?>
                 <a class="btn-outline btn-head-light" href="<?= BASE_URL ?>/profil-santri">Batal</a>
             <?php else: ?>
+                <a class="btn-outline btn-head-light" href="<?= BASE_URL ?>/kartu-santri" target="_blank" rel="noopener">Kartu Santri</a>
+                <a class="btn-outline btn-head-light" href="<?= BASE_URL ?>/kartu-santri?download=pdf">Unduh Kartu (PDF)</a>
                 <a class="btn-outline btn-head-light" href="<?= BASE_URL ?>/profil-santri?edit=1">Edit Profil</a>
                 <a class="btn-outline btn-head-light" href="<?= BASE_URL ?>/portal-santri"><?= $p['status'] === 'pending' ? 'Lanjut Pendaftaran' : 'Portal Santri' ?></a>
             <?php endif; ?>
