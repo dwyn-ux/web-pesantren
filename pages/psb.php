@@ -311,7 +311,7 @@ $activeFormPage = (!empty($errors) && !$hasPage1Error) ? 2 : 1;
   <div class="page-hero-content">
     <div class="page-hero-tag"><span></span>Penerimaan Santri Baru<span></span></div>
     <h1>Buat Akun Pendaftaran</h1>
-    <p>Tahun Ajaran <?= e($psbTahun) ?><?php if ($gelombangAktif): ?> &middot; <?= e($gelombangAktif['label']) ?><?php endif; ?></p>
+    <p>Tahun Ajaran <?= e($psbTahun) ?></p>
   </div>
 </div>
 
@@ -335,63 +335,7 @@ $activeFormPage = (!empty($errors) && !$hasPage1Error) ? 2 : 1;
 <?php else: ?>
 
 <div class="psb-wrapper">
-  <div class="psb-info">
-    <div class="section-tag">
-      <span></span><span class="section-tag-text">Gelombang Aktif</span><span></span>
-    </div>
-    <h2 class="section-title"><?= e($gelombangAktif['label']) ?></h2>
-    <p class="section-desc">
-      Pendaftaran: <?= date('d M Y', strtotime($gelombangAktif['tanggal_buka'])) ?>
-      s/d <?= date('d M Y', strtotime($gelombangAktif['tanggal_tutup'])) ?>
-    </p>
-    <p class="section-desc" style="margin-top:8px;">
-      Tes Pemetaan: <strong><?= date('d M Y', strtotime($gelombangAktif['tanggal_tes'])) ?></strong>
-    </p>
-
-    <div class="syarat-box reveal" style="margin-top:36px;">
-      <h3>Alur Pendaftaran</h3>
-      <ul class="syarat-list">
-        <li><div class="syarat-check">1</div> <strong>Buat Akun</strong> &mdash; Isi formulir di samping, dapatkan nomor pendaftaran.</li>
-        <li><div class="syarat-check">2</div> <strong>Lengkapi Berkas</strong> &mdash; Login ke portal, pilih jalur, upload dokumen.</li>
-        <li><div class="syarat-check">3</div> <strong>Tes Pemetaan</strong> &mdash; Ikuti tes sesuai jadwal gelombang.</li>
-        <li><div class="syarat-check">4</div> <strong>Verifikasi</strong> &mdash; Panitia review berkas &amp; nilai tes.</li>
-        <li><div class="syarat-check">5</div> <strong>Diterima &amp; Daftar Ulang</strong> &mdash; Pembayaran, generate surat kesanggupan.</li>
-      </ul>
-    </div>
-
-    <div class="biaya-box reveal" style="margin-top:24px;">
-      <h3>Estimasi Biaya</h3>
-      <div class="biaya-item">
-        <span class="biaya-label">Pendaftaran</span>
-        <span class="biaya-value"><?= ($gelombangAktif['slug'] === 'indent') ? 'GRATIS' : '' ?></span>
-      </div>
-      <div class="biaya-item">
-        <span class="biaya-label">ADM Awal</span>
-        <span class="biaya-value">Rp 7.500.000</span>
-      </div>
-      <div class="biaya-item">
-        <span class="biaya-label">Wakaf</span>
-        <span class="biaya-value">Rp <?= number_format(
-            match($gelombangAktif['slug']) {
-              'indent' => 1500000,
-              'gelombang-1' => 2000000,
-              'gelombang-2' => 3000000,
-              default => 3500000,
-            }, 0, ',', '.'
-        ) ?></span>
-      </div>
-      <div class="biaya-item">
-        <span class="biaya-label">SPP / Bulan</span>
-        <span class="biaya-value">Rp 800.000</span>
-      </div>
-      <p style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:16px;line-height:1.6;">
-        * Tersedia potongan untuk jalur prestasi, tahfidz, kaderisasi, alumni, dan dhuafa.
-        Detail di portal setelah login.
-      </p>
-    </div>
-  </div>
-
-  <div class="psb-form-card reveal-right">
+  <div class="psb-form-card">
     <div class="form-header">
       <div class="arabic">&#x0628;&#x0650;&#x0633;&#x0650;&#x0645;&#x0650; &#x0627;&#x0644;&#x0644;&#x0651;&#x0647;&#x0650;</div>
       <h2>Formulir Akun Pendaftaran</h2>
