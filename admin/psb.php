@@ -3,6 +3,7 @@ require_once __DIR__ . '/bootstrap.php';
 requireAdmin();
 
 $pdo = getDB();
+backfillNomorDaftar9Digit($pdo);
 $adminJalur = getJalurPotonganAdmin($pdo);
 
 // ── Proses update status ──────────────────────────────────────

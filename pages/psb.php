@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $psbBuka) {
 
         // ── INSERT jika tidak ada error ──
         if (empty($errors)) {
-            $nomorDaftar = generateNomorDaftar($pdo);
+            $nomorDaftar = generateNomorDaftar($pdo, $data['jenjang'], $psbTahun);
             $passwordHash = password_hash($data['password'], PASSWORD_BCRYPT);
 
             $pdo->beginTransaction();

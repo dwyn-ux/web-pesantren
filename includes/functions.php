@@ -1512,17 +1512,73 @@ function generatePasswordAwal(): string {
     return (string) random_int(100000, 999999);
 }
 
-/** Generate nomor pendaftaran ASQ-YYYY-XXXX (per tahun). */
-function generateNomorDaftar(PDO $pdo): string {
-    $tahun = date('Y');
-    // Pakai MAX nomor urut agar tidak tabrakan bila ada pendaftar yang dihapus.
-    $stmt = $pdo->prepare(
-        "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(nomor_daftar, '-', -1) AS UNSIGNED)), 0)
-         FROM pendaftaran WHERE nomor_daftar LIKE ?"
-    );
-    $stmt->execute(["ASQ-$tahun-%"]);
-    $urutan = (int) $stmt->fetchColumn() + 1;
-    return "ASQ-$tahun-" . str_pad((string) $urutan, 4, '0', STR_PAD_LEFT);
+/** Ambil 2 digit tahun awal dari pengaturan psb_tahun (fallback tahun berjalan). */
+function tahunPsbYY(PDO $pdo, ?string $psbTahun = null): string {
+    if ($psbTahun === null) {
+        $psbTahun = (string) ($pdo->query("SELECT value FROM pengaturan WHERE key_name = 'psb_tahun' LIMIT 1")->fetchColumn() ?: '');
+    }
+    return preg_match('/\b(20\d{2})\b/', $psbTahun, $m) ? substr($m[1], -2) : date('y');
+}
+
+/** Format nomor pendaftaran 9 digit NIPD/NISP: YY + 14 (Baru) + 01/07/10 + NNN. */
+function formatNomorDaftar9Digit(string $yy, string $jenjang, int $urutan): string {
+    $kodeTingkat = match (strtolower($jenjang)) {
+        'sd'  => '01',
+        'smp' => '07',
+        'sma' => '10',
+        default => '07',
+    };
+    return $yy . '14' . $kodeTingkat . str_pad((string) $urutan, 3, '0', STR_PAD_LEFT);
+}
+
+/**
+ * Konversi otomatis nomor_daftar lama (non-9-digit) ke format 9 digit NIPD
+ * secara kronologis (id ASC), melanjutkan urutan setelah 338 (mulai 339).
+ */
+function backfillNomorDaftar9Digit(PDO $pdo, ?string $psbTahun = null): void {
+    $lama = $pdo->query(
+        "SELECT id, jenjang FROM pendaftaran
+         WHERE nomor_daftar NOT REGEXP '^[0-9]{9,}$'
+         ORDER BY id ASC"
+    )->fetchAll();
+    if (empty($lama)) return;
+
+    $yy = tahunPsbYY($pdo, $psbTahun);
+    $maxUrut = (int) $pdo->query(
+        "SELECT COALESCE(MAX(CAST(SUBSTRING(nomor_daftar, 7) AS UNSIGNED)), 0)
+         FROM pendaftaran
+         WHERE nomor_daftar REGEXP '^[0-9]{9,}$'"
+    )->fetchColumn();
+    $urutan = max(338, $maxUrut);
+
+    $ownTx = !$pdo->inTransaction();
+    if ($ownTx) $pdo->beginTransaction();
+    try {
+        $upd = $pdo->prepare('UPDATE pendaftaran SET nomor_daftar = ? WHERE id = ?');
+        foreach ($lama as $row) {
+            $urutan++;
+            $upd->execute([formatNomorDaftar9Digit($yy, (string) $row['jenjang'], $urutan), (int) $row['id']]);
+        }
+        if ($ownTx) $pdo->commit();
+    } catch (Throwable $e) {
+        if ($ownTx && $pdo->inTransaction()) $pdo->rollBack();
+        error_log('Backfill nomor_daftar 9 digit gagal: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Generate nomor pendaftaran 9 digit mengikuti format NIPD/NISP:
+ * YY (2 digit tahun ajaran PSB) + 14 (Baru) + 07/10 (SMP/SMA) + NNN (urut >= 339).
+ */
+function generateNomorDaftar(PDO $pdo, string $jenjang = 'smp', ?string $psbTahun = null): string {
+    backfillNomorDaftar9Digit($pdo, $psbTahun);
+    $yy = tahunPsbYY($pdo, $psbTahun);
+    $maxUrut = (int) $pdo->query(
+        "SELECT COALESCE(MAX(CAST(SUBSTRING(nomor_daftar, 7) AS UNSIGNED)), 0)
+         FROM pendaftaran
+         WHERE nomor_daftar REGEXP '^[0-9]{9,}$'"
+    )->fetchColumn();
+    return formatNomorDaftar9Digit($yy, $jenjang, max(338, $maxUrut) + 1);
 }
 
 /** Gelombang aktif auto-detect dari tanggal hari ini. NULL jika di luar semua tahap. */
