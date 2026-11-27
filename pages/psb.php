@@ -368,12 +368,29 @@ $activeFormPage = (!empty($errors) && !$hasPage1Error) ? 2 : 1;
       <input type="hidden" name="csrf_token" value="<?= generateCsrfToken() ?>">
 
       <div class="form-page<?= $activeFormPage === 1 ? ' active' : '' ?>" id="page1">
-        <div class="form-group">
-          <label>Nama Lengkap Calon Santri <span class="req">*</span></label>
-          <input type="text" name="nama_lengkap" class="form-control<?= isset($errors['nama_lengkap']) ? ' is-error' : '' ?>"
-                 placeholder="Nama sesuai akta kelahiran"
-                 value="<?= e($old['nama_lengkap'] ?? '') ?>" required>
-          <?php if (isset($errors['nama_lengkap'])): ?><p class="field-error"><?= e($errors['nama_lengkap']) ?></p><?php endif; ?>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nama Lengkap Calon Santri <span class="req">*</span></label>
+            <input type="text" name="nama_lengkap" class="form-control<?= isset($errors['nama_lengkap']) ? ' is-error' : '' ?>"
+                   placeholder="Nama sesuai akta kelahiran"
+                   value="<?= e($old['nama_lengkap'] ?? '') ?>" required>
+            <?php if (isset($errors['nama_lengkap'])): ?><p class="field-error"><?= e($errors['nama_lengkap']) ?></p><?php endif; ?>
+          </div>
+
+          <div class="form-group">
+            <label>Jenis Kelamin <span class="req">*</span></label>
+            <div class="radio-group">
+              <label class="radio-item">
+                <input type="radio" name="jenis_kelamin" value="L" <?= ($old['jenis_kelamin'] ?? '') === 'L' ? 'checked' : '' ?> required>
+                Laki-laki
+              </label>
+              <label class="radio-item">
+                <input type="radio" name="jenis_kelamin" value="P" <?= ($old['jenis_kelamin'] ?? '') === 'P' ? 'checked' : '' ?>>
+                Perempuan
+              </label>
+            </div>
+            <?php if (isset($errors['jenis_kelamin'])): ?><p class="field-error"><?= e($errors['jenis_kelamin']) ?></p><?php endif; ?>
+          </div>
         </div>
 
         <div class="form-row">
@@ -392,58 +409,47 @@ $activeFormPage = (!empty($errors) && !$hasPage1Error) ? 2 : 1;
           </div>
         </div>
 
-        <div class="form-group">
-          <label>Jenis Kelamin <span class="req">*</span></label>
-          <div class="radio-group">
-            <label class="radio-item">
-              <input type="radio" name="jenis_kelamin" value="L" <?= ($old['jenis_kelamin'] ?? '') === 'L' ? 'checked' : '' ?> required>
-              Laki-laki
-            </label>
-            <label class="radio-item">
-              <input type="radio" name="jenis_kelamin" value="P" <?= ($old['jenis_kelamin'] ?? '') === 'P' ? 'checked' : '' ?>>
-              Perempuan
-            </label>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Jenjang yang Dituju <span class="req">*</span></label>
+            <select name="jenjang" class="form-control<?= isset($errors['jenjang']) ? ' is-error' : '' ?>" required>
+              <option value="">-- Pilih Jenjang --</option>
+              <?php foreach ($labelJenjang as $val => $lbl): ?>
+                <option value="<?= e($val) ?>" <?= ($old['jenjang'] ?? '') === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <?php if (isset($errors['jenjang'])): ?><p class="field-error"><?= e($errors['jenjang']) ?></p><?php endif; ?>
           </div>
-          <?php if (isset($errors['jenis_kelamin'])): ?><p class="field-error"><?= e($errors['jenis_kelamin']) ?></p><?php endif; ?>
+
+          <div class="form-group">
+            <label>Nomor WhatsApp Aktif <span class="req">*</span></label>
+            <input type="tel" name="whatsapp" class="form-control<?= isset($errors['whatsapp']) ? ' is-error' : '' ?>"
+                   placeholder="08xxxxxxxxxx"
+                   value="<?= e($old['whatsapp'] ?? '') ?>" required>
+            <p class="form-note">Contoh: 081234567890 (tanpa +62)</p>
+            <?php if (isset($errors['whatsapp'])): ?><p class="field-error"><?= e($errors['whatsapp']) ?></p><?php endif; ?>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>Jenjang yang Dituju <span class="req">*</span></label>
-          <select name="jenjang" class="form-control<?= isset($errors['jenjang']) ? ' is-error' : '' ?>" required>
-            <option value="">-- Pilih Jenjang --</option>
-            <?php foreach ($labelJenjang as $val => $lbl): ?>
-              <option value="<?= e($val) ?>" <?= ($old['jenjang'] ?? '') === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
-            <?php endforeach; ?>
-          </select>
-          <?php if (isset($errors['jenjang'])): ?><p class="field-error"><?= e($errors['jenjang']) ?></p><?php endif; ?>
-        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Asal Sekolah <span class="req">*</span></label>
+            <input type="text" name="asal_sekolah" class="form-control<?= isset($errors['asal_sekolah']) ? ' is-error' : '' ?>"
+                   placeholder="Nama sekolah / madrasah asal"
+                   value="<?= e($old['asal_sekolah'] ?? '') ?>" required>
+            <?php if (isset($errors['asal_sekolah'])): ?><p class="field-error"><?= e($errors['asal_sekolah']) ?></p><?php endif; ?>
+          </div>
 
-        <div class="form-group">
-          <label>Nomor WhatsApp Aktif <span class="req">*</span></label>
-          <input type="tel" name="whatsapp" class="form-control<?= isset($errors['whatsapp']) ? ' is-error' : '' ?>"
-                 placeholder="08xxxxxxxxxx"
-                 value="<?= e($old['whatsapp'] ?? '') ?>" required>
-          <p class="form-note">Contoh: 081234567890 (tanpa +62)</p>
-          <?php if (isset($errors['whatsapp'])): ?><p class="field-error"><?= e($errors['whatsapp']) ?></p><?php endif; ?>
-        </div>
-
-        <div class="form-group">
-          <label>Asal Sekolah <span class="req">*</span></label>
-          <input type="text" name="asal_sekolah" class="form-control<?= isset($errors['asal_sekolah']) ? ' is-error' : '' ?>"
-                 placeholder="Nama sekolah / madrasah asal"
-                 value="<?= e($old['asal_sekolah'] ?? '') ?>" required>
-          <?php if (isset($errors['asal_sekolah'])): ?><p class="field-error"><?= e($errors['asal_sekolah']) ?></p><?php endif; ?>
-        </div>
-
-        <div class="form-group">
-          <label>Kemampuan Membaca Al-Qur'an <span class="req">*</span></label>
-          <select name="kemampuan_quran" class="form-control<?= isset($errors['kemampuan_quran']) ? ' is-error' : '' ?>" required>
-            <option value="">-- Pilih Kemampuan --</option>
-            <?php foreach ($labelQuran as $val => $lbl): ?>
-              <option value="<?= e($val) ?>" <?= ($old['kemampuan_quran'] ?? '') === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
-            <?php endforeach; ?>
-          </select>
-          <?php if (isset($errors['kemampuan_quran'])): ?><p class="field-error"><?= e($errors['kemampuan_quran']) ?></p><?php endif; ?>
+          <div class="form-group">
+            <label>Kemampuan Membaca Al-Qur'an <span class="req">*</span></label>
+            <select name="kemampuan_quran" class="form-control<?= isset($errors['kemampuan_quran']) ? ' is-error' : '' ?>" required>
+              <option value="">-- Pilih Kemampuan --</option>
+              <?php foreach ($labelQuran as $val => $lbl): ?>
+                <option value="<?= e($val) ?>" <?= ($old['kemampuan_quran'] ?? '') === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <?php if (isset($errors['kemampuan_quran'])): ?><p class="field-error"><?= e($errors['kemampuan_quran']) ?></p><?php endif; ?>
+          </div>
         </div>
 
         <div class="form-nav">
@@ -452,35 +458,39 @@ $activeFormPage = (!empty($errors) && !$hasPage1Error) ? 2 : 1;
       </div>
 
       <div class="form-page<?= $activeFormPage === 2 ? ' active' : '' ?>" id="page2">
-        <div class="form-group">
-          <label>Nama Ayah <span class="req">*</span></label>
-          <input type="text" name="nama_ayah" class="form-control<?= isset($errors['nama_ayah']) ? ' is-error' : '' ?>"
-                 placeholder="Nama lengkap ayah"
-                 value="<?= e($old['nama_ayah'] ?? '') ?>" required>
-          <?php if (isset($errors['nama_ayah'])): ?><p class="field-error"><?= e($errors['nama_ayah']) ?></p><?php endif; ?>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nama Ayah <span class="req">*</span></label>
+            <input type="text" name="nama_ayah" class="form-control<?= isset($errors['nama_ayah']) ? ' is-error' : '' ?>"
+                   placeholder="Nama lengkap ayah"
+                   value="<?= e($old['nama_ayah'] ?? '') ?>" required>
+            <?php if (isset($errors['nama_ayah'])): ?><p class="field-error"><?= e($errors['nama_ayah']) ?></p><?php endif; ?>
+          </div>
+
+          <div class="form-group">
+            <label>Nama Ibu <span class="req">*</span></label>
+            <input type="text" name="nama_ibu" class="form-control<?= isset($errors['nama_ibu']) ? ' is-error' : '' ?>"
+                   placeholder="Nama lengkap ibu"
+                   value="<?= e($old['nama_ibu'] ?? '') ?>" required>
+            <?php if (isset($errors['nama_ibu'])): ?><p class="field-error"><?= e($errors['nama_ibu']) ?></p><?php endif; ?>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>Nama Ibu <span class="req">*</span></label>
-          <input type="text" name="nama_ibu" class="form-control<?= isset($errors['nama_ibu']) ? ' is-error' : '' ?>"
-                 placeholder="Nama lengkap ibu"
-                 value="<?= e($old['nama_ibu'] ?? '') ?>" required>
-          <?php if (isset($errors['nama_ibu'])): ?><p class="field-error"><?= e($errors['nama_ibu']) ?></p><?php endif; ?>
-        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>No. HP Orang Tua / Wali <span class="req">*</span></label>
+            <input type="tel" name="hp_ortu" class="form-control<?= isset($errors['hp_ortu']) ? ' is-error' : '' ?>"
+                   placeholder="08xxxxxxxxxx"
+                   value="<?= e($old['hp_ortu'] ?? '') ?>" required>
+            <?php if (isset($errors['hp_ortu'])): ?><p class="field-error"><?= e($errors['hp_ortu']) ?></p><?php endif; ?>
+          </div>
 
-        <div class="form-group">
-          <label>No. HP Orang Tua / Wali <span class="req">*</span></label>
-          <input type="tel" name="hp_ortu" class="form-control<?= isset($errors['hp_ortu']) ? ' is-error' : '' ?>"
-                 placeholder="08xxxxxxxxxx"
-                 value="<?= e($old['hp_ortu'] ?? '') ?>" required>
-          <?php if (isset($errors['hp_ortu'])): ?><p class="field-error"><?= e($errors['hp_ortu']) ?></p><?php endif; ?>
-        </div>
-
-        <div class="form-group">
-          <label>Pekerjaan Orang Tua</label>
-          <input type="text" name="pekerjaan_ortu" class="form-control"
-                 placeholder="Pekerjaan ayah / ibu"
-                 value="<?= e($old['pekerjaan_ortu'] ?? '') ?>">
+          <div class="form-group">
+            <label>Pekerjaan Orang Tua</label>
+            <input type="text" name="pekerjaan_ortu" class="form-control"
+                   placeholder="Pekerjaan ayah / ibu"
+                   value="<?= e($old['pekerjaan_ortu'] ?? '') ?>">
+          </div>
         </div>
 
         <div class="form-group">
@@ -490,29 +500,30 @@ $activeFormPage = (!empty($errors) && !$hasPage1Error) ? 2 : 1;
           <?php if (isset($errors['alamat'])): ?><p class="field-error"><?= e($errors['alamat']) ?></p><?php endif; ?>
         </div>
 
-        <hr style="margin:24px 0;border:none;border-top:1px solid var(--cream-dark);">
-        <h4 style="font-size:14px;margin-bottom:12px;color:var(--text-dark);">Akun Portal</h4>
-        <p style="font-size:12px;color:var(--text-light);margin-bottom:16px;line-height:1.6;">
-          Akun ini digunakan untuk login ke Portal Santri guna melengkapi data &amp; upload berkas.
-        </p>
+        <div class="psb-account-box">
+          <h4>Akun Portal</h4>
+          <p>Akun ini digunakan untuk login ke Portal Santri guna melengkapi data &amp; upload berkas.</p>
 
-        <div class="form-group">
-          <label>Email <span class="req">*</span></label>
-          <input type="email" name="email" class="form-control<?= isset($errors['email']) ? ' is-error' : '' ?>"
-                 placeholder="email@contoh.com"
-                 value="<?= e($old['email'] ?? '') ?>" required>
-          <?php if (isset($errors['email'])): ?><p class="field-error"><?= e($errors['email']) ?></p><?php endif; ?>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email <span class="req">*</span></label>
+              <input type="email" name="email" class="form-control<?= isset($errors['email']) ? ' is-error' : '' ?>"
+                     placeholder="email@contoh.com"
+                     value="<?= e($old['email'] ?? '') ?>" required>
+              <?php if (isset($errors['email'])): ?><p class="field-error"><?= e($errors['email']) ?></p><?php endif; ?>
+            </div>
+
+            <div class="form-group">
+              <label>Password <span class="req">*</span></label>
+              <input type="password" name="password" class="form-control<?= isset($errors['password']) ? ' is-error' : '' ?>"
+                     placeholder="Minimal 8 karakter" required>
+              <p class="form-note">Gunakan kombinasi huruf &amp; angka. Tidak wajib diganti setelah login.</p>
+              <?php if (isset($errors['password'])): ?><p class="field-error"><?= e($errors['password']) ?></p><?php endif; ?>
+            </div>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>Password <span class="req">*</span></label>
-          <input type="password" name="password" class="form-control<?= isset($errors['password']) ? ' is-error' : '' ?>"
-                 placeholder="Minimal 8 karakter" required>
-          <p class="form-note">Gunakan kombinasi huruf &amp; angka. Tidak wajib diganti setelah login.</p>
-          <?php if (isset($errors['password'])): ?><p class="field-error"><?= e($errors['password']) ?></p><?php endif; ?>
-        </div>
-
-        <p class="form-note" style="margin-top:8px;">
+        <p class="form-note" style="margin-top:14px;">
           Dengan mendaftar, Anda menyetujui syarat dan ketentuan yang berlaku
           di Pondok Pesantren Ash-Shiddiq.
         </p>
