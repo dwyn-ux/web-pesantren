@@ -159,7 +159,12 @@ $labelStatus = [
                     <small class="muted">Tes: <?= $r['tanggal_tes'] ? date('d M Y', strtotime($r['tanggal_tes'])) : '-' ?></small>
                 </td>
                 <td>
-                    <a href="?detail=<?= (int)$r['id'] ?>" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Detail</a>
+                    <?php
+                    $detailUrl = '?detail=' . (int)$r['id']
+                        . ($filterStatus !== '' ? '&status=' . urlencode($filterStatus) : '')
+                        . ($filterJalur !== '' ? '&jalur=' . urlencode($filterJalur) : '');
+                    ?>
+                    <a href="<?= e($detailUrl) ?>" class="btn-sm btn-sm-secondary" style="text-decoration:none;">Detail</a>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -187,8 +192,15 @@ $labelStatus = [
             $wajibList = ['kartu-keluarga','akta-lahir','foto','ktp-ortu'];
             $jalurBerkas = jalurBerkasUntuk($d['jalur']);
     ?>
-    <div class="admin-form-card">
-        <div class="admin-form-title">Detail: <?= e($d['nama_lengkap']) ?> (<?= e($d['nomor_daftar']) ?>)</div>
+    <div id="verifDetailModal" role="dialog" aria-modal="true" aria-labelledby="verifModalTitle"
+         style="position:fixed;inset:0;background:rgba(15,35,24,0.55);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div class="admin-form-card" style="width:100%;max-width:860px;max-height:90vh;overflow-y:auto;margin-bottom:0;position:relative;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--cream-dark);">
+            <div class="admin-form-title" id="verifModalTitle" style="margin-bottom:0;border-bottom:none;padding-bottom:0;">
+                Detail: <?= e($d['nama_lengkap']) ?> (<?= e($d['nomor_daftar']) ?>)
+            </div>
+            <button type="button" id="closeVerifModal" class="btn-sm btn-sm-secondary" aria-label="Tutup">&times; Tutup</button>
+        </div>
 
         <div class="detail-grid">
             <div>
@@ -342,6 +354,23 @@ $labelStatus = [
             <?php endif; ?>
         </div>
     </div>
+    </div>
+    <script>
+    (function () {
+      var modal = document.getElementById('verifDetailModal');
+      var closeBtn = document.getElementById('closeVerifModal');
+      if (!modal) return;
+      function closeVerif() {
+        modal.style.display = 'none';
+        var u = new URL(window.location.href);
+        u.searchParams.delete('detail');
+        window.history.replaceState({}, '', u.pathname + (u.searchParams.toString() ? '?' + u.searchParams.toString() : ''));
+      }
+      if (closeBtn) closeBtn.addEventListener('click', closeVerif);
+      modal.addEventListener('click', function (e) { if (e.target === modal) closeVerif(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && modal.style.display !== 'none') closeVerif(); });
+    }());
+    </script>
     <?php endif; } ?>
 
 <?php include __DIR__ . '/includes/footer.php'; ?>
