@@ -59,10 +59,11 @@ foreach ($pdo->query(
     $pengaturan[$row['key_name']] = trim((string) ($row['value'] ?? ''));
 }
 
-$tahunAjaran = $pengaturan['psb_tahun'] ?: (date('Y') . '/' . (date('Y') + 1));
-$kopAlamat = $pengaturan['kop_alamat'] ?: ($pengaturan['kontak_alamat'] ?: 'Purworejo, Jurangjero, Ngawen, Gunungkidul, D.I. Yogyakarta 55853');
-$kopTelp   = $pengaturan['kop_telepon'] ?: ($pengaturan['kontak_telepon'] ?: ($pengaturan['kontak_whatsapp'] ?: '+62 838-7347-5302'));
-$kopEmail  = $pengaturan['kontak_email'] ?: 'ponpesashiddiq2@gmail.com';
+$getSet = static fn(string $k, string $def = ''): string => !empty($pengaturan[$k]) ? $pengaturan[$k] : $def;
+$tahunAjaran = $getSet('psb_tahun', date('Y') . '/' . (date('Y') + 1));
+$kopAlamat = $getSet('kop_alamat', $getSet('kontak_alamat', 'Purworejo, Jurangjero, Ngawen, Gunungkidul, D.I. Yogyakarta 55853'));
+$kopTelp   = $getSet('kop_telepon', $getSet('kontak_telepon', $getSet('kontak_whatsapp', '+62 838-7347-5302')));
+$kopEmail  = $getSet('kontak_email', 'ponpesashiddiq2@gmail.com');
 
 // ── Foto Santri 3x4 & Logo Kop ───────────────────────────────
 $fotoPath = null;
@@ -236,7 +237,7 @@ if (($_GET['download'] ?? '') === 'pdf') {
     $ry = $cardTop - 20;
     foreach ($rowBlocks as [$lbl, $wrapped, $rh]) {
         $stream .= sprintf("0.35 0.35 0.35 rg BT /F2 9.5 Tf 1 0 0 1 %.1f %.1f Tm (%s) Tj ET\n", $leftX, $ry, $esc($win($lbl)));
-        $stream .= sprintf("0.35 0.35 0.35 rg BT /F1 9.5 Tf 1 0 0 1 %.1f %.1f Tm (:) Tj ET\n", $leftX + $lblW - 8);
+        $stream .= sprintf("0.35 0.35 0.35 rg BT /F1 9.5 Tf 1 0 0 1 %.1f %.1f Tm (:) Tj ET\n", $leftX + $lblW - 8, $ry);
         $vy = $ry;
         foreach ($wrapped as $ln) {
             $stream .= sprintf("0 0 0 rg BT /F1 10 Tf 1 0 0 1 %.1f %.1f Tm (%s) Tj ET\n", $leftX + $lblW, $vy, $esc($win($ln)));
